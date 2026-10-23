@@ -80,7 +80,8 @@ class TagLibWriteTest {
     fun writesAndReadsBackMp3() {
         val file = tempCopy("sample.mp3", ".mp3")
         val before = engine.read(file.absolutePath)!!
-        assertEquals("ID3v2.3", before.tagFormat.substringBefore('+'))
+        assertTrue("expected ID3v2.3 before the edit, got ${before.tagFormat}",
+            before.tagFormat.startsWith("ID3v2.3"))
 
         val result = engine.write(file.absolutePath, edited(before))
         assertTrue("write failed: $result", result.ok)
@@ -184,5 +185,25 @@ class TagLibWriteTest {
         }
         val result = engine.write(text.absolutePath, TagEdit(title = "x"))
         assertTrue("expected a failure, got $result", result is WriteResult.Failure)
+    }
+
+    /**
+     * Diagnostic: writes the same field repeatedly and prints what comes back, so an
+     * append-vs-replace defect in TagLib's property writer is visible in one CI log.
+     */
+    @Test
+    fun writeDiagnostics() {
+        val file = tempCopy("sample.mp3", ".mp3")
+        val before = engine.read(file.absolutePath)!!
+        println("DIAG before    title=[" + before.title + "] comment=[" + before.comment + "]")
+        engine.write(file.absolutePath, TagEdit.from(before).copy(title = "ONE"))
+        val one = engine.read(file.absolutePath)!!
+        println("DIAG after ONE title=[" + one.title + "] comment=[" + one.comment + "]")
+        engine.write(file.absolutePath, TagEdit.from(one).copy(title = "TWO"))
+        val two = engine.read(file.absolutePath)!!
+        println("DIAG after TWO title=[" + two.title + "] comment=[" + two.comment + "]")
+        engine.write(file.absolutePath, TagEdit.from(two).copy(title = "", comment = ""))
+        val cleared = engine.read(file.absolutePath)!!
+        println("DIAG cleared   title=[" + cleared.title + "] comment=[" + cleared.comment + "]")
     }
 }
