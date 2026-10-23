@@ -25,6 +25,26 @@ class TagLibEngine : TagEngine {
         return parse(raw)
     }
 
+    override fun write(path: String, edit: TagEdit): WriteResult {
+        if (path.isEmpty()) return WriteResult.Failure("empty path")
+        NativeLibrary.ensureLoaded()
+
+        val coverBytes: ByteArray?
+        val coverMime: String?
+        when (val cover = edit.cover) {
+            is CoverEdit.Unchanged -> { coverBytes = null; coverMime = null }
+            is CoverEdit.Remove -> { coverBytes = ByteArray(0); coverMime = "" }
+            is CoverEdit.Replace -> { coverBytes = cover.data; coverMime = cover.mimeType }
+        }
+
+        var options = 0
+        if (edit.writeId3v1) options = options or OPTION_ID3V1
+        if (edit.id3v23) options = options or OPTION_ID3V23
+
+        val error = NativeTagBridge.writeAll(path, edit.fields(), coverBytes, coverMime, options)
+        return if (error == null) WriteResult.Success else WriteResult.Failure(error)
+    }
+
     /** Exposed for tests: turns the JNI array into the model. */
     internal fun parse(raw: Array<String>): TagData? {
         if (raw.size < FIELD_COUNT) return null
@@ -95,6 +115,9 @@ class TagLibEngine : TagEngine {
         const val PICTURE_COUNT = 20
         const val PICTURES = 21
         const val FIELD_COUNT = 21
+
+        const val OPTION_ID3V1 = 1
+        const val OPTION_ID3V23 = 2
     }
 }
 

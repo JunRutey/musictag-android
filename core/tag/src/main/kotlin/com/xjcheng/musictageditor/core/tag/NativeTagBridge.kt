@@ -26,6 +26,22 @@ class NativeTagBridge private constructor() {
         @JvmStatic
         external fun readAll(path: String): Array<String>?
 
+        /**
+         * Writes the twelve fields plus lyrics and an optional cover edit.
+         *
+         * cover is null to leave artwork alone, empty to remove it, otherwise the new
+         * bytes. options bit 0 writes ID3v1 too, bit 1 writes ID3v2.3 instead of
+         * ID3v2.4. Returns null on success, otherwise a reason.
+         */
+        @JvmStatic
+        external fun writeAll(
+            path: String,
+            fields: Array<String>,
+            cover: ByteArray?,
+            coverMime: String?,
+            options: Int,
+        ): String?
+
         @JvmStatic
         external fun taglibVersion(): String
     }

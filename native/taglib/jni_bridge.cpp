@@ -255,6 +255,136 @@ void collectPictures(File *file, const TagContext &context, std::vector<Picture>
     }
 }
 
+
+// ---------------------------------------------------------------------------
+// Write path (M2)
+// ---------------------------------------------------------------------------
+
+void trimInPlace(std::string &value) {
+    while (!value.empty() && (value.front() == ' ' || value.front() == '\t')) value.erase(value.begin());
+    while (!value.empty() && (value.back() == ' ' || value.back() == '\t')) value.pop_back();
+}
+
+std::string jstringToUtf8(JNIEnv *env, jstring value) {
+    const jsize length = env->GetStringLength(value);
+    const jchar *chars = env->GetStringChars(value, nullptr);
+    if (chars == nullptr) return {};
+    std::string out;
+    out.reserve(static_cast<size_t>(length));
+    for (jsize i = 0; i < length; ++i) {
+        unsigned int cp = chars[i];
+        if (cp >= 0xD800 && cp <= 0xDBFF && i + 1 < length) {
+            const unsigned int low = chars[i + 1];
+            if (low >= 0xDC00 && low <= 0xDFFF) {
+                cp = 0x10000 + ((cp - 0xD800) << 10) + (low - 0xDC00);
+                ++i;
+            }
+        }
+        if (cp < 0x80) {
+            out.push_back(static_cast<char>(cp));
+        } else if (cp < 0x800) {
+            out.push_back(static_cast<char>(0xC0 | (cp >> 6)));
+            out.push_back(static_cast<char>(0x80 | (cp & 0x3F)));
+        } else if (cp < 0x10000) {
+            out.push_back(static_cast<char>(0xE0 | (cp >> 12)));
+            out.push_back(static_cast<char>(0x80 | ((cp >> 6) & 0x3F)));
+            out.push_back(static_cast<char>(0x80 | (cp & 0x3F)));
+        } else {
+            out.push_back(static_cast<char>(0xF0 | (cp >> 18)));
+            out.push_back(static_cast<char>(0x80 | ((cp >> 12) & 0x3F)));
+            out.push_back(static_cast<char>(0x80 | ((cp >> 6) & 0x3F)));
+            out.push_back(static_cast<char>(0x80 | (cp & 0x3F)));
+        }
+    }
+    env->ReleaseStringChars(value, chars);
+    return out;
+}
+
+// An empty value means "remove this property" - that is how TagLib represents absence.
+void putProperty(PropertyMap &map, const char *key, const std::string &value) {
+    const String name(key, String::UTF8);
+    if (value.empty()) {
+        map.erase(name);
+    } else {
+        map.insert(name, StringList(String(value, String::UTF8)));
+    }
+}
+
+// ID3v2 keeps "3/12" in TRACKNUMBER; the model carries both the number and the combined
+// string. Accept either shape and write TRACKNUMBER/TRACKTOTAL accordingly.
+void putNumberPair(PropertyMap &map, const char *numberKey, const char *totalKey,
+                   const std::string &number, const std::string &combined) {
+    std::string value = number;
+    std::string total;
+    const std::string source = combined.empty() ? number : combined;
+    const auto slash = source.find('/');
+    if (slash != std::string::npos) {
+        if (value.empty()) value = source.substr(0, slash);
+        total = source.substr(slash + 1);
+    }
+    trimInPlace(value);
+    trimInPlace(total);
+    putProperty(map, numberKey, value);
+    putProperty(map, totalKey, total);
+}
+
+TagLib::MP4::CoverArt::Format coverFormatFor(const std::string &mime) {
+    return mime == "image/png" ? TagLib::MP4::CoverArt::PNG : TagLib::MP4::CoverArt::JPEG;
+}
+
+/**
+ * Applies a cover edit: leave it alone, remove it, or replace it.
+ *
+ * Each container stores artwork differently, so this dispatches per format:
+ * FLAC keeps PICTURE blocks, MPEG keeps ID3v2 APIC frames, MP4 keeps a "covr" item.
+ * APE cover art arrives in M3 together with the remaining formats.
+ */
+void applyCover(File *file, const TagContext &context, bool given, const ByteVector &data,
+                const std::string &mime) {
+    if (!given) {
+        return;
+    }
+
+    if (auto *flac = dynamic_cast<TagLib::FLAC::File *>(file)) {
+        flac->removePictures();
+        if (!data.isEmpty()) {
+            auto *picture = new TagLib::FLAC::Picture();
+            picture->setType(TagLib::FLAC::Picture::FrontCover);
+            picture->setMimeType(String(mime, String::UTF8));
+            picture->setData(data);
+            flac->addPicture(picture);  // FLAC::File takes ownership
+        }
+        return;
+    }
+
+    if (auto *mpeg = dynamic_cast<TagLib::MPEG::File *>(file)) {
+        auto *tag = mpeg->ID3v2Tag(true);
+        if (tag == nullptr) {
+            return;
+        }
+        tag->removeFrames("APIC");
+        if (!data.isEmpty()) {
+            auto *frame = new TagLib::ID3v2::AttachedPictureFrame();
+            frame->setMimeType(String(mime, String::UTF8));
+            frame->setType(TagLib::ID3v2::AttachedPictureFrame::FrontCover);
+            frame->setDescription(String());
+            frame->setPicture(data);
+            tag->addFrame(frame);
+        }
+        return;
+    }
+
+    if (context.mp4 != nullptr) {
+        if (data.isEmpty()) {
+            context.mp4->removeItem("covr");
+        } else {
+            TagLib::MP4::CoverArtList list;
+            list.append(TagLib::MP4::CoverArt(coverFormatFor(mime), data));
+            context.mp4->setItem("covr", TagLib::MP4::Item(list));
+        }
+    }
+}
+
 }  // namespace
 
 extern "C" {
@@ -390,5 +520,108 @@ Java_com_xjcheng_musictageditor_core_tag_NativeTagBridge_readAll(JNIEnv *env, jc
         env->DeleteLocalRef(value);
     }
     return result;
+}
+
+// Writes the twelve tag fields plus lyrics and an optional cover edit.
+//
+//   fields  : exactly 13 UTF-8 values -
+//             0 title, 1 artist, 2 album, 3 albumArtist, 4 genre, 5 composer,
+//             6 track, 7 trackStr, 8 disc, 9 discStr, 10 year, 11 comment, 12 lyrics
+//   cover   : null = leave unchanged, empty = remove, otherwise = replace
+//   options : bit 0 write ID3v1 as well, bit 1 write ID3v2.3 instead of ID3v2.4
+//
+// Returns null on success, otherwise a human readable reason.
+JNIEXPORT jstring JNICALL
+Java_com_xjcheng_musictageditor_core_tag_NativeTagBridge_writeAll(
+    JNIEnv *env, jclass, jstring path, jobjectArray fields, jbyteArray cover,
+    jstring coverMime, jint options) {
+    if (path == nullptr || fields == nullptr) {
+        return toJavaString(env, "missing path or fields");
+    }
+    if (env->GetArrayLength(fields) < 13) {
+        return toJavaString(env, "expected 13 fields");
+    }
+
+    const char *rawPath = env->GetStringUTFChars(path, nullptr);
+    if (rawPath == nullptr) {
+        return toJavaString(env, "path conversion failed");
+    }
+    const std::string filePath(rawPath);
+    env->ReleaseStringUTFChars(path, rawPath);
+
+    std::vector<std::string> values(13);
+    for (jsize i = 0; i < 13; ++i) {
+        auto *element = static_cast<jstring>(env->GetObjectArrayElement(fields, i));
+        if (element != nullptr) {
+            values[static_cast<size_t>(i)] = jstringToUtf8(env, element);
+            env->DeleteLocalRef(element);
+        }
+    }
+
+    FileRef ref(filePath.c_str(), false);
+    if (ref.isNull() || ref.file() == nullptr) {
+        return toJavaString(env, "unsupported container");
+    }
+    File *file = ref.file();
+    const TagContext context = classify(file);
+
+    // Start from the existing map so unknown frames/properties survive the edit.
+    PropertyMap properties = file->properties();
+    putProperty(properties, "TITLE", values[0]);
+    putProperty(properties, "ARTIST", values[1]);
+    putProperty(properties, "ALBUM", values[2]);
+    putProperty(properties, "ALBUMARTIST", values[3]);
+    putProperty(properties, "GENRE", values[4]);
+    putProperty(properties, "COMPOSER", values[5]);
+    putNumberPair(properties, "TRACKNUMBER", "TRACKTOTAL", values[6], values[7]);
+    putNumberPair(properties, "DISCNUMBER", "DISCTOTAL", values[8], values[9]);
+    putProperty(properties, "DATE", values[10]);
+    putProperty(properties, "COMMENT", values[11]);
+    putProperty(properties, "LYRICS", values[12]);
+    file->setProperties(properties);
+
+    bool coverGiven = cover != nullptr;
+    ByteVector coverData;
+    if (coverGiven) {
+        const jsize size = env->GetArrayLength(cover);
+        if (size > 0) {
+            jbyte *bytes = env->GetByteArrayElements(cover, nullptr);
+            if (bytes != nullptr) {
+                coverData = ByteVector(reinterpret_cast<const char *>(bytes),
+                                       static_cast<unsigned int>(size));
+                env->ReleaseByteArrayElements(cover, bytes, JNI_ABORT);
+            }
+        }
+    }
+    std::string coverType;
+    if (coverMime != nullptr) {
+        const char *rawMime = env->GetStringUTFChars(coverMime, nullptr);
+        if (rawMime != nullptr) {
+            coverType = rawMime;
+            env->ReleaseStringUTFChars(coverMime, rawMime);
+        }
+    }
+    applyCover(file, context, coverGiven, coverData, coverType);
+
+    bool saved = false;
+    if (auto *mpeg = dynamic_cast<TagLib::MPEG::File *>(file)) {
+        int tags = TagLib::MPEG::File::ID3v2;
+        if ((options & 1) != 0) {
+            tags |= TagLib::MPEG::File::ID3v1;
+        }
+        if (mpeg->hasAPETag()) {
+            tags |= TagLib::MPEG::File::APE;  // keep existing APE tags instead of stripping
+        }
+        const TagLib::ID3v2::Version version =
+            (options & 2) != 0 ? TagLib::ID3v2::v3 : TagLib::ID3v2::v4;
+        saved = mpeg->save(tags, TagLib::File::StripOthers, version, TagLib::File::Duplicate);
+    } else {
+        saved = file->save();
+    }
+
+    if (!saved) {
+        return toJavaString(env, "save failed (read-only file or unsupported tag)");
+    }
+    return nullptr;
 }
 }  // extern "C"

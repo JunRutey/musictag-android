@@ -69,10 +69,13 @@ class TagPicture(val mimeType: String, val data: ByteArray) {
     override fun toString(): String = "TagPicture($mimeType, ${data.size} bytes)"
 }
 
-/** Reading a file's tags. Writing arrives in M2 on the same surface. */
+/** Reads and writes tags of one file. */
 interface TagEngine {
     /** Returns null when the file is missing, unreadable, or not a recognised audio container. */
     fun read(path: String): TagData?
+
+    /** Applies [edit] to the file in place. */
+    fun write(path: String, edit: TagEdit): WriteResult
 
     /** Upstream TagLib version, useful as a smoke test and in bug reports. */
     fun version(): String

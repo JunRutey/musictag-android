@@ -176,6 +176,8 @@ def flac_fixture() -> bytes:
 FIXTURES = {
     "sample.mp3": mp3_fixture,
     "sample.flac": flac_fixture,
+    # Standalone cover used by the write tests to prove replacement round-trips.
+    "cover.png": tiny_png,
 }
 
 
