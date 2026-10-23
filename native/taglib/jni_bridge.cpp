@@ -141,24 +141,78 @@ std::string detectContainer(File *file) {
     return "unknown";
 }
 
-std::string detectTagFormat(File *file, Tag *tag) {
-    if (auto *id3v2 = dynamic_cast<TagLib::ID3v2::Tag *>(tag)) {
-        std::string version = "ID3v2";
-        if (id3v2->header()) {
-            version += "." + std::to_string(id3v2->header()->majorVersion());
-            version += "." + std::to_string(id3v2->header()->revisionNumber());
-        }
-        auto *mpeg = dynamic_cast<TagLib::MPEG::File *>(file);
-        if (mpeg != nullptr && mpeg->hasID3v1Tag()) {
-            version += "+ID3v1";
-        }
-        return version;
+std::string id3v2Label(TagLib::ID3v2::Tag *tag) {
+    std::string label = "ID3v2";
+    if (tag != nullptr && tag->header() != nullptr) {
+        label += "." + std::to_string(tag->header()->majorVersion());
+        label += "." + std::to_string(tag->header()->revisionNumber());
     }
-    if (dynamic_cast<TagLib::Ogg::XiphComment *>(tag)) return "VorbisComment";
-    if (dynamic_cast<TagLib::MP4::Tag *>(tag)) return "MP4";
-    if (dynamic_cast<TagLib::APE::Tag *>(tag)) return "APEv2";
-    if (dynamic_cast<TagLib::ASF::Tag *>(tag)) return "ASF";
-    return "unknown";
+    return label;
+}
+
+/**
+ * What kind of tag a file carries, and the concrete tag object when one is needed.
+ *
+ * File::tag() returns a TagUnion proxy for MPEG and FLAC - the object really is a
+ * TagUnion, not the underlying tag - so casting it always fails. Those two formats
+ * expose their real tags through format-specific accessors. MP4, ASF and Ogg/Vorbis
+ * override tag() covariantly and hand back the concrete type directly.
+ */
+struct TagContext {
+    std::string format = "unknown";
+    TagLib::ID3v2::Tag *id3v2 = nullptr;
+    TagLib::MP4::Tag *mp4 = nullptr;
+};
+
+TagContext classify(File *file) {
+    TagContext context;
+
+    if (auto *mpeg = dynamic_cast<TagLib::MPEG::File *>(file)) {
+        if (mpeg->hasID3v2Tag()) {
+            context.id3v2 = mpeg->ID3v2Tag(false);
+            context.format = id3v2Label(context.id3v2);
+        } else if (mpeg->hasAPETag()) {
+            context.format = "APEv2";
+        } else if (mpeg->hasID3v1Tag()) {
+            context.format = "ID3v1";
+        } else {
+            context.format = "none";
+        }
+        if (mpeg->hasID3v1Tag() && context.id3v2 != nullptr) {
+            context.format += "+ID3v1";
+        }
+        return context;
+    }
+
+    if (auto *flac = dynamic_cast<TagLib::FLAC::File *>(file)) {
+        if (flac->hasID3v2Tag()) {
+            context.id3v2 = flac->ID3v2Tag(false);
+            context.format = id3v2Label(context.id3v2);
+        } else if (flac->xiphComment(false) != nullptr) {
+            context.format = "VorbisComment";
+        } else {
+            context.format = "none";
+        }
+        return context;
+    }
+
+    if (auto *vorbis = dynamic_cast<TagLib::Ogg::Vorbis::File *>(file)) {
+        context.format = vorbis->tag() != nullptr ? "VorbisComment" : "none";
+        return context;
+    }
+
+    if (auto *mp4 = dynamic_cast<TagLib::MP4::File *>(file)) {
+        context.mp4 = mp4->tag();
+        context.format = context.mp4 != nullptr ? "MP4" : "none";
+        return context;
+    }
+
+    if (auto *asf = dynamic_cast<TagLib::ASF::File *>(file)) {
+        context.format = asf->tag() != nullptr ? "ASF" : "none";
+        return context;
+    }
+
+    return context;
 }
 
 // Bit depth is not part of the AudioProperties base class; only some formats expose it.
@@ -170,7 +224,7 @@ int bitsPerSampleOf(const AudioProperties *audio) {
     return 0;
 }
 
-void collectPictures(File *file, Tag *tag, std::vector<Picture> &out) {
+void collectPictures(File *file, const TagContext &context, std::vector<Picture> &out) {
     if (auto *flac = dynamic_cast<TagLib::FLAC::File *>(file)) {
         for (auto *picture : flac->pictureList()) {
             if (picture != nullptr) {
@@ -179,16 +233,16 @@ void collectPictures(File *file, Tag *tag, std::vector<Picture> &out) {
         }
         return;
     }
-    if (auto *id3v2 = dynamic_cast<TagLib::ID3v2::Tag *>(tag)) {
-        for (auto *frame : id3v2->frameList("APIC")) {
+    if (context.id3v2 != nullptr) {
+        for (auto *frame : context.id3v2->frameList("APIC")) {
             if (auto *apic = dynamic_cast<TagLib::ID3v2::AttachedPictureFrame *>(frame)) {
                 out.push_back({utf8(apic->mimeType()), apic->picture()});
             }
         }
         return;
     }
-    if (auto *mp4 = dynamic_cast<TagLib::MP4::Tag *>(tag)) {
-        const auto &items = mp4->itemMap();
+    if (context.mp4 != nullptr) {
+        const auto &items = context.mp4->itemMap();
         const auto it = items.find("covr");
         if (it != items.end()) {
             for (const auto &art : it->second.toCoverArtList()) {
@@ -237,14 +291,15 @@ Java_com_xjcheng_musictageditor_core_tag_NativeTagBridge_readAll(JNIEnv *env, jc
         return nullptr;
     }
     File *file = ref.file();
-    Tag *tag = ref.tag();
+    Tag *tag = ref.tag();  // TagUnion proxy: forwards every Tag accessor
+    const TagContext context = classify(file);
     const PropertyMap properties = file->properties();
 
     std::vector<std::string> fields;
     fields.reserve(32);
 
     fields.push_back(detectContainer(file));
-    fields.push_back(tag != nullptr ? detectTagFormat(file, tag) : "unknown");
+    fields.push_back(context.format);
 
     fields.push_back(tag != nullptr ? utf8(tag->title()) : "");
     fields.push_back(tag != nullptr ? utf8(tag->artist()) : "");
@@ -296,7 +351,7 @@ Java_com_xjcheng_musictageditor_core_tag_NativeTagBridge_readAll(JNIEnv *env, jc
     fields.push_back(std::to_string(bitsPerSampleOf(audio)));
 
     std::vector<Picture> pictures;
-    collectPictures(file, tag, pictures);
+    collectPictures(file, context, pictures);
     fields.push_back(std::to_string(pictures.size()));
     for (const auto &picture : pictures) {
         fields.push_back(picture.mime);
