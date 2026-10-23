@@ -31,7 +31,7 @@ jobs:
           java-version: "21"
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       # The tag engine compiles upstream TagLib for three ABIs.
       - name: Install NDK and CMake
@@ -107,7 +107,7 @@ jobs:
           java-version: "21"
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
 
       # Same sources the Android build compiles, but for the host JVM so TagLib can be
       # exercised by plain unit tests (no device, no emulator).
