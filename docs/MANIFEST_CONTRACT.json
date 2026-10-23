@@ -1,0 +1,223 @@
+{
+  "schema": 1,
+  "package": "com.xjcheng.musictageditor",
+  "activities": [
+    {
+      "name": "com.xjcheng.musictageditor.MainActivity",
+      "exported": true,
+      "filters": [
+        {
+          "actions": [
+            "android.intent.action.MAIN"
+          ],
+          "categories": [
+            "android.intent.category.LAUNCHER"
+          ],
+          "schemes": [],
+          "mimeTypes": [],
+          "hosts": [],
+          "pathPatterns": [],
+          "metaData": []
+        }
+      ]
+    },
+    {
+      "name": "com.xjcheng.musictageditor.SongDetailActivity",
+      "exported": true,
+      "filters": [
+        {
+          "actions": [
+            "android.intent.action.VIEW"
+          ],
+          "categories": [
+            "android.intent.category.DEFAULT"
+          ],
+          "schemes": [
+            "content",
+            "file"
+          ],
+          "mimeTypes": [
+            "audio/aac",
+            "audio/ape",
+            "audio/dff",
+            "audio/dsf",
+            "audio/flac",
+            "audio/mp4",
+            "audio/mp4a-latm",
+            "audio/mpeg",
+            "audio/ogg",
+            "audio/opus",
+            "audio/x-aac",
+            "audio/x-aiff",
+            "audio/x-ape",
+            "audio/x-dff",
+            "audio/x-dsf",
+            "audio/x-ms-wma",
+            "audio/x-musepack",
+            "audio/x-tta",
+            "audio/x-wav",
+            "audio/x-wavpack"
+          ],
+          "hosts": [],
+          "pathPatterns": [],
+          "metaData": []
+        },
+        {
+          "actions": [
+            "android.intent.action.VIEW"
+          ],
+          "categories": [
+            "android.intent.category.DEFAULT"
+          ],
+          "schemes": [
+            "content",
+            "file"
+          ],
+          "mimeTypes": [
+            "*/*"
+          ],
+          "hosts": [
+            "*"
+          ],
+          "pathPatterns": [
+            ".*\\..*\\..*\\.aac",
+            ".*\\..*\\..*\\.ape",
+            ".*\\..*\\..*\\.dff",
+            ".*\\..*\\..*\\.dsf",
+            ".*\\..*\\..*\\.mpc",
+            ".*\\..*\\..*\\.opus",
+            ".*\\..*\\..*\\.tta",
+            ".*\\..*\\..*\\.wv",
+            ".*\\..*\\.aac",
+            ".*\\..*\\.ape",
+            ".*\\..*\\.dff",
+            ".*\\..*\\.dsf",
+            ".*\\..*\\.mpc",
+            ".*\\..*\\.opus",
+            ".*\\..*\\.tta",
+            ".*\\..*\\.wv",
+            ".*\\.aac",
+            ".*\\.ape",
+            ".*\\.dff",
+            ".*\\.dsf",
+            ".*\\.mpc",
+            ".*\\.opus",
+            ".*\\.tta",
+            ".*\\.wv"
+          ],
+          "metaData": []
+        },
+        {
+          "actions": [
+            "android.intent.action.SEND"
+          ],
+          "categories": [
+            "android.intent.category.DEFAULT"
+          ],
+          "schemes": [],
+          "mimeTypes": [
+            "*/*"
+          ],
+          "hosts": [],
+          "pathPatterns": [],
+          "metaData": []
+        }
+      ]
+    },
+    {
+      "name": "com.xjcheng.musictageditor.activity.SearchActivity",
+      "exported": true,
+      "metaData": [
+        "android.app.searchable"
+      ],
+      "filters": [
+        {
+          "actions": [
+            "android.intent.action.SEARCH"
+          ],
+          "categories": [],
+          "schemes": [],
+          "mimeTypes": [],
+          "hosts": [],
+          "pathPatterns": [],
+          "metaData": []
+        }
+      ]
+    },
+    {
+      "name": "com.xjcheng.musictageditor.activity.SearchMediaActivity",
+      "exported": false
+    },
+    {
+      "name": "com.xjcheng.musictageditor.activity.BatchEditSongsDetail",
+      "exported": false
+    },
+    {
+      "name": "com.xjcheng.musictageditor.activity.SettingsActivity",
+      "exported": false
+    },
+    {
+      "name": "com.xjcheng.musictageditor.activity.AlbumActivity",
+      "exported": false
+    },
+    {
+      "name": "com.xjcheng.musictageditor.activity.ArtistActivity",
+      "exported": false
+    },
+    {
+      "name": "com.xjcheng.musictageditor.activity.SearchWebPictureActivity",
+      "exported": false
+    },
+    {
+      "name": "com.xjcheng.musictageditor.activity.SearchWebLyricActivity",
+      "exported": false
+    },
+    {
+      "name": "com.xjcheng.musictageditor.activity.SearchWebTagActivity",
+      "exported": false
+    },
+    {
+      "name": "com.xjcheng.musictageditor.activity.BatchESDSelTagPic",
+      "exported": false
+    },
+    {
+      "name": "com.xjcheng.musictageditor.activity.IgnoreDirSetupActivity",
+      "exported": false
+    },
+    {
+      "name": "com.xjcheng.musictageditor.activity.DonateActivity",
+      "exported": false
+    },
+    {
+      "name": "com.xjcheng.musictageditor.activity.CropImageActivity",
+      "exported": false
+    }
+  ],
+  "services": [
+    {
+      "name": "com.xjcheng.musictageditor.service.BatchService",
+      "exported": false
+    },
+    {
+      "name": "com.xjcheng.musictageditor.service.RefreshMediaStoreService",
+      "exported": false
+    }
+  ],
+  "providers": [
+    {
+      "name": "com.xjcheng.musictageditor.SearchSuggProvider",
+      "exported": false,
+      "authorities": "com.xjcheng.musictageditor.SearchSugg",
+      "grantUriPermissions": false
+    },
+    {
+      "name": "androidx.core.content.FileProvider",
+      "exported": false,
+      "authorities": "com.xjcheng.musictageditor.provider",
+      "grantUriPermissions": true,
+      "metaData": [
+        "android.support.FILE_PROVIDER_PATHS"
+      ]
+    }
+  ]
+}

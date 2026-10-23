@@ -1,0 +1,36 @@
+Music Tag for Android (musictag-android)
+Copyright 2026 The Music Tag (musictag-android) authors
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+--------------------------------------------------------------------------------
+Third-party components
+--------------------------------------------------------------------------------
+
+AndroidX / Jetpack Compose / Material Components
+  Copyright The Android Open Source Project
+  License: Apache License 2.0
+
+Kotlin standard library, kotlinx.coroutines
+  Copyright JetBrains s.r.o.
+  License: Apache License 2.0
+
+OkHttp
+  Copyright Square, Inc.
+  License: Apache License 2.0
+
+TagLib (audio metadata library, linked into the native tag engine)
+  Copyright Scott Wheeler, Lukas Lalinsky, Tsuda Kageyu and contributors
+  License: MPL-1.1 OR LGPL-2.1 (this project uses the MPL-1.1 option)
+  TagLib is consumed as an unmodified upstream release; its source is available from
+  https://taglib.org/ and the corresponding source archive is pinned in
+  native/taglib/CMakeLists.txt. Files under MPL-1.1 remain under MPL-1.1.
+
+--------------------------------------------------------------------------------
+Not included
+--------------------------------------------------------------------------------
+
+This project contains no code, resources, native libraries or cryptographic keys from
+com.xjcheng.musictageditor 1.2.5.2. Service endpoint URLs and protocol details were
+reimplemented from publicly documented network behaviour; the tag engine uses upstream
+TagLib rather than the original app's binary.

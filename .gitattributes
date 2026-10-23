@@ -1,0 +1,14 @@
+# Normalise line endings in the repository and in every checkout (CI is Linux).
+* text=auto eol=lf
+
+# POSIX shell wrapper must keep LF or it will not execute on Linux runners.
+gradlew text eol=lf
+gradlew.bat text eol=crlf
+
+# Binaries
+*.jar binary
+*.keystore binary
+*.jks binary
+*.png binary
+*.webp binary
+*.ttf binary

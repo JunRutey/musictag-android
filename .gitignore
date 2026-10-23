@@ -1,0 +1,26 @@
+# Gradle / Android
+.gradle/
+build/
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+
+# IDE
+.idea/
+*.iml
+*.hprof
+
+# Signing material — never commit a keystore
+keystore/
+*.keystore
+*.jks
+key.properties
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Tooling scratch
+tools/_fetch*.py
+/app/release/

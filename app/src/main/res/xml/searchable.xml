@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Search integration — COMPATIBILITY CONTRACT.
+  Values mirror com.xjcheng.musictageditor 1.2.5.2 verbatim:
+  the authority, the selection string (" ?") and the suggest-intent data URI are
+  consumed by the system search dialog and by callers that build search intents.
+-->
+<searchable xmlns:android="http://schemas.android.com/apk/res/android"
+    android:hint="@string/search_hint"
+    android:label="@string/app_name"
+    android:searchSuggestAuthority="com.xjcheng.musictageditor.SearchSugg"
+    android:searchSuggestIntentAction="android.intent.action.VIEW"
+    android:searchSuggestIntentData="content://com.xjcheng.musictageditor/datatable"
+    android:searchSuggestSelection=" ?" />

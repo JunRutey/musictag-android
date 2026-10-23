@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!--
+      COMPATIBILITY CONTRACT — see docs/COMPAT.md and docs/MANIFEST_CONTRACT.json.
+      Package name, component names, intent filters, authorities and the searchable
+      configuration are load-bearing: third-party apps launch this app through them.
+      Changing any of these requires updating the contract baseline and bumping a
+      documented compatibility note.
+    -->
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="29"
+        tools:ignore="ScopedStorage" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+
+    <application
+        android:name=".MusicTagApp"
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:largeHeap="true"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.MusicTag"
+        android:usesCleartextTraffic="true">
+
+        <!-- ============================ Activities ============================ -->
+
+        <activity
+            android:name=".MainActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:launchMode="singleTop">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".SongDetailActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:launchMode="singleTop">
+
+            <!-- (1) MIME-typed audio documents, file:// and content:// -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="file" />
+                <data android:scheme="content" />
+                <data android:mimeType="audio/ape" />
+                <data android:mimeType="audio/x-ape" />
+                <data android:mimeType="audio/flac" />
+                <data android:mimeType="audio/mpeg" />
+                <data android:mimeType="audio/x-wav" />
+                <data android:mimeType="audio/mp4" />
+                <data android:mimeType="audio/mp4a-latm" />
+                <data android:mimeType="audio/ogg" />
+                <data android:mimeType="audio/opus" />
+                <data android:mimeType="audio/x-ms-wma" />
+                <data android:mimeType="audio/x-aiff" />
+                <data android:mimeType="audio/x-musepack" />
+                <data android:mimeType="audio/x-wavpack" />
+                <data android:mimeType="audio/x-tta" />
+                <data android:mimeType="audio/dsf" />
+                <data android:mimeType="audio/x-dsf" />
+                <data android:mimeType="audio/dff" />
+                <data android:mimeType="audio/x-dff" />
+                <data android:mimeType="audio/aac" />
+                <data android:mimeType="audio/x-aac" />
+            </intent-filter>
+
+            <!-- (2) Extension-based matching for providers that report */*
+                 (including the doubled/tripled dot variants the original app used
+                 to tolerate names such as "Artist.Album.01.flac"). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="file" />
+                <data android:scheme="content" />
+                <data android:mimeType="*/*" />
+                <data android:host="*" />
+                <data android:pathPattern=".*\.ape" />
+                <data android:pathPattern=".*\.tta" />
+                <data android:pathPattern=".*\.wv" />
+                <data android:pathPattern=".*\.mpc" />
+                <data android:pathPattern=".*\.opus" />
+                <data android:pathPattern=".*\.dsf" />
+                <data android:pathPattern=".*\.dff" />
+                <data android:pathPattern=".*\.aac" />
+                <data android:pathPattern=".*\..*\.ape" />
+                <data android:pathPattern=".*\..*\..*\.ape" />
+                <data android:pathPattern=".*\..*\.tta" />
+                <data android:pathPattern=".*\..*\..*\.tta" />
+                <data android:pathPattern=".*\..*\.wv" />
+                <data android:pathPattern=".*\..*\..*\.wv" />
+                <data android:pathPattern=".*\..*\.mpc" />
+                <data android:pathPattern=".*\..*\..*\.mpc" />
+                <data android:pathPattern=".*\..*\.opus" />
+                <data android:pathPattern=".*\..*\..*\.opus" />
+                <data android:pathPattern=".*\..*\.dsf" />
+                <data android:pathPattern=".*\..*\..*\.dsf" />
+                <data android:pathPattern=".*\..*\.dff" />
+                <data android:pathPattern=".*\..*\..*\.dff" />
+                <data android:pathPattern=".*\..*\.aac" />
+                <data android:pathPattern=".*\..*\..*\.aac" />
+            </intent-filter>
+
+            <!-- (3) Share sheet -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".activity.SearchActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:exported="true"
+            android:label=""
+            android:launchMode="singleTop"
+            android:screenOrientation="portrait">
+            <intent-filter>
+                <action android:name="android.intent.action.SEARCH" />
+            </intent-filter>
+            <meta-data
+                android:name="android.app.searchable"
+                android:resource="@xml/searchable" />
+        </activity>
+
+        <activity
+            android:name=".activity.SearchMediaActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:exported="false"
+            android:label=""
+            android:launchMode="singleTop"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".activity.BatchEditSongsDetail"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:exported="false"
+            android:label="@string/app_name"
+            android:launchMode="singleTop" />
+
+        <activity
+            android:name=".activity.SettingsActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:exported="false"
+            android:label="@string/title_activity_settings"
+            android:launchMode="singleTop"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".activity.AlbumActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:exported="false"
+            android:label=""
+            android:launchMode="singleTop"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".activity.ArtistActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:exported="false"
+            android:label=""
+            android:launchMode="singleTop"
+            android:screenOrientation="portrait" />
+
+        <activity
+            android:name=".activity.SearchWebPictureActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:exported="false"
+            android:label="@string/menuitem_websearch"
+            android:launchMode="singleTop" />
+
+        <activity
+            android:name=".activity.SearchWebLyricActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:exported="false"
+            android:launchMode="singleTop" />
+
+        <activity
+            android:name=".activity.SearchWebTagActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:exported="false"
+            android:label="@string/menuitem_searchalltags"
+            android:launchMode="singleTop" />
+
+        <activity
+            android:name=".activity.BatchESDSelTagPic"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:exported="false"
+            android:label="@string/menuitem_choose_from_song_tags"
+            android:launchMode="singleTop" />
+
+        <activity
+            android:name=".activity.IgnoreDirSetupActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:exported="false"
+            android:label="@string/perf_title_dirpath_of_ignore_medias"
+            android:launchMode="singleTop" />
+
+        <!-- Kept as an empty shell purely so explicit-component callers still resolve.
+             The donation feature itself is intentionally not implemented. -->
+        <activity
+            android:name=".activity.DonateActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:exported="false"
+            android:launchMode="singleTop" />
+
+        <activity
+            android:name=".activity.CropImageActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:exported="false"
+            android:label="@string/label_croppicture"
+            android:launchMode="singleTop" />
+
+        <!-- ============================= Providers ============================ -->
+
+        <provider
+            android:name="com.xjcheng.musictageditor.SearchSuggProvider"
+            android:authorities="com.xjcheng.musictageditor.SearchSugg"
+            android:exported="false" />
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="com.xjcheng.musictageditor.provider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/provider_paths" />
+        </provider>
+
+        <!-- ============================== Services ============================ -->
+
+        <service
+            android:name=".service.BatchService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <service
+            android:name=".service.RefreshMediaStoreService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+    </application>
+</manifest>
