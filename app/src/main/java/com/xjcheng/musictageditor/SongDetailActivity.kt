@@ -20,9 +20,10 @@ import com.xjcheng.musictageditor.ui.theme.MusicTagTheme
 /**
  * Tag editor screen — the app's main compatibility entry point.
  *
- * Third parties open their audio documents here via VIEW (typed audio MIME, extension
- * based `*/*` matching) or SEND. M0 resolves and *probes* the handed-over document so
- * the read/write path is validated early; the editor itself lands in M2.
+ * Third parties open their audio documents here via VIEW (typed audio MIME, or the
+ * any-any MIME filter with extension matching) or SEND. M0 resolves and *probes* the
+ * handed-over document so the read/write path is validated early; the editor itself
+ * lands in M2.
  */
 class SongDetailActivity : ComponentActivity() {
 

@@ -106,6 +106,17 @@ def check_kotlin() -> None:
             errors.append(f"tab character: {path.relative_to(ROOT)}")
         if not text.endswith("\n"):
             errors.append(f"missing trailing newline: {path.relative_to(ROOT)}")
+
+        # A KDoc continuation line may only contain the terminator when it *is* the
+        # terminator. Otherwise the comment closes early and the rest of the line is
+        # parsed as code (a wildcard MIME in a comment broke the first CI run).
+        for lineno, line in enumerate(text.splitlines(), 1):
+            stripped = line.strip()
+            if stripped.startswith("*") and "*/" in stripped[:-2]:
+                errors.append(
+                    f"comment terminator inside a KDoc line: {path.relative_to(ROOT)}:{lineno} "
+                    f"(write 'any-any MIME' instead of the wildcard)"
+                )
     notes.append(f"kotlin: checked {len(list((APP / 'java').rglob('*.kt')))} files")
 
 

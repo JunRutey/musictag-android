@@ -54,7 +54,7 @@ object CompatContract {
     )
 
     /**
-     * Extensions matched through the `*/*` filter, including the duplicated-path
+     * Extensions matched through the any-any MIME filter, including the duplicated-path
      * variants the original app shipped to tolerate multi-dot file names.
      */
     val EXTENSION_PATH_PATTERNS: List<String> = buildList {
