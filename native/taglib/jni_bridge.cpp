@@ -32,6 +32,9 @@
 #include <mp4/mp4file.h>
 #include <mp4/mp4tag.h>
 #include <mpeg/id3v2/frames/attachedpictureframe.h>
+#include <mpeg/id3v2/frames/commentsframe.h>
+#include <mpeg/id3v2/frames/textidentificationframe.h>
+#include <mpeg/id3v2/frames/unsynchronizedlyricsframe.h>
 #include <mpeg/id3v2/id3v2tag.h>
 #include <mpeg/mpegfile.h>
 #include <ogg/oggfile.h>
@@ -301,34 +304,7 @@ std::string jstringToUtf8(JNIEnv *env, jstring value) {
     return out;
 }
 
-// An empty value means "remove this property" - that is how TagLib represents absence.
-void putProperty(PropertyMap &map, const char *key, const std::string &value) {
-    const String name(key, String::UTF8);
-    if (value.empty()) {
-        map.erase(name);
-    } else {
-        map.insert(name, StringList(String(value, String::UTF8)));
-    }
-}
-
 // ID3v2 keeps "3/12" in TRACKNUMBER; the model carries both the number and the combined
-// string. Accept either shape and write TRACKNUMBER/TRACKTOTAL accordingly.
-void putNumberPair(PropertyMap &map, const char *numberKey, const char *totalKey,
-                   const std::string &number, const std::string &combined) {
-    std::string value = number;
-    std::string total;
-    const std::string source = combined.empty() ? number : combined;
-    const auto slash = source.find('/');
-    if (slash != std::string::npos) {
-        if (value.empty()) value = source.substr(0, slash);
-        total = source.substr(slash + 1);
-    }
-    trimInPlace(value);
-    trimInPlace(total);
-    putProperty(map, numberKey, value);
-    putProperty(map, totalKey, total);
-}
-
 TagLib::MP4::CoverArt::Format coverFormatFor(const std::string &mime) {
     return mime == "image/png" ? TagLib::MP4::CoverArt::PNG : TagLib::MP4::CoverArt::JPEG;
 }
@@ -384,6 +360,106 @@ void applyCover(File *file, const TagContext &context, bool given, const ByteVec
             context.mp4->setItem("covr", TagLib::MP4::Item(list));
         }
     }
+}
+
+
+std::pair<std::string, std::string> splitPair(const std::string &number,
+                                              const std::string &combined) {
+    std::string value = number;
+    std::string total;
+    const std::string source = combined.empty() ? number : combined;
+    const auto slash = source.find('/');
+    if (slash != std::string::npos) {
+        if (value.empty()) value = source.substr(0, slash);
+        total = source.substr(slash + 1);
+    }
+    trimInPlace(value);
+    trimInPlace(total);
+    return {value, total};
+}
+
+std::string joinPair(const std::string &number, const std::string &total) {
+    if (number.empty()) return total;
+    return total.empty() ? number : number + "/" + total;
+}
+
+void putXiphText(TagLib::Ogg::XiphComment *comment, const char *key, const std::string &value) {
+    if (comment == nullptr) return;
+    if (value.empty()) {
+        comment->removeFields(String(key, String::UTF8));
+    } else {
+        comment->addField(String(key, String::UTF8), String(value, String::UTF8), true);
+    }
+}
+
+// One frame id, one value: removeFrames() first so repeated writes cannot accumulate
+// (TagLib joins two TIT2 frames into "old / new" on read, which is not a replace).
+void writeId3v2Text(TagLib::ID3v2::Tag *tag, const char *frameId, const std::string &value) {
+    if (tag == nullptr) return;
+    tag->removeFrames(ByteVector(frameId));
+    if (value.empty()) return;
+    auto *frame = new TagLib::ID3v2::TextIdentificationFrame(ByteVector(frameId), String::UTF8);
+    frame->setText(String(value, String::UTF8));
+    tag->addFrame(frame);
+}
+
+void writeId3v2Fields(File *file, const std::vector<std::string> &values, bool id3v24) {
+    auto *mpeg = dynamic_cast<TagLib::MPEG::File *>(file);
+    if (mpeg == nullptr) return;
+    auto *tag = mpeg->ID3v2Tag(true);
+    const auto track = splitPair(values[6], values[7]);
+    const auto disc = splitPair(values[8], values[9]);
+
+    writeId3v2Text(tag, "TIT2", values[0]);
+    writeId3v2Text(tag, "TPE1", values[1]);
+    writeId3v2Text(tag, "TALB", values[2]);
+    writeId3v2Text(tag, "TPE2", values[3]);
+    writeId3v2Text(tag, "TCON", values[4]);
+    writeId3v2Text(tag, "TCOM", values[5]);
+    writeId3v2Text(tag, "TRCK", joinPair(track.first, track.second));
+    writeId3v2Text(tag, "TPOS", joinPair(disc.first, disc.second));
+
+    writeId3v2Text(tag, id3v24 ? "TDRC" : "TYER", values[10]);
+    // Never keep both year frames: that is what a v2.3/v2.4 conversion would leave behind.
+    tag->removeFrames(ByteVector(id3v24 ? "TYER" : "TDRC"));
+
+    tag->removeFrames("COMM");
+    if (!values[11].empty()) {
+        auto *comment = new TagLib::ID3v2::CommentsFrame(String::UTF8);
+        comment->setLanguage(ByteVector("eng"));
+        comment->setText(String(values[11], String::UTF8));
+        tag->addFrame(comment);
+    }
+
+    tag->removeFrames("USLT");
+    if (!values[12].empty()) {
+        auto *lyrics = new TagLib::ID3v2::UnsynchronizedLyricsFrame(String::UTF8);
+        lyrics->setLanguage(ByteVector("eng"));
+        lyrics->setText(String(values[12], String::UTF8));
+        tag->addFrame(lyrics);
+    }
+}
+
+void writeFlacFields(File *file, const std::vector<std::string> &values) {
+    auto *flac = dynamic_cast<TagLib::FLAC::File *>(file);
+    if (flac == nullptr) return;
+    auto *comment = flac->xiphComment(true);
+    const auto track = splitPair(values[6], values[7]);
+    const auto disc = splitPair(values[8], values[9]);
+
+    putXiphText(comment, "TITLE", values[0]);
+    putXiphText(comment, "ARTIST", values[1]);
+    putXiphText(comment, "ALBUM", values[2]);
+    putXiphText(comment, "ALBUMARTIST", values[3]);
+    putXiphText(comment, "GENRE", values[4]);
+    putXiphText(comment, "COMPOSER", values[5]);
+    putXiphText(comment, "TRACKNUMBER", track.first);
+    putXiphText(comment, "TRACKTOTAL", track.second);
+    putXiphText(comment, "DISCNUMBER", disc.first);
+    putXiphText(comment, "DISCTOTAL", disc.second);
+    putXiphText(comment, "DATE", values[10]);
+    putXiphText(comment, "COMMENT", values[11]);
+    putXiphText(comment, "LYRICS", values[12]);
 }
 
 }  // namespace
@@ -566,20 +642,14 @@ Java_com_xjcheng_musictageditor_core_tag_NativeTagBridge_writeAll(
     File *file = ref.file();
     const TagContext context = classify(file);
 
-    // Start from the existing map so unknown frames/properties survive the edit.
-    PropertyMap properties = file->properties();
-    putProperty(properties, "TITLE", values[0]);
-    putProperty(properties, "ARTIST", values[1]);
-    putProperty(properties, "ALBUM", values[2]);
-    putProperty(properties, "ALBUMARTIST", values[3]);
-    putProperty(properties, "GENRE", values[4]);
-    putProperty(properties, "COMPOSER", values[5]);
-    putNumberPair(properties, "TRACKNUMBER", "TRACKTOTAL", values[6], values[7]);
-    putNumberPair(properties, "DISCNUMBER", "DISCTOTAL", values[8], values[9]);
-    putProperty(properties, "DATE", values[10]);
-    putProperty(properties, "COMMENT", values[11]);
-    putProperty(properties, "LYRICS", values[12]);
-    file->setProperties(properties);
+    const bool isMpeg = dynamic_cast<TagLib::MPEG::File *>(file) != nullptr;
+    if (isMpeg) {
+        writeId3v2Fields(file, values, (options & 2) == 0);
+    } else if (dynamic_cast<TagLib::FLAC::File *>(file) != nullptr) {
+        writeFlacFields(file, values);
+    } else {
+        return toJavaString(env, "writing is not supported for this container yet");
+    }
 
     bool coverGiven = cover != nullptr;
     ByteVector coverData;
@@ -606,16 +676,22 @@ Java_com_xjcheng_musictageditor_core_tag_NativeTagBridge_writeAll(
 
     bool saved = false;
     if (auto *mpeg = dynamic_cast<TagLib::MPEG::File *>(file)) {
+        const bool wantV1 = (options & 1) != 0;
+        const bool hasV1 = mpeg->hasID3v1Tag();
         int tags = TagLib::MPEG::File::ID3v2;
-        if ((options & 1) != 0) {
+        if (wantV1 || hasV1) {
             tags |= TagLib::MPEG::File::ID3v1;
+            // Refresh ID3v1 from ID3v2 with overwrite=true. Letting save() merge both
+            // directions appends the old values and produces "a / b" titles.
+            TagLib::Tag::duplicate(mpeg->ID3v2Tag(false), mpeg->ID3v1Tag(true), true);
         }
         if (mpeg->hasAPETag()) {
             tags |= TagLib::MPEG::File::APE;  // keep existing APE tags instead of stripping
         }
         const TagLib::ID3v2::Version version =
             (options & 2) != 0 ? TagLib::ID3v2::v3 : TagLib::ID3v2::v4;
-        saved = mpeg->save(tags, TagLib::File::StripOthers, version, TagLib::File::Duplicate);
+        saved = mpeg->save(tags, TagLib::File::StripOthers, version,
+                           TagLib::File::DoNotDuplicate);
     } else {
         saved = file->save();
     }
