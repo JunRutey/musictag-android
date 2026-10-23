@@ -6,6 +6,23 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added (M1 — tag engine, read path)
+
+* `native/taglib`: upstream TagLib 2.0.2 (MPL-1.1) pinned by tag and compiled for
+  `arm64-v8a`, `armeabi-v7a`, `x86_64`; a ~400 line JNI bridge exposes one call that
+  returns everything about a file (12 tag fields, lyrics, audio properties, cover art).
+* `:core:tag`: pure-JVM `TagEngine`/`TagLibEngine` with a documented flat-array contract,
+  its own base64 decoder (no `java.util.Base64`, which is API 26+) and no Android
+  dependency, so it is unit-testable on the host JVM.
+* Generated, license-free fixtures (`tools/gen_fixtures.py`): ID3v2.3+MPEG and
+  FLAC+VorbisComment+PICTURE, asserted field by field.
+* `:app` reads and displays the tags of a handed-over document, including `content://`
+  documents staged through the new `DocumentSource`.
+* CI: second job builds TagLib for the host and runs the tag tests; the main job installs
+  the pinned NDK and ships the native library for three ABIs.
+* `tools/selfcheck.py` now also guards the JNI↔Kotlin symbol pairing, native/cpp file
+  hygiene and fixture drift.
+
 ### Verified
 
 * First green CI run (`CI #14`): self-check, 10 contract unit tests, lint, `assembleDebug`,

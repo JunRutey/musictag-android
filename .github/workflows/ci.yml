@@ -33,6 +33,13 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      # The tag engine compiles upstream TagLib for three ABIs.
+      - name: Install NDK and CMake
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --install "ndk;27.0.12077973" "cmake;3.22.1" > /dev/null
+          echo "ndk=$ANDROID_HOME/ndk/27.0.12077973"
+
       # Fails in seconds on broken XML / missing classes instead of after a full compile.
       - name: Static self-check
         run: python3 tools/selfcheck.py
@@ -83,3 +90,46 @@ jobs:
           name: unit-test-report
           path: app/build/reports/tests/testDebugUnitTest
           if-no-files-found: ignore
+
+  native:
+    name: Native tag engine (host build + real reads)
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # Same sources the Android build compiles, but for the host JVM so TagLib can be
+      # exercised by plain unit tests (no device, no emulator).
+      - name: Configure host build of the JNI bridge
+        run: cmake -S native/taglib -B build/host -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build host library
+        run: cmake --build build/host --parallel
+
+      - name: List produced libraries
+        run: ls -l build/host/*.so
+
+      - name: Tag engine tests (real TagLib reads against fixtures)
+        env:
+          MUSICTAG_HOST_LIB: ${{ github.workspace }}/build/host/libmusictag_jni.so
+        run: ./gradlew --no-daemon --stacktrace :core:tag:test
+
+      - name: Upload tag engine test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tag-engine-test-report
+          path: core/tag/build/reports/tests/test
+          if-no-files-found: ignore
+

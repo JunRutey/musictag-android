@@ -24,7 +24,30 @@ python3 tools/manifest_contract.py --from-xml app/src/main/AndroidManifest.xml \
 ./gradlew testDebugUnitTest lintDebug assembleDebug
 python3 tools/manifest_contract.py --verify-apk app/build/outputs/apk/debug/app-debug.apk \
     --expect docs/MANIFEST_CONTRACT.json
+python3 tools/compat_diff.py --old original-1.2.5.2.apk --new app-debug.apk
 ```
+
+## Tag engine: two builds of the same sources
+
+`native/taglib` is compiled twice:
+
+* **Android** — AGP's `externalNativeBuild` produces the packaged `.so` for
+  `arm64-v8a`, `armeabi-v7a` and `x86_64`.
+* **Host (Linux)** — the `native` CI job runs
+
+  ```bash
+  cmake -S native/taglib -B build/host -DCMAKE_BUILD_TYPE=Release
+  cmake --build build/host --parallel
+  MUSICTAG_HOST_LIB="$PWD/build/host/libmusictag_jni.so" ./gradlew :core:tag:test
+  ```
+
+  `:core:tag` loads the library from `MUSICTAG_HOST_LIB` when set, otherwise through
+  `System.loadLibrary("musictag_jni")` on device. Without the variable the native tests
+  are skipped through `org.junit.Assume`, so a laptop without cmake stays green.
+
+Fixtures are generated, not committed by hand:
+`python3 tools/gen_fixtures.py` writes `core/tag/src/test/resources/fixtures/`, and
+`tools/selfcheck.py` fails when a committed fixture drifts from the generator.
 
 ## Fixtures
 

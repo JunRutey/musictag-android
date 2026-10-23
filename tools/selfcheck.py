@@ -113,8 +113,14 @@ def check_manifest() -> None:
     notes.append(f"manifest: {len(declared)} app components checked")
 
 
+def source_files(pattern: str) -> list[Path]:
+    return sorted(p for p in ROOT.glob(pattern) if not any(part in {"build", ".gradle", ".git"} for part in p.parts))
+
+
 def check_kotlin() -> None:
-    for path in sorted((APP / "java").rglob("*.kt")):
+    files = source_files("**/src/**/*.kt")
+    native_files = source_files("native/**/*.cpp") + source_files("native/**/*.h")
+    for path in files + native_files:
         text = path.read_text(encoding="utf-8")
         if text.count("{") != text.count("}"):
             errors.append(f"unbalanced braces: {path.relative_to(ROOT)} "
@@ -136,7 +142,44 @@ def check_kotlin() -> None:
                     f"comment terminator inside a KDoc line: {path.relative_to(ROOT)}:{lineno} "
                     f"(write 'any-any MIME' instead of the wildcard)"
                 )
-    notes.append(f"kotlin: checked {len(list((APP / 'java').rglob('*.kt')))} files")
+    notes.append(f"kotlin: {len(files)} files, native: {len(native_files)} files checked")
+
+
+def check_fixtures() -> None:
+    sys.path.insert(0, str(ROOT / "tools"))
+    import gen_fixtures  # noqa: PLC0415
+
+    checked = 0
+    for name, builder in gen_fixtures.FIXTURES.items():
+        path = gen_fixtures.OUT / name
+        if not path.exists():
+            errors.append(f"missing fixture {name} (run tools/gen_fixtures.py)")
+            continue
+        if path.read_bytes() != builder():
+            errors.append(f"fixture out of date: {name} (run tools/gen_fixtures.py)")
+        checked += 1
+    notes.append(f"fixtures: {checked} generated files verified")
+
+
+def check_native_build() -> None:
+    cmake = ROOT / "native" / "taglib" / "CMakeLists.txt"
+    bridge = ROOT / "native" / "taglib" / "jni_bridge.cpp"
+    for required in (cmake, bridge):
+        if not required.exists():
+            errors.append(f"missing native source: {required.relative_to(ROOT)}")
+            continue
+        if required.suffix == ".cpp":
+            text = required.read_text(encoding="utf-8")
+            declared = re.findall(r"Java_com_xjcheng_musictageditor_core_tag_NativeTagBridge_(\w+)", text)
+            kotlin = (ROOT / "core" / "tag" / "src" / "main" / "kotlin" / "com" / "xjcheng" /
+                      "musictageditor" / "core" / "tag" / "NativeTagBridge.kt").read_text(encoding="utf-8")
+            for symbol in declared:
+                if f"external fun {symbol}(" not in kotlin:
+                    errors.append(f"JNI export {symbol} has no matching Kotlin external declaration")
+                else:
+                    notes.append(f"jni: {symbol} matched")
+    notes.append("native: CMake project present")
+
 
 
 def check_workflows() -> None:
@@ -161,6 +204,8 @@ def main() -> int:
     check_manifest()
     check_kotlin()
     check_workflows()
+    check_fixtures()
+    check_native_build()
 
     for note in notes:
         print(f"ok   {note}")

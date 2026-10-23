@@ -13,6 +13,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import com.xjcheng.musictageditor.activity.PlaceholderActivity
+import com.xjcheng.musictageditor.core.tag.TagLibEngine
+import com.xjcheng.musictageditor.io.DocumentSource
 import com.xjcheng.musictageditor.ui.M0Screen
 import com.xjcheng.musictageditor.ui.describeIntent
 import com.xjcheng.musictageditor.ui.theme.MusicTagTheme
@@ -26,6 +28,8 @@ import com.xjcheng.musictageditor.ui.theme.MusicTagTheme
  * lands in M2.
  */
 class SongDetailActivity : ComponentActivity() {
+
+    private val engine = TagLibEngine()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,14 +53,49 @@ class SongDetailActivity : ComponentActivity() {
             lines += "document: <none — nothing to edit yet>"
         } else {
             lines += probeDocument(uri)
+            lines += ""
+            lines += readTags(uri)
         }
         setContent {
             MusicTagTheme {
                 M0Screen(
                     title = "Edit tags",
-                    milestone = "M2 — tag editor (engine arrives in M1)",
+                    milestone = "M1 — tag engine reads files; the editor lands in M2",
                     lines = lines,
                 )
+            }
+        }
+    }
+
+    /**
+     * M1 proof that the native tag engine works in the shipped APK: read the document
+     * and show what TagLib found. Editing arrives in M2.
+     */
+    private fun readTags(uri: Uri): List<String> {
+        val document = DocumentSource.resolve(this, uri)
+            ?: return listOf("tags: <document could not be opened>")
+        return try {
+            val tag = engine.read(document.path)
+            if (tag == null) {
+                listOf("tags: <not a recognised audio container>")
+            } else {
+                buildList {
+                    add("tags: ${tag.summary()}")
+                    add("  title:   ${tag.title}")
+                    add("  artist:  ${tag.artist}")
+                    add("  album:   ${tag.album}")
+                    add("  track:   ${tag.trackStr}")
+                    add("  year:    ${tag.year}")
+                    add("  lyrics:  ${tag.lyrics.length} chars")
+                    add("  format:  ${tag.tagFormat} (taglib ${engine.version()})")
+                }
+            }
+        } catch (t: Throwable) {
+            listOf("tags: <engine error: ${t.javaClass.simpleName}: ${t.message}>")
+        } finally {
+            if (document.staged) {
+                // The staged copy is only needed for this read; M2 keeps it while editing.
+                java.io.File(document.path).delete()
             }
         }
     }

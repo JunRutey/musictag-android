@@ -20,6 +20,9 @@ android {
     namespace = "com.xjcheng.musictageditor"
     compileSdk = 35
 
+    // Pinned NDK: the tag engine compiles upstream TagLib for three ABIs.
+    ndkVersion = "27.0.12077973"
+
     defaultConfig {
         applicationId = "com.xjcheng.musictageditor"
         minSdk = 21
@@ -27,6 +30,25 @@ android {
         versionCode = (project.findProperty("versionCode") as String?)?.toInt() ?: 1
         versionName = (project.findProperty("versionName") as String?) ?: "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // x86 is dead weight for a sideloaded utility; arm64 + armv7 + emulator x86_64.
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64")
+        }
+
+        externalNativeBuild {
+            cmake {
+                // Static libc++ keeps the APK self-contained (no libc++_shared.so entry).
+                arguments += "-DANDROID_STL=c++_static"
+            }
+        }
+    }
+
+    externalNativeBuild {
+        cmake {
+            path = file("../native/taglib/CMakeLists.txt")
+            version = "3.22.1"
+        }
     }
 
     signingConfigs {
@@ -95,6 +117,8 @@ kotlin {
 }
 
 dependencies {
+    implementation(project(":core:tag"))
+
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
