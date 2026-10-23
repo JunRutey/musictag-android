@@ -38,8 +38,13 @@ class ManifestContractTest {
         return factory.newDocumentBuilder().parse(f)
     }
 
-    private fun attr(element: Element, localName: String): String? =
-        element.getAttributeNS(androidNs, localName).takeIf { it.isNotEmpty() }
+    private fun attr(element: Element, localName: String): String? {
+        // android:name in the manifest, plain `name` in res/xml/*.xml.
+        val namespaced = element.getAttributeNS(androidNs, localName)
+        if (namespaced.isNotEmpty()) return namespaced
+        val plain = element.getAttribute(localName)
+        return plain.takeIf { it.isNotEmpty() }
+    }
 
     private fun children(element: Element, tag: String): List<Element> {
         val out = mutableListOf<Element>()
@@ -56,8 +61,10 @@ class ManifestContractTest {
 
     private fun resolvedName(element: Element): String? {
         val raw = attr(element, "name") ?: return null
-        val pkg = manifest.getAttribute("package")
-        return if (raw.startsWith(".")) pkg + raw else raw
+        // The applicationId lives in build.gradle.kts: AGP 8 rejects a `package`
+        // attribute in the source manifest, so resolve relative names against the
+        // documented contract value instead of the manifest root.
+        return if (raw.startsWith(".")) CompatContract.PACKAGE + raw else raw
     }
 
     private fun filters(activity: Element): List<Element> = children(activity, "intent-filter")
@@ -82,8 +89,18 @@ class ManifestContractTest {
     // ------------------------------------------------------------------ tests
 
     @Test
-    fun packageNameIsTheOriginalApplicationId() {
-        assertEquals(CompatContract.PACKAGE, manifest.getAttribute("package"))
+    fun applicationIdAndNamespaceStayTheOriginalPackage() {
+        // AGP 8 keeps the identity in the build script, not in the manifest, so this is
+        // where an accidental rename would happen.
+        val script = File("build.gradle.kts")
+        assertTrue("missing app/build.gradle.kts", script.exists())
+        val text = script.readText()
+        val applicationId = Regex("""applicationId\s*=\s*"([^"]+)"""")
+            .find(text)?.groupValues?.get(1)
+        val namespace = Regex("""namespace\s*=\s*"([^"]+)"""")
+            .find(text)?.groupValues?.get(1)
+        assertEquals(CompatContract.PACKAGE, applicationId)
+        assertEquals(CompatContract.PACKAGE, namespace)
     }
 
     @Test

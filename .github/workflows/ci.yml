@@ -40,6 +40,14 @@ jobs:
       - name: Unit tests
         run: ./gradlew --no-daemon --stacktrace testDebugUnitTest
 
+      # Assertion text is the fastest way to diagnose a red run; surface it in the log
+      # instead of hiding it in an XML artifact the agent has to download.
+      - name: Show unit test failures
+        if: failure()
+        run: |
+          find app/build/test-results -name '*.xml' -print0 2>/dev/null \
+            | xargs -0 grep -h -B1 -A8 '<failure' 2>/dev/null | head -n 160 || true
+
       - name: Lint
         run: ./gradlew --no-daemon --stacktrace lintDebug
 
