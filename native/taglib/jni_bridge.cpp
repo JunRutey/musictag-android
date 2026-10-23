@@ -12,6 +12,7 @@
 #include <jni.h>
 
 #include <algorithm>
+#include <cctype>
 #include <string>
 #include <vector>
 
@@ -197,7 +198,7 @@ void collectPictures(File *file, Tag *tag, std::vector<Picture> &out) {
             }
             if (nameLength + 1 < binary.size()) {
                 ByteVector payload;
-                payload.append(binary.mid(nameLength + 1));
+                payload.append(binary.mid(static_cast<unsigned int>(nameLength + 1)));
                 const std::string name(raw, nameLength);
                 const std::string lower = [&name] {
                     std::string s = name;

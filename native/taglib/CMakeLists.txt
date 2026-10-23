@@ -36,6 +36,14 @@ FetchContent_MakeAvailable(taglib)
 add_library(musictag_jni SHARED jni_bridge.cpp)
 target_link_libraries(musictag_jni PRIVATE tag)
 
+# TagLib's build-tree layout differs from the installed layout: headers live in
+# <src>/taglib/*.h while the install interface uses include/taglib. Add both roots so
+# `#include <taglib/xxx.h>` works against the fetched sources as well as a system copy.
+target_include_directories(musictag_jni PRIVATE
+    ${taglib_SOURCE_DIR}
+    ${taglib_SOURCE_DIR}/taglib
+)
+
 if(ANDROID)
     target_link_libraries(musictag_jni PRIVATE log)
     target_compile_options(musictag_jni PRIVATE -fvisibility=hidden -fexceptions)
