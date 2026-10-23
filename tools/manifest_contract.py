@@ -112,10 +112,23 @@ def _filter_contract(intent_filter: ET.Element, unescape: bool) -> dict:
 def _component_contract(element: ET.Element, package: str, unescape: bool) -> dict:
     raw_name = _attr(element, "name", unescape) or ""
     name = package + raw_name if raw_name.startswith(".") else raw_name
+    filters = [_filter_contract(f, unescape) for f in _children(element, "intent-filter")]
+
+    # Android's default for `exported` before API 31: a component with at least one
+    # intent filter is exported, otherwise it is not. Manifests built with targetSdk < 31
+    # (such as the original 1.2.5.2, targetSdk 28) rely on that implicit default, so we
+    # normalise to the *effective* value instead of comparing attribute presence.
+    declared_exported = _attr(element, "exported", unescape)
+    exported = (
+        declared_exported.lower() == "true" if declared_exported is not None else bool(filters)
+    )
+
     contract: dict = {
         "name": name,
-        "exported": (_attr(element, "exported", unescape) or "false").lower() == "true",
+        "exported": exported,
     }
+    if declared_exported is None and filters:
+        contract["exportedImplicit"] = True
     if element.tag.endswith("provider"):
         contract["authorities"] = _attr(element, "authorities", unescape)
         contract["grantUriPermissions"] = (
@@ -124,7 +137,6 @@ def _component_contract(element: ET.Element, package: str, unescape: bool) -> di
     meta = _sorted(_attr(m, "name", unescape) for m in _children(element, "meta-data"))
     if meta:
         contract["metaData"] = meta
-    filters = [_filter_contract(f, unescape) for f in _children(element, "intent-filter")]
     if filters:
         contract["filters"] = filters
     return contract

@@ -49,6 +49,8 @@ Providers:
 
 ## 3. Intent filters on `SongDetailActivity`
 
+0. **Inert `MAIN`** — no category, so it never shows in a launcher. Reproduced verbatim so
+   that `resolveActivity()` / `queryIntentActivities()` answer exactly as before.
 1. **Typed audio** — `VIEW` + `DEFAULT`, schemes `file`/`content`, 20 MIME types
    (`audio/ape`, `audio/x-ape`, `audio/flac`, `audio/mpeg`, `audio/x-wav`, `audio/mp4`,
    `audio/mp4a-latm`, `audio/ogg`, `audio/opus`, `audio/x-ms-wma`, `audio/x-aiff`,
@@ -93,8 +95,6 @@ Changing these is allowed and does not break callers:
 * UI layout, navigation, themes, icons
 * SharedPreferences keys and the `tagshistory` SQLite schema
 * `versionName` / `versionCode` numbering
-* the inert `MAIN`-only intent filter the original declared on `SongDetailActivity`
-  (it has no `LAUNCHER` category, so it never matched anything)
 
 ## 7. Signature and installation
 
@@ -108,8 +108,22 @@ without the original private key.
 
 ## 8. Evidence
 
-`tools/manifest_contract.py --verify-apk` was run against the original 1.2.5.2 APK with the
-baseline generated from this repo. Result: every activity, service, provider, MIME type,
-path pattern, authority and searchable declaration matched; the only reported differences
-were the three `exported` flags, which the original left implicit (pre-API-31 default) while
-this project must declare them explicitly for `targetSdk` 35.
+Two independent tools, both runnable offline and in CI:
+
+* `tools/manifest_contract.py --verify-apk` — compares the **merged** manifest of a built
+  APK against [`MANIFEST_CONTRACT.json`](MANIFEST_CONTRACT.json). One-directional: required
+  components/filters must exist, library-injected extras are reported but allowed.
+* `tools/compat_diff.py --old <original>.apk --new <rewrite>.apk` — diffs the
+  caller-visible surface of two APKs: package, component names, effective `exported`
+  flags, intent filters (actions/categories/schemes/MIME/host/pathPattern) and provider
+  authorities. UI, resources and version strings are ignored by design.
+
+`manifest_contract.py` normalises `exported` to Android's *effective* value: when the
+attribute is absent (legal for `targetSdk` < 31, which is how 1.2.5.2 was built), a
+component with at least one intent filter counts as exported. That is why the three entry
+points compare equal even though only the rewrite declares `android:exported="true"`.
+
+Result against the original 1.2.5.2 APK: **package identical, 15/15 activities, 2/2
+services, 2/2 providers, all 20 MIME types, all 24 path patterns, both provider
+authorities and the searchable configuration match.** The only remaining difference was
+the inert `MAIN` filter, which is now reproduced as well.

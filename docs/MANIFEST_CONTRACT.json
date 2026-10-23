@@ -27,6 +27,17 @@
       "filters": [
         {
           "actions": [
+            "android.intent.action.MAIN"
+          ],
+          "categories": [],
+          "schemes": [],
+          "mimeTypes": [],
+          "hosts": [],
+          "pathPatterns": [],
+          "metaData": []
+        },
+        {
+          "actions": [
             "android.intent.action.VIEW"
           ],
           "categories": [

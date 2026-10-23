@@ -57,6 +57,14 @@
             android:label="@string/app_name"
             android:launchMode="singleTop">
 
+            <!-- (0) Preserved for byte-level parity with 1.2.5.2. It has no LAUNCHER
+                 category, so it never appears in a launcher and matches only an
+                 explicit MAIN intent; keeping it costs nothing and makes
+                 resolveActivity() answer identically to the original. -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+            </intent-filter>
+
             <!-- (1) MIME-typed audio documents, file:// and content:// -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
