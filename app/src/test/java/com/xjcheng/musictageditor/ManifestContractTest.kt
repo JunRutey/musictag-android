@@ -84,7 +84,36 @@ class ManifestContractTest {
         dataAttrs(filter).mapNotNull { attr(it, "scheme") }.toSet()
 
     private fun pathPatterns(filter: Element): Set<String> =
-        dataAttrs(filter).mapNotNull { attr(it, "pathPattern") }.toSet()
+        dataAttrs(filter).mapNotNull { attr(it, "pathPattern") }
+            .map { androidUnescape(it) }
+            .toSet()
+
+    /**
+     * AAPT2 compiles manifest attribute values as Android strings, so a single
+     * backslash in the source is consumed: `.*\.ape` ships as `.*.ape`, while
+     * `.*\\.ape` ships as the intended `.*\.ape`. Compare in compiled form.
+     */
+    private fun androidUnescape(value: String): String {
+        val out = StringBuilder(value.length)
+        var i = 0
+        while (i < value.length) {
+            val c = value[i]
+            if (c != '\\' || i == value.length - 1) {
+                out.append(c)
+                i++
+                continue
+            }
+            when (val next = value[i + 1]) {
+                '\\' -> out.append('\\')
+                'n' -> out.append('\n')
+                't' -> out.append('\t')
+                'r' -> out.append('\r')
+                else -> out.append(next)
+            }
+            i += 2
+        }
+        return out.toString()
+    }
 
     // ------------------------------------------------------------------ tests
 

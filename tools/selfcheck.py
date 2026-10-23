@@ -91,6 +91,25 @@ def check_manifest() -> None:
     if app_name and app_name.split(".")[-1] not in declared_classes:
         errors.append(f"application class {app_name} has no Kotlin source")
 
+    # AAPT2 unescapes manifest attribute values, so a pathPattern needs a doubled
+    # backslash in the source or the regex escape silently disappears from the APK.
+    for data in root.iter("data"):
+        pattern = data.get(ANDROID + "pathPattern")
+        if pattern is None:
+            continue
+        i = 0
+        while i < len(pattern):
+            if pattern[i] == "\\":
+                if i + 1 >= len(pattern) or pattern[i + 1] != "\\":
+                    errors.append(
+                        f"pathPattern uses a single backslash (AAPT2 strips it): {pattern!r} "
+                        f"- write a doubled backslash in the manifest"
+                    )
+                    break
+                i += 2
+            else:
+                i += 1
+
     notes.append(f"manifest: {len(declared)} app components checked")
 
 
