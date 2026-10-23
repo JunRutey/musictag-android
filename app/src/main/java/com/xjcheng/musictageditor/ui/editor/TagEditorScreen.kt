@@ -9,6 +9,7 @@ import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -148,7 +149,7 @@ private fun Header(state: EditorUiState) {
 }
 
 @Composable
-private fun Fields(
+private fun ColumnScope.Fields(
     state: EditorUiState,
     onFieldChange: (TagField, String) -> Unit,
     onLyricsChange: (String) -> Unit,
