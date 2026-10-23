@@ -154,7 +154,7 @@ std::string detectTagFormat(File *file, Tag *tag) {
         }
         return version;
     }
-    if (dynamic_cast<TagLib::XiphComment *>(tag)) return "VorbisComment";
+    if (dynamic_cast<TagLib::Ogg::XiphComment *>(tag)) return "VorbisComment";
     if (dynamic_cast<TagLib::MP4::Tag *>(tag)) return "MP4";
     if (dynamic_cast<TagLib::APE::Tag *>(tag)) return "APEv2";
     if (dynamic_cast<TagLib::ASF::Tag *>(tag)) return "ASF";
@@ -174,7 +174,7 @@ void collectPictures(File *file, Tag *tag, std::vector<Picture> &out) {
     if (auto *flac = dynamic_cast<TagLib::FLAC::File *>(file)) {
         for (auto *picture : flac->pictureList()) {
             if (picture != nullptr) {
-                out.push_back({utf8(picture->mimeType()), picture->picture()});
+                out.push_back({utf8(picture->mimeType()), picture->data()});
             }
         }
         return;
