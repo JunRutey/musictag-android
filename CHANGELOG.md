@@ -6,6 +6,26 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Verified
+
+* First green CI run (`CI #14`): self-check, 10 contract unit tests, lint, `assembleDebug`,
+  merged-manifest contract verification against the built APK, artifact upload.
+* The built artifact reports `package=com.xjcheng.musictageditor`, `targetSdk=35` and the
+  complete original component/filter surface (`tools/manifest_contract.py`: "manifest
+  contract OK", only library-injected components reported as allowed extras).
+
+### Fixed during bring-up
+
+* KDoc containing the any-any MIME wildcard closed the comment block early (Kotlin
+  reported "Expecting a top level declaration"); `selfcheck` now rejects it.
+* AGP 8 forbids `package=` in the source manifest, so the contract test resolves
+  component names from `CompatContract.PACKAGE` and asserts `applicationId`/`namespace`
+  from `build.gradle.kts` instead.
+* AAPT2 compiles manifest attribute values as Android strings and consumes a single
+  backslash, so `.*\.ape` silently shipped as `.*.ape`. Every regex backslash in a
+  `pathPattern` is now doubled in the source, the contract tool models the same
+  unescaping, and `selfcheck` rejects a lone backslash.
+
 ### Added
 
 * **M0 — scaffold and compatibility surface**

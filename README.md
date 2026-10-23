@@ -1,5 +1,7 @@
 # Music Tag for Android (rewrite)
 
+[![CI](https://github.com/JunRutey/musictag-android/actions/workflows/ci.yml/badge.svg)](https://github.com/JunRutey/musictag-android/actions/workflows/ci.yml)
+
 A modern, maintainable reimplementation of **音乐标签 / Music Tag** for Android — the
 tag editor whose last release was `com.xjcheng.musictageditor` 1.2.5.2.
 
@@ -13,10 +15,12 @@ libraries, while preserving the parts of the old app that other apps depend on
 * Network: single OkHttp client, one provider per music site
 * Build: GitHub Actions only — every APK you can install is produced by CI
 
-> **Status: M0 (scaffold).** There is no editor yet. What works today is the
-> compatibility surface: the app installs, launches, keeps the historical package and
-> component names, accepts `VIEW` / `SEND` / `SEARCH` intents, resolves `content://`
-> documents, and reports what it received. See the roadmap below.
+> **Status: M0 (scaffold) — verified.**
+> The compatibility surface is live and proven by CI: the built APK declares the original
+> package, all 15 activities / 2 services / 2 providers, the 20 MIME types, the 24
+> extension patterns, the `SEND` and `SEARCH` entries and both provider authorities
+> (`tools/manifest_contract.py` runs against the merged manifest on every push). The
+> editor itself lands in M2, the tag engine in M1.
 
 ## Install
 
