@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <cctype>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <ape/apefile.h>
@@ -310,22 +311,39 @@ Java_com_xjcheng_musictageditor_core_tag_NativeTagBridge_readAll(JNIEnv *env, jc
     fields.push_back(tag != nullptr ? utf8(tag->genre()) : "");
     fields.push_back(firstProperty(properties, "COMPOSER"));
 
-    std::string trackNumber = firstProperty(properties, "TRACKNUMBER");
-    if (trackNumber.empty() && tag != nullptr && tag->track() > 0) {
-        trackNumber = std::to_string(tag->track());
-    }
-    const std::string trackTotal = firstProperty(properties, "TRACKTOTAL");
-    const std::string discNumber = firstProperty(properties, "DISCNUMBER");
-    const std::string discTotal = firstProperty(properties, "DISCTOTAL");
+    // ID3v2 exposes "3/12" verbatim in TRACKNUMBER while VorbisComment splits it into
+    // TRACKNUMBER/TRACKTOTAL, so the combined form has to be split here.
+    const auto splitNumber = [](const std::string &raw, const std::string &explicitTotal) {
+        std::string number = raw;
+        std::string total = explicitTotal;
+        const auto slash = raw.find('/');
+        if (slash != std::string::npos) {
+            number = raw.substr(0, slash);
+            if (total.empty()) {
+                total = raw.substr(slash + 1);
+            }
+        }
+        while (!number.empty() && (number.back() == ' ' || number.back() == '\t')) number.pop_back();
+        while (!total.empty() && (total.back() == ' ' || total.back() == '\t')) total.pop_back();
+        return std::make_pair(number, total);
+    };
     const auto joinWithTotal = [](const std::string &number, const std::string &total) {
         if (number.empty()) return total.empty() ? std::string() : total;
         return total.empty() ? number : number + "/" + total;
     };
 
-    fields.push_back(trackNumber);
-    fields.push_back(joinWithTotal(trackNumber, trackTotal));
-    fields.push_back(discNumber);
-    fields.push_back(joinWithTotal(discNumber, discTotal));
+    std::string trackRaw = firstProperty(properties, "TRACKNUMBER");
+    if (trackRaw.empty() && tag != nullptr && tag->track() > 0) {
+        trackRaw = std::to_string(tag->track());
+    }
+    const auto track = splitNumber(trackRaw, firstProperty(properties, "TRACKTOTAL"));
+    const auto disc = splitNumber(firstProperty(properties, "DISCNUMBER"),
+                                  firstProperty(properties, "DISCTOTAL"));
+
+    fields.push_back(track.first);
+    fields.push_back(joinWithTotal(track.first, track.second));
+    fields.push_back(disc.first);
+    fields.push_back(joinWithTotal(disc.first, disc.second));
 
     std::string year = firstProperty(properties, "DATE");
     if (year.size() > 4) {

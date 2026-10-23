@@ -30,7 +30,9 @@ class TagLibEngine : TagEngine {
         if (raw.size < FIELD_COUNT) return null
 
         fun text(index: Int): String = raw.getOrNull(index) ?: ""
-        fun number(index: Int): Int = text(index).toIntOrNull() ?: 0
+
+        // Tolerates a combined "3/12" in case a future engine revision reports it.
+        fun number(index: Int): Int = text(index).takeWhile { it.isDigit() }.toIntOrNull() ?: 0
 
         val pictureCount = number(PICTURE_COUNT)
         val pictures = ArrayList<TagPicture>(pictureCount.coerceAtLeast(0))
