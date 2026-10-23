@@ -36,6 +36,7 @@
 #include <mpeg/id3v2/frames/textidentificationframe.h>
 #include <mpeg/id3v2/frames/unsynchronizedlyricsframe.h>
 #include <mpeg/id3v2/id3v2tag.h>
+#include <mpeg/id3v1/id3v1tag.h>
 #include <mpeg/mpegfile.h>
 #include <ogg/oggfile.h>
 #include <ogg/vorbis/vorbisfile.h>
