@@ -130,6 +130,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: tag-engine-test-report
-          path: core/tag/build/reports/tests/test
+          path: |
+            core/tag/build/reports/tests/test
+            core/tag/build/test-results/test
           if-no-files-found: ignore
 

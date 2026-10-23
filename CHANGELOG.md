@@ -6,6 +6,26 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Verified (M1)
+
+* `CI #30` green with two jobs: the Android build (TagLib compiled for three ABIs, APK
+  contains `lib/<abi>/libmusictag_jni.so`) and the native job (host build + tag tests).
+* The tag-engine report shows **14 tests, 0 failures, 0 ignored** — the native tests ran
+  against real TagLib rather than skipping.
+
+### Fixed during M1 bring-up (each caught by CI, each now documented in-code)
+
+* TagLib 2.x moved headers into per-format directories and includes siblings by bare
+  name, so the bridge needs every header directory on its include path.
+* `XiphComment` lives in `TagLib::Ogg`; `FLAC::Picture` exposes `data()`, not `picture()`.
+* `-fvisibility=hidden` on the bridge duplicated TagLib's typeinfo and broke every
+  `dynamic_cast`.
+* `MPEG::File::tag()` and `FLAC::File::tag()` return a `TagUnion` proxy, so casting them
+  yields nothing: the format showed "unknown" while tags parsed fine and MP3 covers were
+  never found. Concrete tags now come from `ID3v2Tag()` / `xiphComment()`.
+* ID3v2 keeps `TRCK` as `"3/12"` (VorbisComment splits it), so the numeric track field
+  was unparsable until the bridge normalised both forms.
+
 ### Added (M1 — tag engine, read path)
 
 * `native/taglib`: upstream TagLib 2.0.2 (MPL-1.1) pinned by tag and compiled for

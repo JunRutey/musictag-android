@@ -96,21 +96,35 @@ Status values: `todo` / `wip` / `done` / `dropped`.
 
 ## 9. Formats
 
-| Container | Tag blocks | Milestone |
-|---|---|---|
-| MP3 | ID3v1, ID3v2.3, ID3v2.4 | M1/M2 |
-| FLAC | VorbisComment + PICTURE | M1/M2 |
-| MP4/M4A | `ilst` (incl. `covr`) | M1/M2 |
-| APE | APEv2 | M1/M2 |
-| Ogg Vorbis / Opus | VorbisComment | M3 |
-| WMA | ASF | M3 |
-| WAV / AIFF | RIFF LIST-INFO / ID3 chunk | M3 |
-| AAC | ADTS + leading ID3v2 | M3 |
-| TTA | ID3v2 / APEv2 | M3 |
-| WavPack | APEv2 | M3 |
-| Musepack | APEv2 / ID3v2 | M3 |
-| DSF | trailing ID3v2 | M3 |
-| DFF | `ID3 ` chunk (gated by setting) | M3 |
+Status legend: **read** = parsed and covered by a fixture test; **write** = editable.
+
+| Container | Tag blocks | Read | Write |
+|---|---|---|---|
+| MP3 | ID3v1, ID3v2.3, ID3v2.4 | ✅ M1 (ID3v2.3 + APIC + USLT fixtures) | M2 |
+| FLAC | VorbisComment + PICTURE | ✅ M1 (13 properties + cover fixture) | M2 |
+| MP4/M4A | `ilst` (incl. `covr`) | engine ready, fixture M3 | M2 |
+| APE | APEv2 | text via PropertyMap; cover M3 | M3 |
+| Ogg Vorbis / Opus | VorbisComment | engine ready, fixture M3 | M3 |
+| WMA | ASF | engine ready, fixture M3 | M3 |
+| WAV / AIFF | RIFF LIST-INFO / ID3 chunk | fixture M3 | M3 |
+| AAC | ADTS + leading ID3v2 | fixture M3 | M3 |
+| TTA | ID3v2 / APEv2 | fixture M3 | M3 |
+| WavPack | APEv2 | fixture M3 | M3 |
+| Musepack | APEv2 / ID3v2 | fixture M3 | M3 |
+| DSF | trailing ID3v2 | fixture M3 | M3 |
+| DFF | `ID3 ` chunk (gated by setting) | fixture M3 | M3 |
+
+Engine-level facts established in M1 and enforced by the native job:
+
+* `TagLib::FileRef` opens by content sniffing, so extension-less documents work.
+* Container detection and tag classification use `dynamic_cast`; MPEG/FLAC return a
+  `TagUnion` proxy from `tag()`, so their concrete tags come from `ID3v2Tag()` /
+  `xiphComment()`. This is documented in the bridge because it silently yields
+  "unknown" otherwise.
+* Bit depth comes from the per-format `Properties` subclasses (FLAC/APE/ASF).
+* ID3v2 reports `TRCK` as `"3/12"` while VorbisComment splits it; the bridge normalises
+  both into `track` + `trackStr`.
+
 
 ## 10. Deliberately dropped
 
