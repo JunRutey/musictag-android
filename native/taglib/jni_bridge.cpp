@@ -48,6 +48,7 @@ using TagLib::File;
 using TagLib::FileRef;
 using TagLib::PropertyMap;
 using TagLib::String;
+using TagLib::StringList;
 using TagLib::Tag;
 
 struct Picture {
