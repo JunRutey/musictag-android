@@ -1,5 +1,5 @@
 // JNI bridge between Kotlin (com.xjcheng.musictageditor.core.tag.NativeTagBridge) and
-// upstream TagLib. Read-only in M1; the write path lands in M2 on the same surface.
+// upstream TagLib 2.x. Read-only in M1; the write path lands in M2 on the same surface.
 //
 // Design notes:
 //  * One JNI call returns everything about a file as a flat String[], so Kotlin needs
@@ -8,6 +8,8 @@
 //    the contract to a single, easily-tested method.
 //  * Strings are converted through UTF-16 so tags containing emoji or other
 //    supplementary-plane characters survive (NewStringUTF would mangle them).
+//  * Include paths follow TagLib 2.x's build-tree layout (<ape/apefile.h>), which is what
+//    the FetchContent source tree provides; the 1.x flat layout is not supported.
 
 #include <jni.h>
 
@@ -16,26 +18,30 @@
 #include <string>
 #include <vector>
 
-#include <taglib/apefile.h>
-#include <taglib/apetag.h>
-#include <taglib/asffile.h>
-#include <taglib/attachedpictureframe.h>
-#include <taglib/fileref.h>
-#include <taglib/flacfile.h>
-#include <taglib/flacpicture.h>
-#include <taglib/id3v1tag.h>
-#include <taglib/id3v2tag.h>
-#include <taglib/mp4file.h>
-#include <taglib/mp4tag.h>
-#include <taglib/mpegfile.h>
-#include <taglib/oggfile.h>
-#include <taglib/tag.h>
-#include <taglib/tpropertymap.h>
-#include <taglib/vorbisfile.h>
-#include <taglib/xiphcomment.h>
+#include <ape/apefile.h>
+#include <ape/apeproperties.h>
+#include <ape/apetag.h>
+#include <asf/asffile.h>
+#include <asf/asfproperties.h>
+#include <audioproperties.h>
+#include <fileref.h>
+#include <flac/flacfile.h>
+#include <flac/flacproperties.h>
+#include <mp4/mp4coverart.h>
+#include <mp4/mp4file.h>
+#include <mp4/mp4tag.h>
+#include <mpeg/id3v2/frames/attachedpictureframe.h>
+#include <mpeg/id3v2/id3v2tag.h>
+#include <mpeg/mpegfile.h>
+#include <ogg/oggfile.h>
+#include <ogg/vorbis/vorbisfile.h>
+#include <ogg/xiphcomment.h>
+#include <tag.h>
+#include <toolkit/tpropertymap.h>
 
 namespace {
 
+using TagLib::AudioProperties;
 using TagLib::ByteVector;
 using TagLib::File;
 using TagLib::FileRef;
@@ -71,8 +77,7 @@ jstring toJavaString(JNIEnv *env, const char *data, size_t size) {
             cp = lead & 0x07;
             extra = 3;
         } else {
-            // Invalid byte: substitute U+FFFD and continue.
-            utf16.push_back(0xFFFD);
+            utf16.push_back(0xFFFD);  // invalid byte
             ++i;
             continue;
         }
@@ -144,7 +149,7 @@ std::string detectTagFormat(File *file, Tag *tag) {
             version += "." + std::to_string(id3v2->header()->revisionNumber());
         }
         auto *mpeg = dynamic_cast<TagLib::MPEG::File *>(file);
-        if (mpeg && mpeg->hasID3v1Tag()) {
+        if (mpeg != nullptr && mpeg->hasID3v1Tag()) {
             version += "+ID3v1";
         }
         return version;
@@ -156,10 +161,19 @@ std::string detectTagFormat(File *file, Tag *tag) {
     return "unknown";
 }
 
+// Bit depth is not part of the AudioProperties base class; only some formats expose it.
+int bitsPerSampleOf(const AudioProperties *audio) {
+    if (audio == nullptr) return 0;
+    if (auto *flac = dynamic_cast<const TagLib::FLAC::Properties *>(audio)) return flac->bitsPerSample();
+    if (auto *ape = dynamic_cast<const TagLib::APE::Properties *>(audio)) return ape->bitsPerSample();
+    if (auto *asf = dynamic_cast<const TagLib::ASF::Properties *>(audio)) return asf->bitsPerSample();
+    return 0;
+}
+
 void collectPictures(File *file, Tag *tag, std::vector<Picture> &out) {
     if (auto *flac = dynamic_cast<TagLib::FLAC::File *>(file)) {
         for (auto *picture : flac->pictureList()) {
-            if (picture) {
+            if (picture != nullptr) {
                 out.push_back({utf8(picture->mimeType()), picture->picture()});
             }
         }
@@ -183,37 +197,7 @@ void collectPictures(File *file, Tag *tag, std::vector<Picture> &out) {
                 out.push_back({mime, art.data()});
             }
         }
-        return;
     }
-#if TAGLIB_MAJOR_VERSION >= 2
-    if (auto *ape = dynamic_cast<TagLib::APE::Tag *>(tag)) {
-        const auto &items = ape->itemMap();
-        const auto it = items.find("COVER ART (FRONT)");
-        if (it != items.end()) {
-            const ByteVector binary = it->second.binary();
-            const auto *raw = reinterpret_cast<const char *>(binary.data());
-            size_t nameLength = 0;
-            while (nameLength < binary.size() && raw[nameLength] != '\0') {
-                ++nameLength;
-            }
-            if (nameLength + 1 < binary.size()) {
-                ByteVector payload;
-                payload.append(binary.mid(static_cast<unsigned int>(nameLength + 1)));
-                const std::string name(raw, nameLength);
-                const std::string lower = [&name] {
-                    std::string s = name;
-                    std::transform(s.begin(), s.end(), s.begin(),
-                                   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-                    return s;
-                }();
-                const std::string mime =
-                    lower.find(".png") != std::string::npos ? "image/png" : "image/jpeg";
-                out.push_back({mime, payload});
-            }
-        }
-        return;
-    }
-#endif
 }
 
 }  // namespace
@@ -260,19 +244,19 @@ Java_com_xjcheng_musictageditor_core_tag_NativeTagBridge_readAll(JNIEnv *env, jc
     fields.reserve(32);
 
     fields.push_back(detectContainer(file));
-    fields.push_back(tag ? detectTagFormat(file, tag) : "unknown");
+    fields.push_back(tag != nullptr ? detectTagFormat(file, tag) : "unknown");
 
-    fields.push_back(tag ? utf8(tag->title()) : "");
-    fields.push_back(tag ? utf8(tag->artist()) : "");
-    fields.push_back(tag ? utf8(tag->album()) : "");
+    fields.push_back(tag != nullptr ? utf8(tag->title()) : "");
+    fields.push_back(tag != nullptr ? utf8(tag->artist()) : "");
+    fields.push_back(tag != nullptr ? utf8(tag->album()) : "");
 
     const std::string albumArtist = firstProperty(properties, "ALBUMARTIST");
     fields.push_back(!albumArtist.empty() ? albumArtist : firstProperty(properties, "ALBUM ARTIST"));
-    fields.push_back(tag ? utf8(tag->genre()) : "");
+    fields.push_back(tag != nullptr ? utf8(tag->genre()) : "");
     fields.push_back(firstProperty(properties, "COMPOSER"));
 
     std::string trackNumber = firstProperty(properties, "TRACKNUMBER");
-    if (trackNumber.empty() && tag && tag->track() > 0) {
+    if (trackNumber.empty() && tag != nullptr && tag->track() > 0) {
         trackNumber = std::to_string(tag->track());
     }
     const std::string trackTotal = firstProperty(properties, "TRACKTOTAL");
@@ -292,11 +276,11 @@ Java_com_xjcheng_musictageditor_core_tag_NativeTagBridge_readAll(JNIEnv *env, jc
     if (year.size() > 4) {
         year = year.substr(0, 4);
     }
-    if (year.empty() && tag && tag->year() > 0) {
+    if (year.empty() && tag != nullptr && tag->year() > 0) {
         year = std::to_string(tag->year());
     }
     fields.push_back(year);
-    fields.push_back(tag ? utf8(tag->comment()) : "");
+    fields.push_back(tag != nullptr ? utf8(tag->comment()) : "");
 
     std::string lyrics = firstProperty(properties, "LYRICS");
     if (lyrics.empty()) {
@@ -304,12 +288,12 @@ Java_com_xjcheng_musictageditor_core_tag_NativeTagBridge_readAll(JNIEnv *env, jc
     }
     fields.push_back(lyrics);
 
-    const TagLib::AudioProperties *audio = ref.audioProperties();
-    fields.push_back(audio ? std::to_string(audio->lengthInMilliseconds()) : "");
-    fields.push_back(audio ? std::to_string(audio->bitrate()) : "");
-    fields.push_back(audio ? std::to_string(audio->sampleRate()) : "");
-    fields.push_back(audio ? std::to_string(audio->channels()) : "");
-    fields.push_back(audio ? std::to_string(audio->bitsPerSample()) : "");
+    const AudioProperties *audio = ref.audioProperties();
+    fields.push_back(audio != nullptr ? std::to_string(audio->lengthInMilliseconds()) : "");
+    fields.push_back(audio != nullptr ? std::to_string(audio->bitrate()) : "");
+    fields.push_back(audio != nullptr ? std::to_string(audio->sampleRate()) : "");
+    fields.push_back(audio != nullptr ? std::to_string(audio->channels()) : "");
+    fields.push_back(std::to_string(bitsPerSampleOf(audio)));
 
     std::vector<Picture> pictures;
     collectPictures(file, tag, pictures);
