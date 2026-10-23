@@ -53,8 +53,8 @@ class TagLibReadTest {
         val tag = engine.read(fixture("sample.mp3"))
         assertNotNull("mp3 fixture should be readable", tag)
         tag!!
-        assertEquals("MPEG", tag.container)
-        assertTrue("expected an ID3v2 tag, got ${tag.tagFormat}", tag.tagFormat.startsWith("ID3v2.3"))
+        assertEquals("container of ${tag.summary()}", "MPEG", tag.container)
+        assertTrue("expected ID3v2.3, got ${tag.summary()}", tag.tagFormat.startsWith("ID3v2.3"))
         assertEquals("Fixture Title", tag.title)
         assertEquals("Fixture Artist", tag.artist)
         assertEquals("Fixture Album", tag.album)
@@ -75,8 +75,8 @@ class TagLibReadTest {
         val tag = engine.read(fixture("sample.flac"))
         assertNotNull("flac fixture should be readable", tag)
         tag!!
-        assertEquals("FLAC", tag.container)
-        assertEquals("VorbisComment", tag.tagFormat)
+        assertEquals("container of ${tag.summary()}", "FLAC", tag.container)
+        assertEquals("tag format of ${tag.summary()}", "VorbisComment", tag.tagFormat)
         assertEquals("Fixture Title", tag.title)
         assertEquals("Fixture Artist", tag.artist)
         assertEquals("Fixture Album", tag.album)

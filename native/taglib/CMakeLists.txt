@@ -50,14 +50,16 @@ target_include_directories(musictag_jni PRIVATE ${TAGLIB_INCLUDE_DIRS})
 
 if(ANDROID)
     target_link_libraries(musictag_jni PRIVATE log)
-    target_compile_options(musictag_jni PRIVATE -fvisibility=hidden -fexceptions)
+    target_compile_options(musictag_jni PRIVATE -fexceptions)
 else()
     find_package(JNI REQUIRED)
     target_include_directories(musictag_jni PRIVATE ${JNI_INCLUDE_DIRS})
 endif()
 
-# Keep the JNI entry points visible; everything else stays hidden.
-set_target_properties(musictag_jni PROPERTIES
-    CXX_VISIBILITY_PRESET hidden
-    VISIBILITY_INLINES_HIDDEN ON
-)
+# Deliberately default visibility.
+#
+# TagLib is linked statically, and the bridge identifies tag types with dynamic_cast.
+# Compiling this translation unit with hidden visibility emits a *local* copy of
+# TagLib's typeinfo objects, so the vtable's typeinfo (from TagLib's own objects) and the
+# one the cast compares against differ, and every dynamic_cast silently returns null.
+# Symptom: tags read fine but the detected tag format is "unknown".
