@@ -44,11 +44,12 @@ fun MusicTagTheme(
     content: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
-    val colors = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-        darkTheme -> DarkColors
-        else -> LightColors
+    val colors = if (dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+    } else if (darkTheme) {
+        DarkColors
+    } else {
+        LightColors
     }
     MaterialTheme(colorScheme = colors, content = content)
 }
