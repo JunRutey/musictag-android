@@ -100,8 +100,8 @@ Status legend: **read** = parsed and covered by a fixture test; **write** = edit
 
 | Container | Tag blocks | Read | Write |
 |---|---|---|---|
-| MP3 | ID3v1, ID3v2.3, ID3v2.4 | ✅ M1 (ID3v2.3 + APIC + USLT fixtures) | M2 |
-| FLAC | VorbisComment + PICTURE | ✅ M1 (13 properties + cover fixture) | M2 |
+| MP3 | ID3v1, ID3v2.3, ID3v2.4 | ✅ M1 (ID3v2.3 + APIC + USLT fixtures) | ✅ M2 (per-frame writes, APIC, USLT, ID3v1 companion) |
+| FLAC | VorbisComment + PICTURE | ✅ M1 (13 properties + cover fixture) | ✅ M2 (XiphComment replace + PICTURE) |
 | MP4/M4A | `ilst` (incl. `covr`) | engine ready, fixture M3 | M2 |
 | APE | APEv2 | text via PropertyMap; cover M3 | M3 |
 | Ogg Vorbis / Opus | VorbisComment | engine ready, fixture M3 | M3 |

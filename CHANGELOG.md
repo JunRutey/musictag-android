@@ -6,6 +6,27 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Verified (M2)
+
+* CI #39 green: 24 tag-engine tests, 0 failures, 0 skipped (read + write round trips).
+* The editor compiles and ships in the debug APK; the write path is exercised by tests
+  that copy fixtures, edit them, write, and read the result back.
+
+### Added (M2)
+
+* Compose editor: twelve fields, lyrics, artwork add/replace/remove, MP3 options, save.
+* Write-back for content:// documents (mode 
+wt) plus MediaScannerConnection
+  refresh, and a settings repository for the MP3 write options.
+
+### Fixed during M2 bring-up
+
+* setProperties() does not replace on ID3v2/FLAC: the old frame survived and a second
+  one was added (read back as "old / new"), and the comment was dropped. The write path
+  now creates exactly one frame per field (diagnostic prints in the test log proved it).
+* ID3v1::Tag is only forward-declared by mpegfile.h, so Tag::duplicate needed
+  <mpeg/id3v1/id3v1tag.h> to see a complete type.
+
 ### Verified (M1)
 
 * `CI #30` green with two jobs: the Android build (TagLib compiled for three ABIs, APK

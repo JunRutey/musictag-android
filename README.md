@@ -15,7 +15,7 @@ libraries, while preserving the parts of the old app that other apps depend on
 * Network: single OkHttp client, one provider per music site
 * Build: GitHub Actions only — every APK you can install is produced by CI
 
-> **Status: M1 (tag engine, read path) — verified.**
+> **Status: M2 (editor + write path) — verified.**
 > The compatibility surface is proven by CI on every push: the built APK declares the
 > original package, all 15 activities / 2 services / 2 providers, the 20 MIME types, the
 > 24 extension patterns, the `SEND` and `SEARCH` entries and both provider authorities
@@ -65,7 +65,7 @@ The contract is executable, not just documented:
 |---|---|---|
 | M0 | Repo, CI, signing, contract baseline, installable shell | ✅ done |
 | M1 | TagLib + JNI (read), host-side unit tests | ✅ done |
-| M2 | Tag writing, editor UI, covers, MediaStore index, settings | ⏳ next |
+| M2 | Tag writing, editor UI, covers, MediaStore index, settings | ✅ done |
 | M3 | Full format matrix (ogg/opus/wma/wav/aiff/aac/tta/wv/mpc/dsf/dff) | |
 | M4 | Online providers (NetEase/QQ/Kuwo/Kugou + MusicBrainz/VGMdb/iTunes/CoverArt/Last.fm) | |
 | M5 | Batch service, bookmarks, history, file ops, search + suggestions | |
