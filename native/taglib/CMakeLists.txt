@@ -36,13 +36,17 @@ FetchContent_MakeAvailable(taglib)
 add_library(musictag_jni SHARED jni_bridge.cpp)
 target_link_libraries(musictag_jni PRIVATE tag)
 
-# TagLib's build-tree layout differs from the installed layout: headers live in
-# <src>/taglib/*.h while the install interface uses include/taglib. Add both roots so
-# `#include <taglib/xxx.h>` works against the fetched sources as well as a system copy.
-target_include_directories(musictag_jni PRIVATE
-    ${taglib_SOURCE_DIR}
-    ${taglib_SOURCE_DIR}/taglib
-)
+# TagLib's public headers include their siblings by bare name (e.g. apefile.h does
+# `#include "tfile.h"`), and it keeps one directory per subsystem. Rather than hardcode
+# that list - which changes between releases - add every directory that holds a header.
+file(GLOB_RECURSE TAGLIB_PUBLIC_HEADERS CONFIGURE_DEPENDS ${taglib_SOURCE_DIR}/taglib/*.h)
+set(TAGLIB_INCLUDE_DIRS ${taglib_SOURCE_DIR}/taglib)
+foreach(header ${TAGLIB_PUBLIC_HEADERS})
+    get_filename_component(header_dir ${header} DIRECTORY)
+    list(APPEND TAGLIB_INCLUDE_DIRS ${header_dir})
+endforeach()
+list(REMOVE_DUPLICATES TAGLIB_INCLUDE_DIRS)
+target_include_directories(musictag_jni PRIVATE ${TAGLIB_INCLUDE_DIRS})
 
 if(ANDROID)
     target_link_libraries(musictag_jni PRIVATE log)
