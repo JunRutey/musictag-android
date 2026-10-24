@@ -281,4 +281,39 @@ class TagLibWriteTest {
         assertEquals("one embedded picture expected", 1, after.pictures.size)
         assertArrayEquals(cover, after.pictures[0].data)
     }
+
+    @Test
+    fun writesAndReadsBackMp4() {
+        val file = tempCopy("sample.m4a", ".m4a")
+        val before = engine.read(file.absolutePath)
+        assertNotNull("synthetic m4a fixture should be readable", before)
+        before!!
+        assertEquals("MP4", before.container)
+        assertEquals("MP4", before.tagFormat)
+        assertEquals("Fixture Title", before.title)
+        assertEquals("3/12", before.trackStr)
+        assertEquals("1/2", before.discStr)
+        assertEquals(1, before.pictures.size)
+
+        val result = engine.write(file.absolutePath, edited(before))
+        assertTrue("write failed: $result", result.ok)
+
+        val after = engine.read(file.absolutePath)!!
+        // The fixture has no track atom, so audio properties stay 0.
+        assertEdited(after, checkAudio = false)
+        assertEquals("MP4", after.tagFormat)
+    }
+
+    @Test
+    fun replacesCoverOnMp4() {
+        val file = tempCopy("sample.m4a", ".m4a")
+        val before = engine.read(file.absolutePath)!!
+        val cover = coverFixture()
+        assertTrue(engine.write(file.absolutePath, edited(before)
+            .copy(cover = CoverEdit.Replace(cover, "image/png"))).ok)
+
+        val after = engine.read(file.absolutePath)!!
+        assertEquals("one embedded picture expected", 1, after.pictures.size)
+        assertArrayEquals(cover, after.pictures[0].data)
+    }
 }

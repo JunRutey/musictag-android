@@ -306,6 +306,78 @@ def ape_fixture() -> bytes:
 
 
 
+# ------------------------------------------------------------------------------ mp4
+
+
+def mp4_box(name: str, payload: bytes) -> bytes:
+    return struct.pack(">I", 8 + len(payload)) + name.encode("latin-1") + payload
+
+
+def mp4_data(payload: bytes, type_indicator: int) -> bytes:
+    """A 'data' box: 4-byte type indicator (1 UTF-8, 14 PNG), 4-byte locale, payload."""
+    return mp4_box("data", struct.pack(">II", type_indicator, 0) + payload)
+
+
+def mp4_text(atom: str, value: str) -> bytes:
+    return mp4_box(atom, mp4_data(value.encode("utf-8"), 1))
+
+
+def mp4_pair(atom: str, number: int, total: int) -> bytes:
+    payload = struct.pack(">HHHH", 0, number, total, 0)
+    return mp4_box(atom, mp4_data(payload, 0))
+
+
+def mvhd_box() -> bytes:
+    matrix = struct.pack(
+        ">9I", 0x00010000, 0, 0,
+        0, 0x00010000, 0,
+        0, 0, 0x40000000,
+    )
+    payload = (
+        struct.pack(">IIII", 0, 0, 0, 0)      # version/flags, creation, modification
+        + struct.pack(">II", 1000, 3000)      # timescale (ms), duration
+        + struct.pack(">I", 0x00010000)       # rate 1.0
+        + struct.pack(">H", 0x0100)           # volume 1.0
+        + b"\x00\x00" + b"\x00" * 8
+        + matrix
+        + b"\x00" * 24
+        + struct.pack(">I", 2)                # next track id
+    )
+    return mp4_box("mvhd", payload)
+
+
+def hdlr_box() -> bytes:
+    payload = b"\x00\x00\x00\x00" + b"\x00\x00\x00\x00" + b"mdir" + b"\x00" * 12 + b"\x00"
+    return mp4_box("hdlr", payload)
+
+
+def mp4_fixture() -> bytes:
+    items = b"".join(
+        [
+            mp4_text("\xa9nam", TITLE),
+            mp4_text("\xa9ART", ARTIST),
+            mp4_text("\xa9alb", ALBUM),
+            mp4_text("aART", ALBUMARTIST),
+            mp4_text("\xa9gen", GENRE),
+            mp4_text("\xa9wrt", COMPOSER),
+            mp4_text("\xa9day", YEAR),
+            mp4_text("\xa9cmt", COMMENT),
+            mp4_text("\xa9lyr", LYRICS),
+            mp4_pair("trkn", TRACK, TRACK_TOTAL),
+            mp4_pair("disk", DISC, DISC_TOTAL),
+            mp4_box("covr", mp4_data(tiny_png(), 14)),
+        ]
+    )
+    ilst = mp4_box("ilst", items)
+    meta = mp4_box("meta", b"\x00\x00\x00\x00" + hdlr_box() + ilst)
+    udta = mp4_box("udta", meta)
+    moov = mp4_box("moov", mvhd_box() + udta)
+    ftyp = mp4_box("ftyp", b"M4A " + struct.pack(">I", 0) + b"M4A " + b"isom" + b"mp42")
+    mdat = mp4_box("mdat", b"\x00" * 64)
+    return ftyp + moov + mdat
+
+
+
 # ------------------------------------------------------------------------------ main
 
 FIXTURES = {
@@ -313,6 +385,7 @@ FIXTURES = {
     "sample.flac": flac_fixture,
     "sample.ogg": ogg_fixture,
     "sample.ape": ape_fixture,
+    "sample.m4a": mp4_fixture,
     # Standalone cover used by the write tests to prove replacement round-trips.
     "cover.png": tiny_png,
 }
