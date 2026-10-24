@@ -14,9 +14,11 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.net.Uri
+import android.annotation.SuppressLint
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import com.xjcheng.musictageditor.MainActivity
@@ -50,6 +52,8 @@ class BatchService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val engine = TagLibEngine()
     private var job: Job? = null
+
+    private val notifications: NotificationManagerCompat get() = NotificationManagerCompat.from(this)
 
     @Volatile
     private var cancelled = false
@@ -143,15 +147,20 @@ class BatchService : Service() {
         ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
     }
 
+    @SuppressLint("MissingPermission")
     private fun updateNotification(progress: BatchProgress, total: Int) {
-        val manager = getSystemService(NotificationManager::class.java) ?: return
-        manager.notify(NOTIFICATION_ID, buildNotification(progress.processed, total, progress.currentName))
+        runCatching {
+            notifications.notify(
+                NOTIFICATION_ID,
+                buildNotification(progress.processed, total, progress.currentName),
+            )
+        }
     }
 
+    @SuppressLint("MissingPermission")
     private fun notifyFinished(summary: String, failures: Int) {
-        val manager = getSystemService(NotificationManager::class.java) ?: return
         val text = if (failures == 0) summary else "$summary · check the failed files"
-        manager.notify(NOTIFICATION_ID + 1, buildNotification(1, 1, text))
+        runCatching { notifications.notify(NOTIFICATION_ID + 1, buildNotification(1, 1, text)) }
     }
 
     private fun buildNotification(processed: Int, total: Int, current: String?): Notification {
@@ -182,9 +191,8 @@ class BatchService : Service() {
 
     private fun ensureChannel() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
-        val manager = getSystemService(NotificationManager::class.java) ?: return
-        if (manager.getNotificationChannel(CHANNEL) != null) return
-        manager.createNotificationChannel(
+        if (notifications.getNotificationChannel(CHANNEL) != null) return
+        notifications.createNotificationChannel(
             NotificationChannel(CHANNEL, "Batch tag writing", NotificationManager.IMPORTANCE_LOW),
         )
     }
