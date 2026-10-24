@@ -121,7 +121,8 @@ class LrcTest {
         val merged = Lrc.mergeTranslation(sample, translation)
         assertEquals(
             "[00:00.00]晴天 // Sunny Day\n" +
-                "[00:05.20]故事的小黄花\n" +
+                // No translation for this line, so its original spacing is preserved.
+                "[00:05.20] 故事的小黄花\n" +
                 "[00:09.40]从出生那年就飘着 // Drifting since birth\n",
             merged,
         )
