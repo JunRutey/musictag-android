@@ -69,6 +69,12 @@ jobs:
             --verify-apk app/build/outputs/apk/debug/app-debug.apk \
             --expect docs/MANIFEST_CONTRACT.json
 
+      - name: Verify intent resolution matrix
+        run: |
+          python3 tools/intent_matrix.py \
+            --apk app/build/outputs/apk/debug/app-debug.apk \
+            --write-doc docs/INTENT_MATRIX.md
+
       - name: Show APK facts
         run: |
           APK=app/build/outputs/apk/debug/app-debug.apk
