@@ -265,18 +265,10 @@ def ape_header() -> bytes:
     descriptor = struct.pack(
         "<7I", 52, 24, 0, 0, 0, 0, 0
     ) + b"\x00" * 16  # descriptor size, header size, seek/header/frame/terminating sizes, md5
-    header = struct.pack(
-        "<HHIIIIHHI",
-        2000,        # compression level
-        0,           # format flags
-        73728,       # blocks per frame
-        44100,       # final frame blocks
-        1,           # total frames
-        16,          # bits per sample
-        2,           # channels
-        44100,       # sample rate
-        0,           # padding to keep the struct literal readable
-    )[:24]
+    # 2 + 2 + 4 + 4 + 4 + 2 + 2 + 4 = 24 bytes, exactly the APE header layout
+    # (compression, flags, blocks/frame, final-frame blocks, total frames,
+    #  bits per sample, channels, sample rate).
+    header = struct.pack("<HHIIIHHI", 2000, 0, 73728, 44100, 1, 16, 2, 44100)
     return b"MAC " + struct.pack("<H", 3990) + struct.pack("<H", 0) + descriptor + header
 
 
