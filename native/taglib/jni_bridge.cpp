@@ -297,7 +297,8 @@ void collectPictures(File *file, const TagContext &context, std::vector<Picture>
     if (auto *ape = existingApeTag(file)) {
         const auto &items = ape->itemListMap();
         for (auto it = items.begin(); it != items.end(); ++it) {
-            if (!it->first.startsWith("Cover Art")) continue;
+            // APEv2 keys are case-insensitive; TagLib may store them upper-cased.
+            if (!it->first.upper().startsWith("COVER ART")) continue;
             const ByteVector binary = it->second.binaryData();
             const auto *raw = reinterpret_cast<const char *>(binary.data());
             size_t nameLength = 0;
