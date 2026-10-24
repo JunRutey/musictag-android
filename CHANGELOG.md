@@ -6,6 +6,42 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Verified (M3/M4 so far)
+
+* `CI #59`: **54 tests, 0 failures, 0 skipped** (30 tag engine + 24 network).
+  Formats read *and* written against generated fixtures: MP3 (ID3v2.3/2.4 + ID3v1),
+  FLAC, Ogg Vorbis, APE (APEv2) and M4A (MP4 `ilst`), including artwork in every one.
+* weapi is checked three ways: AES against NIST SP 800-38A vectors, the RSA step against a
+  Python arbitrary-precision computation, and the two-layer composition by unwrapping it.
+  The `163 key` marker round-trips and decrypts with the raw key bytes.
+
+### Added (M3)
+
+* One write path for every container TagLib supports, dispatched by tag family: ID3v2
+  (MPEG/WAV/AIFF/DSF/DSDIFF/TrueAudio), Xiph (FLAC/Ogg Vorbis/Ogg Opus), APEv2
+  (APE/WavPack/Musepack), MP4 and ASF.
+* Cover art per family, and reading of Ogg/APEv2 artwork.
+* Generated fixtures for Ogg (three pages with real CRCs) and M4A (ftyp+moov+ilst) and a
+  synthetic Monkey's Audio file with a 12-item APEv2 tag.
+
+### Added (M4, in progress)
+
+* `:core:net`: weapi and `163 key` crypto, an `HttpTransport` abstraction with an OkHttp
+  implementation, the provider model and the NetEase provider with recorded-response
+  tests.
+
+### Fixed during M3/M4
+
+* `setProperties()` appended instead of replacing on ID3v2/FLAC (read back as
+  "old / new") and dropped the comment; writes are now one frame per field.
+* `MPEG::File::tag()`/`FLAC::File::tag()` return a `TagUnion` proxy, so casting them never
+  matched: format showed "unknown" and MP3 artwork was invisible.
+* FLAC keeps artwork in PICTURE blocks, not in the Vorbis comment.
+* APEv2 cover keys are stored upper-cased, so the prefix match must be case-insensitive.
+* The synthetic APE header packed bit depth/channels/sample rate with the wrong widths.
+* `selfcheck` now strips comments, strings, raw strings and char literals before counting
+  braces and parentheses (a key literal and a quote char literal both tripped it).
+
 ### Verified (M2)
 
 * CI #39 green: 24 tag-engine tests, 0 failures, 0 skipped (read + write round trips).

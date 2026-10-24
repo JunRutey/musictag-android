@@ -43,7 +43,7 @@ Status values: `todo` / `wip` / `done` / `dropped`.
 
 | # | Capability | Milestone | Status | Proof |
 |---|---|---|---|---|
-| 4.1 | Read / write lyrics in tags | M2 | todo | round-trip test |
+| 4.1 | Read / write lyrics in tags | M2 | ✅ done | round-trip test |
 | 4.2 | Import from / export to `.lrc` | M2 | todo | round-trip test |
 | 4.3 | Reformat timetags, remove timetags, adjust offset | M3 | todo | fixture test |
 | 4.4 | Delete blank text lines, delete head tags | M3 | todo | fixture test |
@@ -55,7 +55,7 @@ Status values: `todo` / `wip` / `done` / `dropped`.
 
 | # | Provider | Endpoints | Milestone | Status |
 |---|---|---|---|---|
-| 5.1 | NetEase Cloud Music | `cloudsearch/pc`, `v3/song/detail`, `song/lyric`, `v1/album/{id}` + weapi crypto | M4 | todo |
+| 5.1 | NetEase Cloud Music | `cloudsearch/pc`, `v3/song/detail`, `song/lyric` + weapi crypto | M4 | ✅ done (fixtures; live endpoint unverified) |
 | 5.2 | QQ Music | `musicu.fcg`, lyric fcgi, `T002R800x800M000` cover | M4 | todo |
 | 5.3 | Kuwo | `search.kuwo.cn/r.s`, `m.kuwo.cn/songinfoandlrc` | M4 | todo |
 | 5.4 | Kugou (lyrics only) | `mobilecdn` search, `m3ws` KRC | M4 | todo |
@@ -102,17 +102,17 @@ Status legend: **read** = parsed and covered by a fixture test; **write** = edit
 |---|---|---|---|
 | MP3 | ID3v1, ID3v2.3, ID3v2.4 | ✅ M1 (ID3v2.3 + APIC + USLT fixtures) | ✅ M2 (per-frame writes, APIC, USLT, ID3v1 companion) |
 | FLAC | VorbisComment + PICTURE | ✅ M1 (13 properties + cover fixture) | ✅ M2 (XiphComment replace + PICTURE) |
-| MP4/M4A | `ilst` (incl. `covr`) | engine ready, fixture M3 | M2 |
-| APE | APEv2 | text via PropertyMap; cover M3 | M3 |
-| Ogg Vorbis / Opus | VorbisComment | engine ready, fixture M3 | M3 |
-| WMA | ASF | engine ready, fixture M3 | M3 |
-| WAV / AIFF | RIFF LIST-INFO / ID3 chunk | fixture M3 | M3 |
-| AAC | ADTS + leading ID3v2 | fixture M3 | M3 |
-| TTA | ID3v2 / APEv2 | fixture M3 | M3 |
-| WavPack | APEv2 | fixture M3 | M3 |
-| Musepack | APEv2 / ID3v2 | fixture M3 | M3 |
-| DSF | trailing ID3v2 | fixture M3 | M3 |
-| DFF | `ID3 ` chunk (gated by setting) | fixture M3 | M3 |
+| MP4/M4A | `ilst` (incl. `covr`) | ✅ M3 (minimal ftyp+moov fixture, 9 text atoms + trkn/disk + covr) | ✅ M3 |
+| APE | APEv2 | ✅ M3 (synthetic MAC header + 12-item APEv2 tag) | ✅ M3 (text + Cover Art (Front)) |
+| Ogg Vorbis / Opus | VorbisComment | ✅ M3 (hand-built Ogg pages with real CRCs) | ✅ M3 (text + METADATA_BLOCK_PICTURE) |
+| WMA | ASF | engine support, fixture pending | engine support, fixture pending |
+| WAV / AIFF | RIFF LIST-INFO / ID3 chunk | engine support, fixture pending | ID3 chunk only (TagLib cannot create one) |
+| AAC | ADTS + leading ID3v2 | engine support, fixture pending | engine support, fixture pending |
+| TTA | ID3v2 / APEv2 | engine support, fixture pending | engine support, fixture pending |
+| WavPack | APEv2 | engine support, fixture pending | engine support, fixture pending |
+| Musepack | APEv2 / ID3v2 | engine support, fixture pending | engine support, fixture pending |
+| DSF | trailing ID3v2 | engine support, fixture pending | engine support, fixture pending |
+| DFF | `ID3 ` chunk (gated by setting) | engine support, fixture pending | engine support, fixture pending |
 
 Engine-level facts established in M1 and enforced by the native job:
 

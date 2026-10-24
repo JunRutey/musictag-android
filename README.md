@@ -15,7 +15,7 @@ libraries, while preserving the parts of the old app that other apps depend on
 * Network: single OkHttp client, one provider per music site
 * Build: GitHub Actions only — every APK you can install is produced by CI
 
-> **Status: M2 (editor + write path) — verified.**
+> **Status: M3 (format matrix) — verified; M4 in progress.**
 > The compatibility surface is proven by CI on every push: the built APK declares the
 > original package, all 15 activities / 2 services / 2 providers, the 20 MIME types, the
 > 24 extension patterns, the `SEND` and `SEARCH` entries and both provider authorities
