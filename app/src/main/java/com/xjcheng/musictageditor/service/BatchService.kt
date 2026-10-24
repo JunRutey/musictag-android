@@ -48,6 +48,7 @@ import kotlinx.coroutines.launch
 class BatchService : Service() {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val engine = TagLibEngine()
     private var job: Job? = null
 
     @Volatile
@@ -106,7 +107,7 @@ class BatchService : Service() {
     private fun readFields(uri: String): Map<BatchField, String> {
         val document = DocumentSource.resolve(this, Uri.parse(uri))
             ?: error("cannot open $uri")
-        val data = TagLibEngine.read(document.path) ?: error("cannot read tags")
+        val data = engine.read(document.path) ?: error("cannot read tags")
         return BatchTagIo.readFields(data)
     }
 
@@ -114,8 +115,8 @@ class BatchService : Service() {
     private fun writeFields(uri: String, values: Map<BatchField, String>): String? {
         val parsed = Uri.parse(uri)
         val document = DocumentSource.resolve(this, parsed) ?: return "cannot open the file"
-        val data = TagLibEngine.read(document.path) ?: return "cannot read the tags"
-        val result = TagLibEngine.write(document.path, BatchTagIo.edit(data, values))
+        val data = engine.read(document.path) ?: return "cannot read the tags"
+        val result = engine.write(document.path, BatchTagIo.edit(data, values))
         if (!result.ok) return "the tag engine rejected the write"
         return when (val written = DocumentWriter.writeBack(this, parsed, document)) {
             is DocumentWriter.Result.Success -> null
