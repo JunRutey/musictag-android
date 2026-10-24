@@ -257,12 +257,70 @@ def ogg_fixture() -> bytes:
 
 
 
+# ------------------------------------------------------------------------------ ape
+
+
+def ape_header() -> bytes:
+    """A minimal but well-formed Monkey's Audio header (1 s of 44.1 kHz stereo)."""
+    descriptor = struct.pack(
+        "<7I", 52, 24, 0, 0, 0, 0, 0
+    ) + b"\x00" * 16  # descriptor size, header size, seek/header/frame/terminating sizes, md5
+    header = struct.pack(
+        "<HHIIIIHHI",
+        2000,        # compression level
+        0,           # format flags
+        73728,       # blocks per frame
+        44100,       # final frame blocks
+        1,           # total frames
+        16,          # bits per sample
+        2,           # channels
+        44100,       # sample rate
+        0,           # padding to keep the struct literal readable
+    )[:24]
+    return b"MAC " + struct.pack("<H", 3990) + struct.pack("<H", 0) + descriptor + header
+
+
+def ape_item(key: str, value: bytes, binary: bool = False) -> bytes:
+    flags = 2 if binary else 0
+    return struct.pack("<II", len(value), flags) + key.encode("utf-8") + b"\x00" + value
+
+
+def ape_fixture() -> bytes:
+    items = b"".join(
+        [
+            ape_item("Title", TITLE.encode()),
+            ape_item("Artist", ARTIST.encode()),
+            ape_item("Album", ALBUM.encode()),
+            ape_item("Album Artist", ALBUMARTIST.encode()),
+            ape_item("Genre", GENRE.encode()),
+            ape_item("Composer", COMPOSER.encode()),
+            ape_item("Track", f"{TRACK}/{TRACK_TOTAL}".encode()),
+            ape_item("Disc", f"{DISC}/{DISC_TOTAL}".encode()),
+            ape_item("Year", YEAR.encode()),
+            ape_item("Comment", COMMENT.encode()),
+            ape_item("Lyrics", LYRICS.encode()),
+            ape_item("Cover Art (Front)", b"cover.png\x00" + tiny_png(), binary=True),
+        ]
+    )
+    footer = (
+        b"APETAGEX"
+        + struct.pack("<I", 2000)
+        + struct.pack("<I", len(items) + 32)   # items + this footer
+        + struct.pack("<I", 12)                # item count
+        + struct.pack("<I", 0)                 # flags: footer only
+        + b"\x00" * 8
+    )
+    return ape_header() + items + footer
+
+
+
 # ------------------------------------------------------------------------------ main
 
 FIXTURES = {
     "sample.mp3": mp3_fixture,
     "sample.flac": flac_fixture,
     "sample.ogg": ogg_fixture,
+    "sample.ape": ape_fixture,
     # Standalone cover used by the write tests to prove replacement round-trips.
     "cover.png": tiny_png,
 }

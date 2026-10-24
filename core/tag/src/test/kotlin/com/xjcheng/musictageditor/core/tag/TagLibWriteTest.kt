@@ -238,4 +238,37 @@ class TagLibWriteTest {
         assertEquals("one embedded picture expected", 1, after.pictures.size)
         assertArrayEquals(cover, after.pictures[0].data)
     }
+
+    @Test
+    fun writesAndReadsBackApe() {
+        val file = tempCopy("sample.ape", ".ape")
+        val before = engine.read(file.absolutePath)
+        assertNotNull("synthetic ape fixture should be readable", before)
+        before!!
+        assertEquals("APE", before.container)
+        assertEquals("APEv2", before.tagFormat)
+        assertEquals("Fixture Title", before.title)
+        assertEquals("3/12", before.trackStr)
+        assertEquals(1, before.pictures.size)
+
+        val result = engine.write(file.absolutePath, edited(before))
+        assertTrue("write failed: $result", result.ok)
+
+        val after = engine.read(file.absolutePath)!!
+        assertEdited(after)
+        assertEquals("APEv2", after.tagFormat)
+    }
+
+    @Test
+    fun replacesCoverOnApe() {
+        val file = tempCopy("sample.ape", ".ape")
+        val before = engine.read(file.absolutePath)!!
+        val cover = coverFixture()
+        assertTrue(engine.write(file.absolutePath, edited(before)
+            .copy(cover = CoverEdit.Replace(cover, "image/png"))).ok)
+
+        val after = engine.read(file.absolutePath)!!
+        assertEquals("one embedded picture expected", 1, after.pictures.size)
+        assertArrayEquals(cover, after.pictures[0].data)
+    }
 }

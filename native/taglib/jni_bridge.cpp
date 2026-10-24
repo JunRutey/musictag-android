@@ -141,6 +141,7 @@ std::string base64(const ByteVector &bytes) {
 
 // Defined with the write helpers below; Ogg cover art lives in the comment.
 TagLib::Ogg::XiphComment *xiphTagOf(File *file);
+TagLib::APE::Tag *existingApeTag(File *file);
 
 std::string firstProperty(const PropertyMap &map, const char *key) {
     const auto it = map.find(String(key, String::UTF8));
@@ -231,6 +232,47 @@ TagContext classify(File *file) {
         return context;
     }
 
+    // Containers whose primary tag is ID3v2 stored in a chunk (RIFF/DSF/DSDIFF/TTA).
+    if (auto *wav = dynamic_cast<TagLib::RIFF::WAV::File *>(file)) {
+        context.id3v2 = wav->hasID3v2Tag() ? wav->ID3v2Tag() : nullptr;
+        context.format = context.id3v2 != nullptr ? id3v2Label(context.id3v2) : "none";
+        return context;
+    }
+    if (auto *aiff = dynamic_cast<TagLib::RIFF::AIFF::File *>(file)) {
+        context.id3v2 = aiff->hasID3v2Tag() ? aiff->tag() : nullptr;
+        context.format = context.id3v2 != nullptr ? id3v2Label(context.id3v2) : "none";
+        return context;
+    }
+    if (auto *dsf = dynamic_cast<TagLib::DSF::File *>(file)) {
+        context.id3v2 = dsf->tag();
+        context.format = context.id3v2 != nullptr ? id3v2Label(context.id3v2) : "none";
+        return context;
+    }
+    if (auto *dsdiff = dynamic_cast<TagLib::DSDIFF::File *>(file)) {
+        context.id3v2 = dsdiff->hasID3v2Tag() ? dsdiff->ID3v2Tag(false) : nullptr;
+        context.format = context.id3v2 != nullptr ? id3v2Label(context.id3v2) : "none";
+        return context;
+    }
+    if (auto *tta = dynamic_cast<TagLib::TrueAudio::File *>(file)) {
+        context.id3v2 = tta->hasID3v2Tag() ? tta->ID3v2Tag(false) : nullptr;
+        context.format = context.id3v2 != nullptr ? id3v2Label(context.id3v2) : "none";
+        return context;
+    }
+
+    // APEv2 containers: Monkey's Audio, WavPack and Musepack.
+    if (auto *ape = dynamic_cast<TagLib::APE::File *>(file)) {
+        context.format = ape->hasAPETag() ? "APEv2" : "none";
+        return context;
+    }
+    if (auto *wavpack = dynamic_cast<TagLib::WavPack::File *>(file)) {
+        context.format = wavpack->hasAPETag() ? "APEv2" : "none";
+        return context;
+    }
+    if (auto *mpc = dynamic_cast<TagLib::MPC::File *>(file)) {
+        context.format = mpc->hasAPETag() ? "APEv2" : "none";
+        return context;
+    }
+
     return context;
 }
 
@@ -249,6 +291,29 @@ void collectPictures(File *file, const TagContext &context, std::vector<Picture>
             if (picture != nullptr) {
                 out.push_back({utf8(picture->mimeType()), picture->data()});
             }
+        }
+        return;
+    }
+    if (auto *ape = existingApeTag(file)) {
+        const auto &items = ape->itemListMap();
+        for (auto it = items.begin(); it != items.end(); ++it) {
+            if (!it->first.startsWith("Cover Art")) continue;
+            const ByteVector binary = it->second.binaryData();
+            const auto *raw = reinterpret_cast<const char *>(binary.data());
+            size_t nameLength = 0;
+            while (nameLength < binary.size() && raw[nameLength] != '\0') ++nameLength;
+            if (nameLength + 1 >= binary.size()) continue;
+            ByteVector payload;
+            payload.append(binary.mid(static_cast<unsigned int>(nameLength + 1)));
+            const std::string name(raw, nameLength);
+            const std::string lower = [&name] {
+                std::string s = name;
+                std::transform(s.begin(), s.end(), s.begin(),
+                               [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+                return s;
+            }();
+            const std::string mime = lower.find(".png") != std::string::npos ? "image/png" : "image/jpeg";
+            out.push_back({mime, payload});
         }
         return;
     }
@@ -388,6 +453,19 @@ TagLib::APE::Tag *apeTagOf(File *file) {
     if (auto *ape = dynamic_cast<TagLib::APE::File *>(file)) return ape->APETag(true);
     if (auto *wavpack = dynamic_cast<TagLib::WavPack::File *>(file)) return wavpack->APETag(true);
     if (auto *mpc = dynamic_cast<TagLib::MPC::File *>(file)) return mpc->APETag(true);
+    return nullptr;
+}
+
+TagLib::APE::Tag *existingApeTag(File *file) {
+    if (auto *ape = dynamic_cast<TagLib::APE::File *>(file)) {
+        return ape->hasAPETag() ? ape->APETag(false) : nullptr;
+    }
+    if (auto *wavpack = dynamic_cast<TagLib::WavPack::File *>(file)) {
+        return wavpack->hasAPETag() ? wavpack->APETag(false) : nullptr;
+    }
+    if (auto *mpc = dynamic_cast<TagLib::MPC::File *>(file)) {
+        return mpc->hasAPETag() ? mpc->APETag(false) : nullptr;
+    }
     return nullptr;
 }
 
