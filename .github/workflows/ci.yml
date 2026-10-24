@@ -63,6 +63,9 @@ jobs:
 
       # The JVM tests guard the *source* manifest; this guards the *merged* manifest
       # that actually ships (library manifests are merged in during the build).
+      - name: Assemble release APK (unsigned)
+        run: ./gradlew --no-daemon --stacktrace assembleRelease -Pmusictag.unsignedRelease=true
+
       - name: Verify compatibility contract against the built APK
         run: |
           python3 tools/manifest_contract.py \
@@ -87,6 +90,13 @@ jobs:
         with:
           name: app-debug
           path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+
+      - name: Upload release APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: app-release-unsigned
+          path: app/build/outputs/apk/release/app-release-unsigned.apk
           if-no-files-found: error
 
       - name: Upload unit test report

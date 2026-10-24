@@ -78,7 +78,14 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
-            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
+            // CI builds the release APK unsigned (-Pmusictag.unsignedRelease=true) and signs
+            // it with apksigner, because the keystore never leaves the secrets store. Local
+            // builds without a release signing config still fall back to the debug key.
+            val unsignedRelease = (findProperty("musictag.unsignedRelease") as String?)?.toBoolean() == true
+            signingConfig = when {
+                unsignedRelease -> null
+                else -> signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
+            }
         }
     }
 
