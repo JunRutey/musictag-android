@@ -55,12 +55,18 @@ object MediaFilters {
         }
     }
 
-    /** Mp4 audio is common and usually a video file with an audio track. */
+    /**
+     * MP4 files are usually videos with an audio track, which is why the original app let
+     * users hide them. The extension wins over the MIME type: MediaStore reports
+     * udio/mp4 for m4a *and* for the audio track of an mp4 video, while .m4a is always
+     * an audio file.
+     */
     fun isVideo(track: MediaTrack): Boolean {
         val mime = track.mimeType.lowercase()
         if (mime.startsWith("video/")) return true
-        if (mime == "audio/mp4" || mime == "audio/x-m4a") return false
-        return track.path.lowercase().endsWith(".mp4")
+        val path = track.path.lowercase()
+        if (path.endsWith(".m4a")) return false
+        return path.endsWith(".mp4") || path.endsWith(".m4v")
     }
 
     /** Case-insensitive match over title, artist and album. */
