@@ -1,0 +1,34 @@
+{
+  "result": {
+    "songs": [
+      {
+        "id": 186016,
+        "name": "晴天",
+        "ar": [{ "id": 6452, "name": "周杰伦" }],
+        "al": {
+          "id": 18875,
+          "name": "叶惠美",
+          "picUrl": "https://p1.music.126.net/cover-a.jpg",
+          "publishTime": 1056988800000
+        },
+        "dt": 269000,
+        "no": 1
+      },
+      {
+        "id": 347230,
+        "name": "富士山下",
+        "ar": [{ "id": 2116, "name": "陈奕迅" }],
+        "al": {
+          "id": 34012,
+          "name": "What's Going On...?",
+          "picUrl": "https://p2.music.126.net/cover-b.jpg",
+          "publishTime": 1167609600000
+        },
+        "dt": 259000,
+        "no": 2
+      }
+    ],
+    "songCount": 2
+  },
+  "code": 200
+}

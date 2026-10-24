@@ -1,0 +1,19 @@
+{
+  "songs": [
+    {
+      "id": 186016,
+      "name": "晴天",
+      "ar": [{ "id": 6452, "name": "周杰伦" }],
+      "al": {
+        "id": 18875,
+        "name": "叶惠美",
+        "picUrl": "https://p1.music.126.net/cover-a.jpg",
+        "publishTime": 1056988800000
+      },
+      "dt": 269000,
+      "no": 1
+    }
+  ],
+  "privileges": [{ "id": 186016, "fee": 1, "st": 0 }],
+  "code": 200
+}
