@@ -84,9 +84,9 @@ object MusicBrainzApi {
         val label = release["label-info"]?.jsonArray?.firstOrNull()?.jsonObject?.obj("label")?.string("name")
         return TagCandidate(
             title = null,
-            artist = artistCredit(release),
+            artist = artistCredit(release).takeIf { it.isNotBlank() },
             album = release.string("title"),
-            albumArtist = artistCredit(release),
+            albumArtist = artistCredit(release).takeIf { it.isNotBlank() },
             year = release.string("date")?.take(4)?.takeIf { it.length == 4 },
             comment = label?.let { "Label: $it" },
             coverUrl = release.string("id")?.let(CoverArtArchiveProvider::frontCoverUrl),

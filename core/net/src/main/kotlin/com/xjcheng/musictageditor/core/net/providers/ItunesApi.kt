@@ -75,7 +75,12 @@ object ItunesApi {
         )
     }
 
-    /** Rewrites the `NNNxNNNbb` size segment of an mzstatic artwork URL. */
+    /**
+     * Rewrites the `NNNxNNNbb` size segment of an mzstatic artwork URL.
+     *
+     * URLs without that segment are returned unchanged: they are still valid artwork, just
+     * not size-selectable.
+     */
     fun artwork(url: String?, size: Int): String? {
         if (url.isNullOrBlank()) return null
         return url.replace(Regex("""/\d+x\d+bb\.(jpg|png)$"""), "/${size}x${size}bb.jpg")

@@ -70,7 +70,8 @@ class ItunesApiTest {
             ItunesApi.artwork("https://x/100x100bb.jpg", 300),
         )
         assertNull(ItunesApi.artwork(null, 300))
-        assertNull(ItunesApi.artwork("https://x/no-size.jpg", 300))
+        // No size segment: kept as-is, because the URL still points at usable artwork.
+        assertEquals("https://x/no-size.jpg", ItunesApi.artwork("https://x/no-size.jpg", 300))
     }
 
     @Test
