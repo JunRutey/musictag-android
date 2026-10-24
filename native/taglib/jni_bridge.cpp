@@ -631,6 +631,21 @@ void applyCover(File *file, const TagContext &context, bool given, const ByteVec
     }
     const TagFamily family = familyOf(file);
 
+    // FLAC stores artwork in PICTURE metadata blocks on the file, while Ogg keeps the
+    // base64 METADATA_BLOCK_PICTURE inside the comment. Both are "Xiph" for text, so the
+    // container has to be checked before falling through to the comment.
+    if (auto *flac = dynamic_cast<TagLib::FLAC::File *>(file)) {
+        flac->removePictures();
+        if (!data.isEmpty()) {
+            auto *picture = new TagLib::FLAC::Picture();
+            picture->setType(TagLib::FLAC::Picture::FrontCover);
+            picture->setMimeType(String(mime, String::UTF8));
+            picture->setData(data);
+            flac->addPicture(picture);  // FLAC::File takes ownership
+        }
+        return;
+    }
+
     if (family == TagFamily::Xiph) {
         auto *comment = xiphTagOf(file);
         if (comment == nullptr) return;
