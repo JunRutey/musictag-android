@@ -1,0 +1,21 @@
+{
+  "track": {
+    "name": "晴天",
+    "artist": {
+      "name": "周杰伦"
+    },
+    "album": {
+      "title": "叶惠美"
+    },
+    "toptags": {
+      "tag": [
+        {
+          "name": "mandopop"
+        },
+        {
+          "name": "pop"
+        }
+      ]
+    }
+  }
+}

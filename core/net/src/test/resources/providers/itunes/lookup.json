@@ -1,0 +1,17 @@
+{
+  "resultCount": 1,
+  "results": [
+    {
+      "trackId": 255383726,
+      "trackName": "晴天",
+      "artistName": "周杰伦",
+      "collectionName": "叶惠美",
+      "releaseDate": "2003-07-31T07:00:00Z",
+      "trackNumber": 1,
+      "trackCount": 11,
+      "trackTimeMillis": 269000,
+      "primaryGenreName": "Pop",
+      "artworkUrl100": "https://is1-ssl.mzstatic.com/image/thumb/Music/aa/bb/cc/100x100bb.jpg"
+    }
+  ]
+}
