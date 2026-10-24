@@ -78,8 +78,9 @@ class BatchOpsTest {
             "Artist - Song",
             BatchOps.rename("%a - %t", values, fallback = "file"),
         )
+        // The separator is sanitised, so a template cannot create directories.
         assertEquals(
-            "03 Album/Song (2003)",
+            "03 Album_Song (2003)",
             BatchOps.rename("%n %l/%t (%y)", values, fallback = "file"),
         )
         assertEquals(
@@ -103,6 +104,7 @@ class BatchOpsTest {
         assertEquals("name", BatchOps.sanitize("name..."))
         assertEquals(120, BatchOps.sanitize("x".repeat(500)).length)
         assertEquals("", BatchOps.sanitize("\u0001\u0002"))
+        assertEquals("ab", BatchOps.sanitize("a\u0001b"))
     }
 
     @Test

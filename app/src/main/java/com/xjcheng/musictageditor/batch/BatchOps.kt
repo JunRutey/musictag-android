@@ -113,7 +113,10 @@ object BatchOps {
 
     /** Keeps the base name legal and bounded; the caller keeps the original extension. */
     fun sanitize(name: String): String = name
-        .replace(Regex("""[\\/:*?"<>|\u0000-\u001f]"""), "_")
+        // Reserved path characters become underscores; control characters are dropped
+        // outright, because "__" from junk bytes is not a usable file name either.
+        .replace(Regex("""[\\/:*?"<>|]"""), "_")
+        .replace(Regex("""[\u0000-\u001f]"""), "")
         .replace(Regex("""\s+"""), " ")
         .trim()
         .trim('.')
