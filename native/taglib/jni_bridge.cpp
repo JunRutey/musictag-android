@@ -786,7 +786,7 @@ Java_com_xjcheng_musictageditor_core_tag_NativeTagBridge_readAll(JNIEnv *env, jc
     fields.push_back(std::to_string(bitsPerSampleOf(audio)));
 
     std::vector<Picture> pictures;
-    collectPictures(file, tag, pictures);
+    collectPictures(file, context, pictures);
     fields.push_back(std::to_string(pictures.size()));
     for (const auto &picture : pictures) {
         fields.push_back(picture.mime);
