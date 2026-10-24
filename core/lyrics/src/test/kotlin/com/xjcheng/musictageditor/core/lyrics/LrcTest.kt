@@ -37,9 +37,9 @@ class LrcTest {
 
     @Test
     fun normalisesFractionWidths() {
-        assertEquals(100L, Lrc.parse("[00:01.1]x").single().timeMs)
+        assertEquals(1_100L, Lrc.parse("[00:01.1]x").single().timeMs)
         assertEquals(120L, Lrc.parse("[00:01.12]x").single().timeMs)
-        assertEquals(123L, Lrc.parse("[00:01.123]x").single().timeMs)
+        assertEquals(1_123L, Lrc.parse("[00:01.123]x").single().timeMs)
         assertEquals(1_000L, Lrc.parse("[00:01]x").single().timeMs)
     }
 
@@ -120,9 +120,9 @@ class LrcTest {
         val translation = "[00:00.00] Sunny Day\n[00:09.40] Drifting since birth\n"
         val merged = Lrc.mergeTranslation(sample, translation)
         assertEquals(
-            "[00:00.00] 晴天 // Sunny Day\n" +
-                "[00:05.20] 故事的小黄花\n" +
-                "[00:09.40] 从出生那年就飘着 // Drifting since birth\n",
+            "[00:00.00]晴天 // Sunny Day\n" +
+                "[00:05.20]故事的小黄花\n" +
+                "[00:09.40]从出生那年就飘着 // Drifting since birth\n",
             merged,
         )
     }
@@ -143,10 +143,11 @@ class LrcTest {
     fun parsesRealWorldFixture() {
         val fixture = checkNotNull(javaClass.getResource("/lyrics/sample.lrc")).readText()
         val lines = Lrc.parse(fixture)
-        assertEquals(4, lines.size)
+        // "Repeated chorus" carries two timestamps, so five entries come out of four lines.
+        assertEquals(5, lines.size)
         assertEquals("[ti:Fixture Song]", fixture.lineSequence().first())
         assertEquals("01:02.50", Lrc.timestamp(lines.last().timeMs))
         val shifted = Lrc.offset(fixture, -1_000)
-        assertEquals(4, Lrc.parse(shifted).size)
+        assertEquals(5, Lrc.parse(shifted).size)
     }
 }

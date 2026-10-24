@@ -23,7 +23,7 @@ object Lrc {
 
     private val TIMESTAMP = Regex("""\[(\d{1,3}):([0-5]\d)(?:[.:](\d{1,3}))?]""")
     private val METADATA = Regex("""^\[(ti|ar|al|by|offset|length|re|ve|tool|encoding):.*]$""", RegexOption.IGNORE_CASE)
-    private val OFFSET = Regex("""\[offset:\s*(-?\d+)]""", RegexOption.IGNORE_CASE)
+    private val OFFSET = Regex("""\[offset:\s*([-+]?\d+)]""", RegexOption.IGNORE_CASE)
 
     /** Parses every timestamped line, in file order; malformed lines are skipped. */
     fun parse(text: String): List<LrcLine> {
@@ -58,7 +58,7 @@ object Lrc {
         val seconds = (safe % 60_000) / 1_000
         val digits = decimals.coerceIn(1, 3)
         val scaled = scale(safe % 1_000, digits)
-        return "%02d:%02d.%0${digits}d".format(minutes, seconds, scaled)
+        return "[%02d:%02d.%0${digits}d]".format(minutes, seconds, scaled)
     }
 
     /** Rewrites every timestamp to [decimals] digits without touching the lyric text. */
@@ -93,20 +93,16 @@ object Lrc {
     }
 
     /** Removes timestamps, keeping the text lines (used to store plain lyrics). */
-    fun stripTimestamps(text: String): String = text.lineSequence()
-        .map { TIMESTAMP.replace(it, "").trim() }
-        .filter { it.isNotEmpty() }
-        .joinToString("\n", postfix = "\n")
+    fun stripTimestamps(text: String): String =
+        joinLines(text.lineSequence().map { TIMESTAMP.replace(it, "").trim() }.filter { it.isNotEmpty() })
 
     /** Removes blank lines while keeping everything else as-is. */
-    fun dropBlankLines(text: String): String = text.lineSequence()
-        .filter { it.isNotBlank() }
-        .joinToString("\n", postfix = "\n")
+    fun dropBlankLines(text: String): String =
+        joinLines(text.lineSequence().filter { it.isNotBlank() })
 
     /** Removes `[ti:…]`-style metadata lines. */
-    fun dropHeadTags(text: String): String = text.lineSequence()
-        .filterNot { METADATA.matches(it.trim()) }
-        .joinToString("\n", postfix = "\n")
+    fun dropHeadTags(text: String): String =
+        joinLines(text.lineSequence().filterNot { METADATA.matches(it.trim()) })
 
     /** Reads the `[offset:…]` metadata value, if present. */
     fun declaredOffset(text: String): Long? =
@@ -134,11 +130,18 @@ object Lrc {
         val translated = parse(translation).associate { it.timeMs to it.text }
         val merged = parse(original).map { line ->
             val extra = translated[line.timeMs]
-            if (extra.isNullOrBlank()) line else LrcLine(line.timeMs, line.text + separator + extra)
+            if (extra.isNullOrBlank()) line
+            else LrcLine(line.timeMs, line.text.trim() + separator + extra.trim())
         }
         val known = merged.map { it.timeMs }.toSet()
         val leftovers = parse(translation).filterNot { it.timeMs in known }
         return format(merged + leftovers)
+    }
+
+    /** Joins lines with a trailing newline, and keeps the empty case truly empty. */
+    private fun joinLines(lines: Sequence<String>): String {
+        val kept = lines.toList()
+        return if (kept.isEmpty()) "" else kept.joinToString("\n", postfix = "\n")
     }
 
     /** Two or three digits after the separator mean different fractions; normalise to ms. */
