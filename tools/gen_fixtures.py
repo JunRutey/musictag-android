@@ -171,11 +171,98 @@ def flac_fixture() -> bytes:
     )
 
 
+# ------------------------------------------------------------------------------ ogg
+
+
+def ogg_crc(data: bytes) -> int:
+    """CRC-32 as used by Ogg: polynomial 0x04C11DB7, no reflection, init 0."""
+    crc = 0
+    for byte in data:
+        crc ^= byte << 24
+        for _ in range(8):
+            if crc & 0x80000000:
+                crc = ((crc << 1) ^ 0x04C11DB7) & 0xFFFFFFFF
+            else:
+                crc = (crc << 1) & 0xFFFFFFFF
+    return crc
+
+
+def ogg_page(payload: bytes, header_type: int, granule: int, serial: int, sequence: int) -> bytes:
+    segments = []
+    remaining = len(payload)
+    while remaining >= 255:
+        segments.append(255)
+        remaining -= 255
+    segments.append(remaining)
+    header = (
+        b"OggS"
+        + bytes([0, header_type])
+        + struct.pack("<q", granule)
+        + struct.pack("<I", serial)
+        + struct.pack("<I", sequence)
+        + b"\x00\x00\x00\x00"
+        + bytes([len(segments)])
+        + bytes(segments)
+    )
+    page = header + payload
+    checksum = ogg_crc(page)
+    return page[:22] + struct.pack("<I", checksum) + page[26:]
+
+
+def ogg_vorbis_identification(rate: int = 44100, channels: int = 2) -> bytes:
+    return (
+        b"\x01vorbis"
+        + struct.pack("<I", 0)          # vorbis version
+        + bytes([channels])
+        + struct.pack("<I", rate)
+        + struct.pack("<i", -1)         # bitrate maximum
+        + struct.pack("<i", 128000)     # bitrate nominal
+        + struct.pack("<i", -1)         # bitrate minimum
+        + bytes([0xB8])                 # blocksizes 2^8 / 2^11
+        + b"\x01"                       # framing
+    )
+
+
+def ogg_vorbis_comment(comments: list[tuple[str, str]], vendor: bytes = b"musictag-fixture") -> bytes:
+    out = b"\x03vorbis" + struct.pack("<I", len(vendor)) + vendor + struct.pack("<I", len(comments))
+    for key, value in comments:
+        entry = f"{key}={value}".encode("utf-8")
+        out += struct.pack("<I", len(entry)) + entry
+    return out + b"\x01"
+
+
+def ogg_fixture() -> bytes:
+    comments = [
+        ("TITLE", TITLE),
+        ("ARTIST", ARTIST),
+        ("ALBUM", ALBUM),
+        ("ALBUMARTIST", ALBUMARTIST),
+        ("GENRE", GENRE),
+        ("COMPOSER", COMPOSER),
+        ("TRACKNUMBER", str(TRACK)),
+        ("TRACKTOTAL", str(TRACK_TOTAL)),
+        ("DISCNUMBER", str(DISC)),
+        ("DISCTOTAL", str(DISC_TOTAL)),
+        ("DATE", YEAR),
+        ("COMMENT", COMMENT),
+        ("LYRICS", LYRICS),
+    ]
+    serial = 0x4D555354  # "MUST"
+    setup = b"\x05vorbis" + b"\x00" * 64
+    return (
+        ogg_page(ogg_vorbis_identification(), 0x02, 0, serial, 0)          # BOS + identification
+        + ogg_page(ogg_vorbis_comment(comments) + setup, 0x00, 0, serial, 1)  # comment + setup
+        + ogg_page(b"\x00" * 64, 0x04, 44100 * 3, serial, 2)           # EOS, 3 s of audio
+    )
+
+
+
 # ------------------------------------------------------------------------------ main
 
 FIXTURES = {
     "sample.mp3": mp3_fixture,
     "sample.flac": flac_fixture,
+    "sample.ogg": ogg_fixture,
     # Standalone cover used by the write tests to prove replacement round-trips.
     "cover.png": tiny_png,
 }

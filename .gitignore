@@ -24,3 +24,7 @@ Thumbs.db
 # Tooling scratch
 tools/_fetch*.py
 /app/release/
+
+# Python bytecode from tools/
+__pycache__/
+*.pyc

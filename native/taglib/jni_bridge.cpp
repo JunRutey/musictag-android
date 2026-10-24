@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstdlib>
 #include <string>
 #include <utility>
 #include <vector>
@@ -25,6 +26,15 @@
 #include <asf/asffile.h>
 #include <asf/asfproperties.h>
 #include <audioproperties.h>
+#include <asf/asfattribute.h>
+#include <dsdiff/dsdifffile.h>
+#include <dsf/dsffile.h>
+#include <mpc/mpcfile.h>
+#include <ogg/opus/opusfile.h>
+#include <riff/aiff/aifffile.h>
+#include <riff/wav/wavfile.h>
+#include <trueaudio/trueaudiofile.h>
+#include <wavpack/wavpackfile.h>
 #include <fileref.h>
 #include <flac/flacfile.h>
 #include <flac/flacproperties.h>
@@ -128,6 +138,9 @@ std::string base64(const ByteVector &bytes) {
     }
     return out;
 }
+
+// Defined with the write helpers below; Ogg cover art lives in the comment.
+TagLib::Ogg::XiphComment *xiphTagOf(File *file);
 
 std::string firstProperty(const PropertyMap &map, const char *key) {
     const auto it = map.find(String(key, String::UTF8));
@@ -239,6 +252,14 @@ void collectPictures(File *file, const TagContext &context, std::vector<Picture>
         }
         return;
     }
+    if (auto *comment = xiphTagOf(file)) {
+        for (auto *picture : comment->pictureList()) {
+            if (picture != nullptr) {
+                out.push_back({utf8(picture->mimeType()), picture->data()});
+            }
+        }
+        return;
+    }
     if (context.id3v2 != nullptr) {
         for (auto *frame : context.id3v2->frameList("APIC")) {
             if (auto *apic = dynamic_cast<TagLib::ID3v2::AttachedPictureFrame *>(frame)) {
@@ -262,7 +283,7 @@ void collectPictures(File *file, const TagContext &context, std::vector<Picture>
 
 
 // ---------------------------------------------------------------------------
-// Write path (M2)
+// Write path (M2/M3)
 // ---------------------------------------------------------------------------
 
 void trimInPlace(std::string &value) {
@@ -305,65 +326,6 @@ std::string jstringToUtf8(JNIEnv *env, jstring value) {
     return out;
 }
 
-// ID3v2 keeps "3/12" in TRACKNUMBER; the model carries both the number and the combined
-TagLib::MP4::CoverArt::Format coverFormatFor(const std::string &mime) {
-    return mime == "image/png" ? TagLib::MP4::CoverArt::PNG : TagLib::MP4::CoverArt::JPEG;
-}
-
-/**
- * Applies a cover edit: leave it alone, remove it, or replace it.
- *
- * Each container stores artwork differently, so this dispatches per format:
- * FLAC keeps PICTURE blocks, MPEG keeps ID3v2 APIC frames, MP4 keeps a "covr" item.
- * APE cover art arrives in M3 together with the remaining formats.
- */
-void applyCover(File *file, const TagContext &context, bool given, const ByteVector &data,
-                const std::string &mime) {
-    if (!given) {
-        return;
-    }
-
-    if (auto *flac = dynamic_cast<TagLib::FLAC::File *>(file)) {
-        flac->removePictures();
-        if (!data.isEmpty()) {
-            auto *picture = new TagLib::FLAC::Picture();
-            picture->setType(TagLib::FLAC::Picture::FrontCover);
-            picture->setMimeType(String(mime, String::UTF8));
-            picture->setData(data);
-            flac->addPicture(picture);  // FLAC::File takes ownership
-        }
-        return;
-    }
-
-    if (auto *mpeg = dynamic_cast<TagLib::MPEG::File *>(file)) {
-        auto *tag = mpeg->ID3v2Tag(true);
-        if (tag == nullptr) {
-            return;
-        }
-        tag->removeFrames("APIC");
-        if (!data.isEmpty()) {
-            auto *frame = new TagLib::ID3v2::AttachedPictureFrame();
-            frame->setMimeType(String(mime, String::UTF8));
-            frame->setType(TagLib::ID3v2::AttachedPictureFrame::FrontCover);
-            frame->setDescription(String());
-            frame->setPicture(data);
-            tag->addFrame(frame);
-        }
-        return;
-    }
-
-    if (context.mp4 != nullptr) {
-        if (data.isEmpty()) {
-            context.mp4->removeItem("covr");
-        } else {
-            TagLib::MP4::CoverArtList list;
-            list.append(TagLib::MP4::CoverArt(coverFormatFor(mime), data));
-            context.mp4->setItem("covr", TagLib::MP4::Item(list));
-        }
-    }
-}
-
-
 std::pair<std::string, std::string> splitPair(const std::string &number,
                                               const std::string &combined) {
     std::string value = number;
@@ -383,6 +345,63 @@ std::string joinPair(const std::string &number, const std::string &total) {
     if (number.empty()) return total;
     return total.empty() ? number : number + "/" + total;
 }
+
+/** Which tag family a container uses; decides how text and artwork are written. */
+enum class TagFamily { Id3v2, Xiph, Ape, Mp4, Asf, Unsupported };
+
+TagFamily familyOf(File *file) {
+    if (dynamic_cast<TagLib::MPEG::File *>(file) != nullptr) return TagFamily::Id3v2;
+    if (dynamic_cast<TagLib::FLAC::File *>(file) != nullptr) return TagFamily::Xiph;
+    if (dynamic_cast<TagLib::Ogg::Vorbis::File *>(file) != nullptr) return TagFamily::Xiph;
+    if (dynamic_cast<TagLib::Ogg::Opus::File *>(file) != nullptr) return TagFamily::Xiph;
+    if (dynamic_cast<TagLib::RIFF::WAV::File *>(file) != nullptr) return TagFamily::Id3v2;
+    if (dynamic_cast<TagLib::RIFF::AIFF::File *>(file) != nullptr) return TagFamily::Id3v2;
+    if (dynamic_cast<TagLib::DSF::File *>(file) != nullptr) return TagFamily::Id3v2;
+    if (dynamic_cast<TagLib::DSDIFF::File *>(file) != nullptr) return TagFamily::Id3v2;
+    if (dynamic_cast<TagLib::TrueAudio::File *>(file) != nullptr) return TagFamily::Id3v2;
+    if (dynamic_cast<TagLib::APE::File *>(file) != nullptr) return TagFamily::Ape;
+    if (dynamic_cast<TagLib::WavPack::File *>(file) != nullptr) return TagFamily::Ape;
+    if (dynamic_cast<TagLib::MPC::File *>(file) != nullptr) return TagFamily::Ape;
+    if (dynamic_cast<TagLib::MP4::File *>(file) != nullptr) return TagFamily::Mp4;
+    if (dynamic_cast<TagLib::ASF::File *>(file) != nullptr) return TagFamily::Asf;
+    return TagFamily::Unsupported;
+}
+
+TagLib::ID3v2::Tag *id3v2TagOf(File *file) {
+    if (auto *mpeg = dynamic_cast<TagLib::MPEG::File *>(file)) return mpeg->ID3v2Tag(true);
+    if (auto *wav = dynamic_cast<TagLib::RIFF::WAV::File *>(file)) return wav->ID3v2Tag();
+    if (auto *aiff = dynamic_cast<TagLib::RIFF::AIFF::File *>(file)) return aiff->tag();
+    if (auto *dsf = dynamic_cast<TagLib::DSF::File *>(file)) return dsf->tag();
+    if (auto *dsdiff = dynamic_cast<TagLib::DSDIFF::File *>(file)) return dsdiff->ID3v2Tag(true);
+    if (auto *tta = dynamic_cast<TagLib::TrueAudio::File *>(file)) return tta->ID3v2Tag(true);
+    return nullptr;
+}
+
+TagLib::Ogg::XiphComment *xiphTagOf(File *file) {
+    if (auto *flac = dynamic_cast<TagLib::FLAC::File *>(file)) return flac->xiphComment(true);
+    if (auto *vorbis = dynamic_cast<TagLib::Ogg::Vorbis::File *>(file)) return vorbis->tag();
+    if (auto *opus = dynamic_cast<TagLib::Ogg::Opus::File *>(file)) return opus->tag();
+    return nullptr;
+}
+
+TagLib::APE::Tag *apeTagOf(File *file) {
+    if (auto *ape = dynamic_cast<TagLib::APE::File *>(file)) return ape->APETag(true);
+    if (auto *wavpack = dynamic_cast<TagLib::WavPack::File *>(file)) return wavpack->APETag(true);
+    if (auto *mpc = dynamic_cast<TagLib::MPC::File *>(file)) return mpc->APETag(true);
+    return nullptr;
+}
+
+TagLib::MP4::Tag *mp4TagOf(File *file) {
+    if (auto *mp4 = dynamic_cast<TagLib::MP4::File *>(file)) return mp4->tag();
+    return nullptr;
+}
+
+TagLib::ASF::Tag *asfTagOf(File *file) {
+    if (auto *asf = dynamic_cast<TagLib::ASF::File *>(file)) return asf->tag();
+    return nullptr;
+}
+
+// ---------------------------------------------------------------- text writers
 
 void putXiphText(TagLib::Ogg::XiphComment *comment, const char *key, const std::string &value) {
     if (comment == nullptr) return;
@@ -404,10 +423,9 @@ void writeId3v2Text(TagLib::ID3v2::Tag *tag, const char *frameId, const std::str
     tag->addFrame(frame);
 }
 
-void writeId3v2Fields(File *file, const std::vector<std::string> &values, bool id3v24) {
-    auto *mpeg = dynamic_cast<TagLib::MPEG::File *>(file);
-    if (mpeg == nullptr) return;
-    auto *tag = mpeg->ID3v2Tag(true);
+void writeId3v2Fields(TagLib::ID3v2::Tag *tag, const std::vector<std::string> &values,
+                      bool id3v24) {
+    if (tag == nullptr) return;
     const auto track = splitPair(values[6], values[7]);
     const auto disc = splitPair(values[8], values[9]);
 
@@ -419,7 +437,6 @@ void writeId3v2Fields(File *file, const std::vector<std::string> &values, bool i
     writeId3v2Text(tag, "TCOM", values[5]);
     writeId3v2Text(tag, "TRCK", joinPair(track.first, track.second));
     writeId3v2Text(tag, "TPOS", joinPair(disc.first, disc.second));
-
     writeId3v2Text(tag, id3v24 ? "TDRC" : "TYER", values[10]);
     // Never keep both year frames: that is what a v2.3/v2.4 conversion would leave behind.
     tag->removeFrames(ByteVector(id3v24 ? "TYER" : "TDRC"));
@@ -441,10 +458,8 @@ void writeId3v2Fields(File *file, const std::vector<std::string> &values, bool i
     }
 }
 
-void writeFlacFields(File *file, const std::vector<std::string> &values) {
-    auto *flac = dynamic_cast<TagLib::FLAC::File *>(file);
-    if (flac == nullptr) return;
-    auto *comment = flac->xiphComment(true);
+void writeXiphFields(TagLib::Ogg::XiphComment *comment, const std::vector<std::string> &values) {
+    if (comment == nullptr) return;
     const auto track = splitPair(values[6], values[7]);
     const auto disc = splitPair(values[8], values[9]);
 
@@ -461,6 +476,217 @@ void writeFlacFields(File *file, const std::vector<std::string> &values) {
     putXiphText(comment, "DATE", values[10]);
     putXiphText(comment, "COMMENT", values[11]);
     putXiphText(comment, "LYRICS", values[12]);
+}
+
+void putApeText(TagLib::APE::Tag *tag, const char *key, const std::string &value) {
+    if (tag == nullptr) return;
+    const String name(key, String::UTF8);
+    if (value.empty()) {
+        tag->removeItem(name);
+    } else {
+        tag->setItem(name, TagLib::APE::Item(name, StringList(String(value, String::UTF8))));
+    }
+}
+
+void writeApeFields(TagLib::APE::Tag *tag, const std::vector<std::string> &values) {
+    if (tag == nullptr) return;
+    const auto track = splitPair(values[6], values[7]);
+    const auto disc = splitPair(values[8], values[9]);
+
+    putApeText(tag, "Title", values[0]);
+    putApeText(tag, "Artist", values[1]);
+    putApeText(tag, "Album", values[2]);
+    putApeText(tag, "Album Artist", values[3]);
+    putApeText(tag, "Genre", values[4]);
+    putApeText(tag, "Composer", values[5]);
+    putApeText(tag, "Track", joinPair(track.first, track.second));
+    putApeText(tag, "Disc", joinPair(disc.first, disc.second));
+    putApeText(tag, "Year", values[10]);
+    putApeText(tag, "Comment", values[11]);
+    putApeText(tag, "Lyrics", values[12]);
+}
+
+// MP4 atoms are four raw bytes, several of which start with 0xA9 (the © marker).
+TagLib::String mp4Key(char first, const char *rest) {
+    TagLib::ByteVector bytes;
+    bytes.append(first);
+    bytes.append(rest);
+    return String(bytes, String::Latin1);
+}
+
+void putMp4Text(TagLib::MP4::Tag *tag, const TagLib::String &key, const std::string &value) {
+    if (tag == nullptr) return;
+    if (value.empty()) {
+        tag->removeItem(key);
+    } else {
+        tag->setItem(key, TagLib::MP4::Item(StringList(String(value, String::UTF8))));
+    }
+}
+
+void writeMp4Fields(TagLib::MP4::Tag *tag, const std::vector<std::string> &values) {
+    if (tag == nullptr) return;
+    const auto track = splitPair(values[6], values[7]);
+    const auto disc = splitPair(values[8], values[9]);
+
+    putMp4Text(tag, mp4Key(static_cast<char>(0xA9), "nam"), values[0]);
+    putMp4Text(tag, mp4Key(static_cast<char>(0xA9), "ART"), values[1]);
+    putMp4Text(tag, mp4Key(static_cast<char>(0xA9), "alb"), values[2]);
+    putMp4Text(tag, mp4Key('a', "ART"), values[3]);
+    putMp4Text(tag, mp4Key(static_cast<char>(0xA9), "gen"), values[4]);
+    putMp4Text(tag, mp4Key(static_cast<char>(0xA9), "wrt"), values[5]);
+    putMp4Text(tag, mp4Key(static_cast<char>(0xA9), "day"), values[10]);
+    putMp4Text(tag, mp4Key(static_cast<char>(0xA9), "cmt"), values[11]);
+    putMp4Text(tag, mp4Key(static_cast<char>(0xA9), "lyr"), values[12]);
+
+    const String trackKey("trkn");
+    const String discKey("disk");
+    const auto asNumber = [](const std::string &text) {
+        return text.empty() ? 0 : std::atoi(text.c_str());
+    };
+    if (track.first.empty() && track.second.empty()) {
+        tag->removeItem(trackKey);
+    } else {
+        tag->setItem(trackKey, TagLib::MP4::Item(asNumber(track.first), asNumber(track.second)));
+    }
+    if (disc.first.empty() && disc.second.empty()) {
+        tag->removeItem(discKey);
+    } else {
+        tag->setItem(discKey, TagLib::MP4::Item(asNumber(disc.first), asNumber(disc.second)));
+    }
+}
+
+void putAsfText(TagLib::ASF::Tag *tag, const char *key, const std::string &value) {
+    if (tag == nullptr) return;
+    const String name(key, String::UTF8);
+    if (value.empty()) {
+        tag->removeItem(name);
+    } else {
+        tag->setAttribute(name, TagLib::ASF::Attribute(String(value, String::UTF8)));
+    }
+}
+
+void writeAsfFields(TagLib::ASF::Tag *tag, const std::vector<std::string> &values) {
+    if (tag == nullptr) return;
+    const auto track = splitPair(values[6], values[7]);
+    const auto disc = splitPair(values[8], values[9]);
+
+    putAsfText(tag, "Title", values[0]);
+    putAsfText(tag, "Author", values[1]);
+    putAsfText(tag, "WM/AlbumTitle", values[2]);
+    putAsfText(tag, "WM/AlbumArtist", values[3]);
+    putAsfText(tag, "WM/Genre", values[4]);
+    putAsfText(tag, "WM/Composer", values[5]);
+    putAsfText(tag, "WM/TrackNumber", joinPair(track.first, track.second));
+    putAsfText(tag, "WM/PartOfSet", joinPair(disc.first, disc.second));
+    putAsfText(tag, "WM/Year", values[10]);
+    putAsfText(tag, "Description", values[11]);
+    putAsfText(tag, "WM/Lyrics", values[12]);
+}
+
+/** Applies the twelve fields plus lyrics. Returns an error message, or empty on success. */
+std::string applyTextFields(File *file, const std::vector<std::string> &values, int options) {
+    switch (familyOf(file)) {
+        case TagFamily::Id3v2: {
+            auto *tag = id3v2TagOf(file);
+            if (tag == nullptr) {
+                // WAV/AIFF/DSF only expose an existing ID3 chunk; TagLib cannot add one.
+                return "this file has no ID3 chunk yet and cannot gain one with TagLib";
+            }
+            writeId3v2Fields(tag, values, (options & 2) == 0);
+            return {};
+        }
+        case TagFamily::Xiph:
+            writeXiphFields(xiphTagOf(file), values);
+            return {};
+        case TagFamily::Ape:
+            writeApeFields(apeTagOf(file), values);
+            return {};
+        case TagFamily::Mp4:
+            writeMp4Fields(mp4TagOf(file), values);
+            return {};
+        case TagFamily::Asf:
+            writeAsfFields(asfTagOf(file), values);
+            return {};
+        case TagFamily::Unsupported:
+        default:
+            return "writing is not supported for this container";
+    }
+}
+
+TagLib::MP4::CoverArt::Format coverFormatFor(const std::string &mime) {
+    return mime == "image/png" ? TagLib::MP4::CoverArt::PNG : TagLib::MP4::CoverArt::JPEG;
+}
+
+/**
+ * Applies a cover edit: leave it alone, remove it, or replace it.
+ *
+ * Every container stores artwork differently, so this dispatches on the tag family:
+ * ID3v2 keeps APIC frames, Xiph (FLAC, Ogg) keeps PICTURE blocks inside the comment,
+ * MP4 keeps a "covr" item, APE keeps a binary "Cover Art (Front)" item.
+ */
+void applyCover(File *file, const TagContext &context, bool given, const ByteVector &data,
+                const std::string &mime) {
+    if (!given) {
+        return;
+    }
+    const TagFamily family = familyOf(file);
+
+    if (family == TagFamily::Xiph) {
+        auto *comment = xiphTagOf(file);
+        if (comment == nullptr) return;
+        comment->removeAllPictures();
+        if (!data.isEmpty()) {
+            auto *picture = new TagLib::FLAC::Picture();
+            picture->setType(TagLib::FLAC::Picture::FrontCover);
+            picture->setMimeType(String(mime, String::UTF8));
+            picture->setData(data);
+            comment->addPicture(picture);  // the comment takes ownership
+        }
+        return;
+    }
+
+    if (family == TagFamily::Id3v2) {
+        auto *tag = id3v2TagOf(file);
+        if (tag == nullptr) return;
+        tag->removeFrames("APIC");
+        if (!data.isEmpty()) {
+            auto *frame = new TagLib::ID3v2::AttachedPictureFrame();
+            frame->setMimeType(String(mime, String::UTF8));
+            frame->setType(TagLib::ID3v2::AttachedPictureFrame::FrontCover);
+            frame->setDescription(String());
+            frame->setPicture(data);
+            tag->addFrame(frame);
+        }
+        return;
+    }
+
+    if (family == TagFamily::Mp4) {
+        auto *tag = mp4TagOf(file);
+        if (tag == nullptr) return;
+        if (data.isEmpty()) {
+            tag->removeItem("covr");
+        } else {
+            TagLib::MP4::CoverArtList list;
+            list.append(TagLib::MP4::CoverArt(coverFormatFor(mime), data));
+            tag->setItem("covr", TagLib::MP4::Item(list));
+        }
+        return;
+    }
+
+    if (family == TagFamily::Ape) {
+        auto *tag = apeTagOf(file);
+        if (tag == nullptr) return;
+        const String key("Cover Art (Front)", String::UTF8);
+        if (data.isEmpty()) {
+            tag->removeItem(key);
+        } else {
+            TagLib::ByteVector payload;
+            payload.append(ByteVector(mime == "image/png" ? "cover.png" : "cover.jpg"));
+            payload.append('\0');
+            payload.append(data);
+            tag->setItem(key, TagLib::APE::Item(key, payload, true));
+        }
+    }
 }
 
 }  // namespace
@@ -519,39 +745,22 @@ Java_com_xjcheng_musictageditor_core_tag_NativeTagBridge_readAll(JNIEnv *env, jc
     fields.push_back(tag != nullptr ? utf8(tag->genre()) : "");
     fields.push_back(firstProperty(properties, "COMPOSER"));
 
-    // ID3v2 exposes "3/12" verbatim in TRACKNUMBER while VorbisComment splits it into
-    // TRACKNUMBER/TRACKTOTAL, so the combined form has to be split here.
-    const auto splitNumber = [](const std::string &raw, const std::string &explicitTotal) {
-        std::string number = raw;
-        std::string total = explicitTotal;
-        const auto slash = raw.find('/');
-        if (slash != std::string::npos) {
-            number = raw.substr(0, slash);
-            if (total.empty()) {
-                total = raw.substr(slash + 1);
-            }
-        }
-        while (!number.empty() && (number.back() == ' ' || number.back() == '\t')) number.pop_back();
-        while (!total.empty() && (total.back() == ' ' || total.back() == '\t')) total.pop_back();
-        return std::make_pair(number, total);
-    };
+    std::string trackNumber = firstProperty(properties, "TRACKNUMBER");
+    if (trackNumber.empty() && tag != nullptr && tag->track() > 0) {
+        trackNumber = std::to_string(tag->track());
+    }
+    const std::string trackTotal = firstProperty(properties, "TRACKTOTAL");
+    const std::string discNumber = firstProperty(properties, "DISCNUMBER");
+    const std::string discTotal = firstProperty(properties, "DISCTOTAL");
     const auto joinWithTotal = [](const std::string &number, const std::string &total) {
         if (number.empty()) return total.empty() ? std::string() : total;
         return total.empty() ? number : number + "/" + total;
     };
 
-    std::string trackRaw = firstProperty(properties, "TRACKNUMBER");
-    if (trackRaw.empty() && tag != nullptr && tag->track() > 0) {
-        trackRaw = std::to_string(tag->track());
-    }
-    const auto track = splitNumber(trackRaw, firstProperty(properties, "TRACKTOTAL"));
-    const auto disc = splitNumber(firstProperty(properties, "DISCNUMBER"),
-                                  firstProperty(properties, "DISCTOTAL"));
-
-    fields.push_back(track.first);
-    fields.push_back(joinWithTotal(track.first, track.second));
-    fields.push_back(disc.first);
-    fields.push_back(joinWithTotal(disc.first, disc.second));
+    fields.push_back(trackNumber);
+    fields.push_back(joinWithTotal(trackNumber, trackTotal));
+    fields.push_back(discNumber);
+    fields.push_back(joinWithTotal(discNumber, discTotal));
 
     std::string year = firstProperty(properties, "DATE");
     if (year.size() > 4) {
@@ -577,7 +786,7 @@ Java_com_xjcheng_musictageditor_core_tag_NativeTagBridge_readAll(JNIEnv *env, jc
     fields.push_back(std::to_string(bitsPerSampleOf(audio)));
 
     std::vector<Picture> pictures;
-    collectPictures(file, context, pictures);
+    collectPictures(file, tag, pictures);
     fields.push_back(std::to_string(pictures.size()));
     for (const auto &picture : pictures) {
         fields.push_back(picture.mime);
@@ -643,13 +852,9 @@ Java_com_xjcheng_musictageditor_core_tag_NativeTagBridge_writeAll(
     File *file = ref.file();
     const TagContext context = classify(file);
 
-    const bool isMpeg = dynamic_cast<TagLib::MPEG::File *>(file) != nullptr;
-    if (isMpeg) {
-        writeId3v2Fields(file, values, (options & 2) == 0);
-    } else if (dynamic_cast<TagLib::FLAC::File *>(file) != nullptr) {
-        writeFlacFields(file, values);
-    } else {
-        return toJavaString(env, "writing is not supported for this container yet");
+    const std::string textFailure = applyTextFields(file, values, options);
+    if (!textFailure.empty()) {
+        return toJavaString(env, textFailure);
     }
 
     bool coverGiven = cover != nullptr;

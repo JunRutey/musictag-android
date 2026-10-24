@@ -6,6 +6,7 @@
 package com.xjcheng.musictageditor.core.tag
 
 import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
@@ -205,5 +206,36 @@ class TagLibWriteTest {
         engine.write(file.absolutePath, TagEdit.from(two).copy(title = "", comment = ""))
         val cleared = engine.read(file.absolutePath)!!
         println("DIAG cleared   title=[" + cleared.title + "] comment=[" + cleared.comment + "]")
+    }
+
+    @Test
+    fun writesAndReadsBackOgg() {
+        val file = tempCopy("sample.ogg", ".ogg")
+        val before = engine.read(file.absolutePath)
+        assertNotNull("synthetic ogg fixture should be readable", before)
+        before!!
+        assertEquals("OggVorbis", before.container)
+        assertEquals("VorbisComment", before.tagFormat)
+        assertEquals("Fixture Title", before.title)
+
+        val result = engine.write(file.absolutePath, edited(before))
+        assertTrue("write failed: $result", result.ok)
+
+        val after = engine.read(file.absolutePath)!!
+        assertEdited(after)
+        assertEquals("OggVorbis", after.container)
+    }
+
+    @Test
+    fun writesCoverToOgg() {
+        val file = tempCopy("sample.ogg", ".ogg")
+        val before = engine.read(file.absolutePath)!!
+        val cover = coverFixture()
+        assertTrue(engine.write(file.absolutePath, edited(before)
+            .copy(cover = CoverEdit.Replace(cover, "image/png"))).ok)
+
+        val after = engine.read(file.absolutePath)!!
+        assertEquals("one embedded picture expected", 1, after.pictures.size)
+        assertArrayEquals(cover, after.pictures[0].data)
     }
 }
