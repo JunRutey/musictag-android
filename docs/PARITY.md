@@ -56,18 +56,23 @@ Status values: `todo` / `wip` / `done` / `dropped`.
 | # | Provider | Endpoints | Milestone | Status |
 |---|---|---|---|---|
 | 5.1 | NetEase Cloud Music | `cloudsearch/pc`, `v3/song/detail`, `song/lyric` + weapi crypto | M4 | ✅ done (fixtures; live endpoint unverified) |
-| 5.2 | QQ Music | `musicu.fcg`, lyric fcgi, `T002R800x800M000` cover | M4 | todo |
-| 5.3 | Kuwo | `search.kuwo.cn/r.s`, `m.kuwo.cn/songinfoandlrc` | M4 | todo |
-| 5.4 | Kugou (lyrics only) | `mobilecdn` search, `m3ws` KRC | M4 | todo |
-| 5.5 | MusicBrainz | release/recording search, release detail | M4 | todo |
-| 5.6 | VGMdb | album search, album detail | M4 | todo |
-| 5.7 | iTunes Search | `itunes.apple.com/search` (+ country parameter) | M4 | todo |
-| 5.8 | Cover Art Archive | `coverartarchive.org/release/{id}/front` | M4 | todo |
-| 5.9 | Last.fm | `ws.audioscrobbler.com/2.0` artist/album/track search | M4 | todo |
-| 5.10 | Per-source priority for combined tags / covers / lyrics | M4 | todo | unit test |
-| 5.11 | Result limit, search criteria | M4 | todo | manual |
-| 5.12 | Provider health/diagnostics screen | M4 | todo | manual |
+| 5.2 | QQ Music | `musicu.fcg`, lyric fcgi (JSONP+base64+XML), `T002R800x800M000` cover | M4 | ✅ done |
+| 5.3 | Kuwo | `www.kuwo.cn/api/www/search/searchMusicBykeyWord`, `m.kuwo.cn/newh5/singles/songinfoandlrc` | M4 | ✅ done (JSON endpoints; LRC rebuilt from lines) |
+| 5.4 | Kugou | `mobilecdn` search, `krcs` candidate + `lyrics.kugou.com` LRC download | M4 | ✅ done (LRC, not KRC) |
+| 5.5 | MusicBrainz | `/ws/2/recording`, `/ws/2/release` (+ required User-Agent) | M4 | ✅ done |
+| 5.6 | VGMdb | album search + album page (HTML) | M4 | ✅ done (scraped; no JSON API exists) |
+| 5.7 | iTunes Search | `/search` + `/lookup` (+ country), artwork size rewriting | M4 | ✅ done |
+| 5.8 | Cover Art Archive | `front-500` per release id, with existence check | M4 | ✅ done |
+| 5.9 | Last.fm | `track.search`, `track.getInfo` | M4 | ✅ done (API key injected, inert without one) |
+| 5.10 | Per-source priority for combined tags / covers / lyrics | M4 | ✅ done (`MergePolicy`) | unit test |
+| 5.11 | Result limit, search criteria | M4 | engine done (registry enforces limits); UI pending | manual |
+| 5.12 | Provider health/diagnostics screen | M4 | failures recorded by the registry; screen pending | manual |
 
+
+> **Verification note.** Provider behaviour is verified against recorded response fixtures
+> (see `core/net/src/test/resources/providers`). The services themselves are not contacted
+> by CI, so their current availability and field shapes are unverified; the providers
+> tolerate missing or reordered fields and surface HTTP/parse failures instead of crashing.
 ## 6. Batch operations
 
 | # | Capability | Milestone | Status | Proof |

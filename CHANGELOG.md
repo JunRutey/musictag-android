@@ -6,6 +6,32 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added (M4 backend, complete)
+
+All nine providers from the original application are implemented behind one interface:
+
+| Provider | Notes |
+|---|---|
+| NetEase | weapi-signed search/detail/lyric, lyrics translation |
+| QQ Music | musicu.fcg search, JSONP+base64+XML lyric endpoint |
+| Kuwo | JSON search endpoint, LRC rebuilt from structured lines |
+| Kugou | search plus two-step LRC download (candidate by hash) |
+| MusicBrainz | recording search and recording/release detail, required User-Agent |
+| VGMdb | album search and album page scraped from HTML |
+| iTunes | search and lookup, artwork size rewriting |
+| Cover Art Archive | front cover per release, with existence check |
+| Last.fm | search and track info; API key injected, inert without one |
+
+`ProviderRegistry` runs a query across every tag provider (recording failures instead of
+failing the search), collects candidates and merges them field by field with an explicit
+`MergePolicy`: Chinese services win title/artist and lyrics, curated databases win
+album-level fields, Cover Art Archive wins artwork, and blank values never win.
+
+Three provider bugs were found by the tests: an empty artist credit used to become `""`
+(which would have overwritten tags with blanks), artwork URLs without a size segment are
+kept as-is, and a provider that ignores its result limit could flood the merged list, so
+the registry enforces the limit itself.
+
 ### Verified (M3/M4 so far)
 
 * `CI #59`: **54 tests, 0 failures, 0 skipped** (30 tag engine + 24 network).
