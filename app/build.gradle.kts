@@ -119,6 +119,7 @@ kotlin {
 dependencies {
     implementation(project(":core:tag"))
     implementation(project(":core:net"))
+    implementation(project(":core:lyrics"))
     implementation(libs.okhttp)
 
     implementation(platform(libs.androidx.compose.bom))
