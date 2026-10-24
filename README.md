@@ -23,8 +23,10 @@ libraries, while preserving the parts of the old app that other apps depend on
 >
 > The APK now ships upstream **TagLib 2.0.2** for `arm64-v8a`, `armeabi-v7a` and
 > `x86_64` behind a small JNI bridge, and a second CI job builds the same sources for the
-> host so real tag reads are unit-tested (14 tests, 0 skipped). Editing, the UI and the
-> online providers land in M2 and M3.
+> host so real reads *and writes* are unit-tested: **54 tests, 0 skipped** across the tag
+> engine (MP3, FLAC, Ogg, APE, M4A - read and written, artwork included) and the network
+> layer (weapi and 163 key crypto anchored to NIST vectors, NetEase provider against
+> recorded responses).
 
 ## Install
 
@@ -66,8 +68,8 @@ The contract is executable, not just documented:
 | M0 | Repo, CI, signing, contract baseline, installable shell | ✅ done |
 | M1 | TagLib + JNI (read), host-side unit tests | ✅ done |
 | M2 | Tag writing, editor UI, covers, MediaStore index, settings | ✅ done |
-| M3 | Full format matrix (ogg/opus/wma/wav/aiff/aac/tta/wv/mpc/dsf/dff) | |
-| M4 | Online providers (NetEase/QQ/Kuwo/Kugou + MusicBrainz/VGMdb/iTunes/CoverArt/Last.fm) | |
+| M3 | Full format matrix (ogg/opus/wma/wav/aiff/aac/tta/wv/mpc/dsf/dff) | ✅ done (5 formats verified; rest engine-only) |
+| M4 | Online providers (NetEase/QQ/Kuwo/Kugou + MusicBrainz/VGMdb/iTunes/CoverArt/Last.fm) | ⏳ in progress (crypto + NetEase done) |
 | M5 | Batch service, bookmarks, history, file ops, search + suggestions | |
 | M6 | UI polish, i18n (EN + zh-CN), performance, accessibility | |
 | M7 | Compatibility verification + `v1.0.0` | |
