@@ -5,6 +5,7 @@
 
 package com.xjcheng.musictageditor
 
+import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -20,8 +21,12 @@ import com.xjcheng.musictageditor.core.tag.TagData
 import com.xjcheng.musictageditor.core.tag.TagEdit
 import com.xjcheng.musictageditor.core.tag.TagLibEngine
 import com.xjcheng.musictageditor.core.tag.WriteResult
+import com.xjcheng.musictageditor.activity.SearchActivity
+import com.xjcheng.musictageditor.core.net.TagCandidate
+import com.xjcheng.musictageditor.io.CoverDownloader
 import com.xjcheng.musictageditor.io.DocumentSource
 import com.xjcheng.musictageditor.io.DocumentWriter
+import com.xjcheng.musictageditor.net.SearchContract
 import com.xjcheng.musictageditor.io.LocalDocument
 import com.xjcheng.musictageditor.settings.Settings
 import com.xjcheng.musictageditor.settings.SettingsRepository
@@ -50,6 +55,14 @@ class SongDetailActivity : ComponentActivity() {
     private var document: LocalDocument? = null
     private var documentUri: Uri? = null
     private var coverMime: String = "image/png"
+    private val coverDownloader = CoverDownloader()
+
+    private val findTagsOnline =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode != Activity.RESULT_OK) return@registerForActivityResult
+            val data = result.data ?: return@registerForActivityResult
+            applyCandidate(SearchContract.read(data))
+        }
 
     private val pickCover = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri == null) return@registerForActivityResult
@@ -96,6 +109,7 @@ class SongDetailActivity : ComponentActivity() {
                         persistSettings()
                     },
                     onSave = { save() },
+                    onSearchOnline = { openOnlineSearch() },
                 )
             }
         }
@@ -126,6 +140,56 @@ class SongDetailActivity : ComponentActivity() {
         val clip = intent.clipData
         if (clip != null && clip.itemCount > 0) return clip.getItemAt(0).uri
         return null
+    }
+
+    /** Opens the online search prefilled with the current values. */
+    private fun openOnlineSearch() {
+        val extras = SearchContract.request(ui.edit.title, ui.edit.artist, ui.edit.album)
+        val intent = Intent(this, SearchActivity::class.java)
+        intent.putExtras(extras.extras ?: android.os.Bundle())
+        findTagsOnline.launch(intent)
+    }
+
+    /**
+     * Applies an online candidate to the open draft.
+     *
+     * Only fields the provider actually returned are touched, so a lyrics-only source
+     * cannot wipe the other values. The cover, when offered, is downloaded separately and
+     * marked dirty so saving writes it.
+     */
+    private fun applyCandidate(candidate: TagCandidate) {
+        val edit = ui.edit.copy(
+            title = candidate.title ?: ui.edit.title,
+            artist = candidate.artist ?: ui.edit.artist,
+            album = candidate.album ?: ui.edit.album,
+            albumArtist = candidate.albumArtist ?: ui.edit.albumArtist,
+            genre = candidate.genre ?: ui.edit.genre,
+            composer = candidate.composer ?: ui.edit.composer,
+            track = candidate.track ?: ui.edit.track,
+            disc = candidate.disc ?: ui.edit.disc,
+            year = candidate.year ?: ui.edit.year,
+            comment = candidate.comment ?: ui.edit.comment,
+            lyrics = candidate.lyrics ?: ui.edit.lyrics,
+        )
+        ui = ui.copy(edit = edit, message = "Tags filled from the online search")
+        candidate.coverUrl?.let(::downloadCover)
+    }
+
+    private fun downloadCover(url: String) {
+        lifecycleScope.launch {
+            val bytes = withContext(Dispatchers.IO) { coverDownloader.fetch(url) }
+            if (bytes == null || bytes.isEmpty()) {
+                ui = ui.copy(message = "Tags filled; the cover could not be downloaded")
+            } else {
+                coverMime = if (bytes.size > 3 && bytes[1] == 'P'.code.toByte()) "image/png" else "image/jpeg"
+                ui = ui.copy(
+                    coverBytes = bytes,
+                    coverDirty = true,
+                    coverRemoved = false,
+                    message = "Tags and cover filled from the online search",
+                )
+            }
+        }
     }
 
     private fun load(uri: Uri) {

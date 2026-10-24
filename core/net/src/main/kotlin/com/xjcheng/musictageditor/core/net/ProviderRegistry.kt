@@ -126,6 +126,42 @@ class ProviderRegistry(
             }
             .toMap()
 
+    /**
+     * Searches every tag provider, asks each one that answered for the details of its best
+     * row, and merges the results with [merge]. This is the "fill everything automatically"
+     * path used by the editor.
+     */
+    fun autoMatch(query: SearchQuery, limitPerProvider: Int = 5): TagCandidate {
+        val rows = searchAll(query, limitPerProvider)
+            .groupBy { it.provider }
+            .mapValues { (_, providerRows) -> providerRows.first() }
+
+        val candidates = rows.mapNotNull { (providerId, row) ->
+            val provider = byId[providerId] ?: return@mapNotNull null
+            runCatching { provider.detail(row) }
+                .onFailure { failures += ProviderFailure(providerId, it.message ?: it.toString()) }
+                .getOrNull()
+                ?.takeIf { !it.isEmpty() }
+                ?.let { providerId to it }
+        }.toMap()
+
+        // Even when no provider can fill a field, the row list still identifies the song.
+        val merged = merge(candidates)
+        return merged.copy(
+            title = merged.title ?: rows.values.firstOrNull()?.title?.takeIf { it.isNotBlank() },
+            artist = merged.artist ?: rows.values.firstOrNull()?.artist?.takeIf { it.isNotBlank() },
+            album = merged.album ?: rows.values.firstOrNull()?.album?.takeIf { it.isNotBlank() },
+        )
+    }
+
+    /** Fetches the details of one result from the provider that produced it. */
+    fun detailFor(result: SearchResult): TagCandidate? {
+        val provider = byId[result.provider] ?: return null
+        return runCatching { provider.detail(result) }
+            .onFailure { failures += ProviderFailure(provider.id, it.message ?: it.toString()) }
+            .getOrNull()
+    }
+
     /** Fills every field with the first non-blank value in priority order. */
     fun merge(candidates: Map<ProviderId, TagCandidate>): TagCandidate {
         fun pick(field: MergeField, read: (TagCandidate) -> String?): String? =

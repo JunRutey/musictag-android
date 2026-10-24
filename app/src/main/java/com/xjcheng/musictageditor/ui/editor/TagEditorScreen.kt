@@ -90,6 +90,7 @@ fun TagEditorScreen(
     onWriteId3v1Change: (Boolean) -> Unit,
     onId3v23Change: (Boolean) -> Unit,
     onSave: () -> Unit,
+    onSearchOnline: () -> Unit,
 ) {
     Surface(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -117,7 +118,7 @@ fun TagEditorScreen(
             if (state.isMp3) {
                 Mp3Options(state, onWriteId3v1Change, onId3v23Change)
             }
-            SaveBar(state, onSave)
+            SaveBar(state, onSave, onSearchOnline)
         }
     }
 }
@@ -239,12 +240,19 @@ private fun Mp3Options(
 }
 
 @Composable
-private fun SaveBar(state: EditorUiState, onSave: () -> Unit) {
+private fun SaveBar(state: EditorUiState, onSave: () -> Unit, onSearchOnline: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(16.dp),
         horizontalArrangement = Arrangement.End,
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        OutlinedButton(
+            onClick = onSearchOnline,
+            enabled = !state.saving && state.original != null,
+        ) {
+            Text("Find tags online")
+        }
+        Spacer(modifier = Modifier.width(12.dp))
         if (state.saving) {
             CircularProgressIndicator(modifier = Modifier.size(20.dp))
             Spacer(modifier = Modifier.width(12.dp))

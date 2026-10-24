@@ -22,6 +22,11 @@ data class Settings(
     val id3v23: Boolean = false,
     /** DFF/DSF: write the ID3 chunk (M3). */
     val dffId3: Boolean = true,
+    /**
+     * Last.fm API key. Empty by default: the app ships no third-party credential, the user
+     * supplies their own key in settings (the original hard-coded one).
+     */
+    val lastFmApiKey: String = "",
 )
 
 class SettingsRepository(context: Context) {
@@ -33,6 +38,7 @@ class SettingsRepository(context: Context) {
         writeId3v1 = preferences.getBoolean(KEY_ID3V1, false),
         id3v23 = preferences.getBoolean(KEY_ID3V23, false),
         dffId3 = preferences.getBoolean(KEY_DFF_ID3, true),
+        lastFmApiKey = preferences.getString(KEY_LASTFM_KEY, "").orEmpty(),
     )
 
     fun save(settings: Settings) {
@@ -40,6 +46,7 @@ class SettingsRepository(context: Context) {
             .putBoolean(KEY_ID3V1, settings.writeId3v1)
             .putBoolean(KEY_ID3V23, settings.id3v23)
             .putBoolean(KEY_DFF_ID3, settings.dffId3)
+            .putString(KEY_LASTFM_KEY, settings.lastFmApiKey)
             .apply()
     }
 
@@ -48,5 +55,6 @@ class SettingsRepository(context: Context) {
         const val KEY_ID3V1 = "write_id3v1"
         const val KEY_ID3V23 = "write_id3v23"
         const val KEY_DFF_ID3 = "write_dff_id3"
+        const val KEY_LASTFM_KEY = "lastfm_api_key"
     }
 }

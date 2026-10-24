@@ -138,4 +138,59 @@ class ProviderRegistryTest {
         assertEquals(ProviderId.NETEASE, registry.available.single().id)
     }
 
+
+    @Test
+    fun autoMatchMergesTheBestRowFromEachProvider() {
+        val netease = FakeProvider(
+            ProviderId.NETEASE,
+            rows = listOf(row(ProviderId.NETEASE, title = "晴天")),
+            candidate = TagCandidate(title = "晴天", artist = "周杰伦", lyrics = "[00:01.00] 歌词"),
+        )
+        val musicbrainz = FakeProvider(
+            ProviderId.MUSICBRAINZ,
+            rows = listOf(SearchResult(ProviderId.MUSICBRAINZ, "mb", "晴天", "周杰伦", "叶惠美")),
+            candidate = TagCandidate(album = "叶惠美", year = "2003", track = "1/11"),
+        )
+        val registry = ProviderRegistry(listOf(netease, musicbrainz))
+
+        val merged = registry.autoMatch(SearchQuery(title = "晴天"), limitPerProvider = 3)
+        assertEquals("晴天", merged.title)
+        assertEquals("周杰伦", merged.artist)
+        assertEquals("叶惠美", merged.album)
+        assertEquals("2003", merged.year)
+        assertEquals("1/11", merged.track)
+        assertEquals("[00:01.00] 歌词", merged.lyrics)
+    }
+
+    @Test
+    fun autoMatchFallsBackToRowsWhenNoCandidateArrives() {
+        val provider = FakeProvider(
+            ProviderId.QQ,
+            rows = listOf(SearchResult(ProviderId.QQ, "q", "晴天", "周杰伦", "叶惠美")),
+            candidate = TagCandidate(),
+        )
+        val merged = ProviderRegistry(listOf(provider)).autoMatch(SearchQuery(title = "晴天"))
+        assertEquals("晴天", merged.title)
+        assertEquals("周杰伦", merged.artist)
+        assertEquals("叶惠美", merged.album)
+    }
+
+    @Test
+    fun detailForUsesTheResultProvider() {
+        val provider = FakeProvider(
+            ProviderId.NETEASE,
+            candidate = TagCandidate(title = "晴天", lyrics = "[00:01.00] x"),
+        )
+        val registry = ProviderRegistry(listOf(provider))
+        assertEquals("晴天", registry.detailFor(row(ProviderId.NETEASE))?.title)
+        // A result from a provider that is not registered yields nothing.
+        assertNull(registry.detailFor(row(ProviderId.QQ)))
+    }
+
+    @Test
+    fun detailForRecordsFailures() {
+        val registry = ProviderRegistry(listOf(FakeProvider(ProviderId.NETEASE, fail = true)))
+        assertNull(registry.detailFor(row(ProviderId.NETEASE)))
+        assertEquals(listOf(ProviderId.NETEASE), registry.failures().map { it.provider })
+    }
 }

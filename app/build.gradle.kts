@@ -118,6 +118,8 @@ kotlin {
 
 dependencies {
     implementation(project(":core:tag"))
+    implementation(project(":core:net"))
+    implementation(libs.okhttp)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
