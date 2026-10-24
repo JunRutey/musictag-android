@@ -30,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.xjcheng.musictageditor.activity.SearchActivity
+import com.xjcheng.musictageditor.activity.SearchMediaActivity
 import com.xjcheng.musictageditor.activity.SettingsActivity
 import com.xjcheng.musictageditor.ui.theme.MusicTagTheme
 
@@ -57,6 +58,7 @@ class MainActivity : ComponentActivity() {
                 HomeScreen(
                     version = BuildConfig.VERSION_NAME,
                     onOpenFile = { pickFile() },
+                    onLibrary = { startActivity(Intent(this, SearchMediaActivity::class.java)) },
                     onSearch = { startActivity(Intent(this, SearchActivity::class.java)) },
                     onSettings = { startActivity(Intent(this, SettingsActivity::class.java)) },
                 )
@@ -102,6 +104,7 @@ class MainActivity : ComponentActivity() {
 private fun HomeScreen(
     version: String,
     onOpenFile: () -> Unit,
+    onLibrary: () -> Unit,
     onSearch: () -> Unit,
     onSettings: () -> Unit,
 ) {
@@ -114,7 +117,11 @@ private fun HomeScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(modifier = Modifier.height(24.dp))
-            Button(onClick = onOpenFile, modifier = Modifier.fillMaxWidth()) {
+            Button(onClick = onLibrary, modifier = Modifier.fillMaxWidth()) {
+                Text("Browse the library")
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedButton(onClick = onOpenFile, modifier = Modifier.fillMaxWidth()) {
                 Text("Open an audio file")
             }
             Spacer(modifier = Modifier.height(8.dp))

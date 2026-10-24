@@ -14,12 +14,6 @@ package com.xjcheng.musictageditor.activity
  * Compose screens while the class names stay put.
  */
 
-class SearchMediaActivity :
-    PlaceholderActivity("Search media", "M5 — local media search")
-
-class BatchEditSongsDetail :
-    PlaceholderActivity("Batch edit", "M5 — batch editing")
-
 class AlbumActivity :
     PlaceholderActivity("Album", "M2 — library browsing")
 
