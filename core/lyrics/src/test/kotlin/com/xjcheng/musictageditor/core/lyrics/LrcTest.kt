@@ -38,7 +38,7 @@ class LrcTest {
     @Test
     fun normalisesFractionWidths() {
         assertEquals(1_100L, Lrc.parse("[00:01.1]x").single().timeMs)
-        assertEquals(120L, Lrc.parse("[00:01.12]x").single().timeMs)
+        assertEquals(1_120L, Lrc.parse("[00:01.12]x").single().timeMs)
         assertEquals(1_123L, Lrc.parse("[00:01.123]x").single().timeMs)
         assertEquals(1_000L, Lrc.parse("[00:01]x").single().timeMs)
     }
@@ -146,7 +146,7 @@ class LrcTest {
         // "Repeated chorus" carries two timestamps, so five entries come out of four lines.
         assertEquals(5, lines.size)
         assertEquals("[ti:Fixture Song]", fixture.lineSequence().first())
-        assertEquals("01:02.50", Lrc.timestamp(lines.last().timeMs))
+        assertEquals("[01:02.50]", Lrc.timestamp(lines.last().timeMs))
         val shifted = Lrc.offset(fixture, -1_000)
         assertEquals(5, Lrc.parse(shifted).size)
     }

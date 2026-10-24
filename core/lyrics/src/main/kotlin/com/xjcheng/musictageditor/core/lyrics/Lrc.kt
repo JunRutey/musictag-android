@@ -140,7 +140,11 @@ object Lrc {
 
     /** Joins lines with a trailing newline, and keeps the empty case truly empty. */
     private fun joinLines(lines: Sequence<String>): String {
-        val kept = lines.toList()
+        // A trailing newline shows up as one empty last element; dropping it avoids
+        // doubling the terminator when the result is joined again.
+        val kept = lines.toList().let { list ->
+            if (list.isNotEmpty() && list.last().isEmpty()) list.dropLast(1) else list
+        }
         return if (kept.isEmpty()) "" else kept.joinToString("\n", postfix = "\n")
     }
 
