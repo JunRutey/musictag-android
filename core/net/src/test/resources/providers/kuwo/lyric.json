@@ -1,0 +1,15 @@
+{
+  "code": 200,
+  "data": {
+    "lrclist": [
+      {
+        "time": "0.0",
+        "lineLyric": "晴天"
+      },
+      {
+        "time": "5.2",
+        "lineLyric": "故事的小黄花"
+      }
+    ]
+  }
+}

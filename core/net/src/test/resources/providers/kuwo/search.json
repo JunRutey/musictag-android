@@ -1,0 +1,16 @@
+{
+  "code": 200,
+  "data": {
+    "total": "1",
+    "list": [
+      {
+        "rid": 1234567,
+        "name": "晴天",
+        "artist": "周杰伦",
+        "album": "叶惠美",
+        "duration": 269,
+        "pic": "https://img2.kuwo.cn/star/albumcover/500/aa/bb/cover.jpg"
+      }
+    ]
+  }
+}

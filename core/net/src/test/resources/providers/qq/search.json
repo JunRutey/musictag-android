@@ -1,0 +1,45 @@
+{
+  "req_0": {
+    "code": 0,
+    "data": {
+      "body": {
+        "song": {
+          "list": [
+            {
+              "mid": "003OUlho2HcRHC",
+              "title": "晴天",
+              "singer": [
+                {
+                  "name": "周杰伦"
+                }
+              ],
+              "album": {
+                "name": "叶惠美",
+                "mid": "000MkMni19ClKG",
+                "singername": "周杰伦",
+                "publish_date": "2003-07-31"
+              },
+              "interval": 269
+            },
+            {
+              "mid": "001BLpXF2DyJe2",
+              "title": "富士山下",
+              "singer": [
+                {
+                  "name": "陈奕迅"
+                }
+              ],
+              "album": {
+                "name": "What's Going On...?",
+                "mid": "002a1VHj1sF1Fz",
+                "singername": "陈奕迅",
+                "publish_date": "2006-12-01"
+              },
+              "interval": 259
+            }
+          ]
+        }
+      }
+    }
+  }
+}
