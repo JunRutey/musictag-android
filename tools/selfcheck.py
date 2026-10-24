@@ -117,15 +117,70 @@ def source_files(pattern: str) -> list[Path]:
     return sorted(p for p in ROOT.glob(pattern) if not any(part in {"build", ".gradle", ".git"} for part in p.parts))
 
 
+def strip_literals(text: str) -> str:
+    r"""Remove comments and string literals so structural counts ignore their contents.
+
+    Owning a key such as ``#14ljk_!\]&0U<('`` used to trip the parenthesis balance check;
+    those characters are inside a literal, not syntax. Triple-quoted strings, escapes and
+    both comment forms are handled; single-quoted char literals are left alone because they
+    never span lines and cannot hide a brace.
+    """
+    out = []
+    i = 0
+    length = len(text)
+    while i < length:
+        char = text[i]
+        nxt = text[i + 1] if i + 1 < length else ""
+        if char == "/" and nxt == "/":
+            while i < length and text[i] != "\n":
+                i += 1
+        elif char == "/" and nxt == "*":
+            i += 2
+            while i + 1 < length and not (text[i] == "*" and text[i + 1] == "/"):
+                i += 1
+            i += 2
+        elif char == '"' and text.startswith('"""', i):
+            # A raw string ends with the last three quotes of a quote run, so a literal
+            # whose content ends with a quote (Kotlin writes it as four quotes) is handled.
+            i += 3
+            while i < length:
+                if text[i] != '"':
+                    i += 1
+                    continue
+                run = 1
+                while i + run < length and text[i + run] == '"':
+                    run += 1
+                i += run
+                if run >= 3:
+                    break
+        elif char == '"':
+            i += 1
+            while i < length:
+                if text[i] == "\\":
+                    i += 2
+                    continue
+                if text[i] == '"':
+                    i += 1
+                    break
+                if text[i] == "\n":
+                    break
+                i += 1
+        else:
+            out.append(char)
+            i += 1
+    return "".join(out)
+
+
 def check_kotlin() -> None:
     files = source_files("**/src/**/*.kt")
     native_files = source_files("native/**/*.cpp") + source_files("native/**/*.h")
     for path in files + native_files:
         text = path.read_text(encoding="utf-8")
-        if text.count("{") != text.count("}"):
+        structural = strip_literals(text)
+        if structural.count("{") != structural.count("}"):
             errors.append(f"unbalanced braces: {path.relative_to(ROOT)} "
-                          f"({text.count('{')} open / {text.count('}')} close)")
-        if text.count("(") != text.count(")"):
+                          f"({structural.count('{')} open / {structural.count('}')} close)")
+        if structural.count("(") != structural.count(")"):
             errors.append(f"unbalanced parentheses: {path.relative_to(ROOT)}")
         if "\t" in text:
             errors.append(f"tab character: {path.relative_to(ROOT)}")

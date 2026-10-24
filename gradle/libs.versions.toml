@@ -10,6 +10,7 @@ navigationCompose = "2.9.1"
 coreKtx = "1.16.0"
 coroutines = "1.11.0"
 okhttp = "4.12.0"
+serialization = "1.7.3"
 junit = "4.13.2"
 androidxTestExtJunit = "1.2.1"
 espresso = "3.6.1"
@@ -35,6 +36,7 @@ kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-
 kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-test", version.ref = "coroutines" }
 
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
 
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExtJunit" }

@@ -123,7 +123,7 @@ jobs:
       - name: Tag engine tests (real TagLib reads against fixtures)
         env:
           MUSICTAG_HOST_LIB: ${{ github.workspace }}/build/host/libmusictag_jni.so
-        run: ./gradlew --no-daemon --stacktrace :core:tag:test
+        run: ./gradlew --no-daemon --stacktrace :core:tag:test :core:net:test
 
       - name: Upload tag engine test report
         if: always()
@@ -133,5 +133,7 @@ jobs:
           path: |
             core/tag/build/reports/tests/test
             core/tag/build/test-results/test
+            core/net/build/reports/tests/test
+            core/net/build/test-results/test
           if-no-files-found: ignore
 

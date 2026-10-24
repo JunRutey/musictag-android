@@ -23,6 +23,7 @@ dependencyResolutionManagement {
 rootProject.name = "musictag-android"
 include(":app")
 include(":core:tag")
+include(":core:net")
 
 // Modules are introduced as they land (see docs/ROADMAP in README):
-//   :core:lyrics, :core:net, :core:data, :core:media
+//   :core:lyrics, :core:data, :core:media, :core:providers
