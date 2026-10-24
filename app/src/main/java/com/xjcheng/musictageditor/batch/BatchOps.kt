@@ -133,6 +133,7 @@ object BatchOps {
         removeTimestamps: Boolean = false,
         dropBlankLines: Boolean = false,
         dropHeadTags: Boolean = false,
+        toSimplified: Boolean = false,
         offsetMs: Long = 0,
     ): String {
         var text = lyrics
@@ -141,6 +142,7 @@ object BatchOps {
         if (removeTimestamps) text = com.xjcheng.musictageditor.core.lyrics.Lrc.stripTimestamps(text)
         if (dropBlankLines) text = com.xjcheng.musictageditor.core.lyrics.Lrc.dropBlankLines(text)
         if (dropHeadTags) text = com.xjcheng.musictageditor.core.lyrics.Lrc.dropHeadTags(text)
+        if (toSimplified) text = com.xjcheng.musictageditor.core.lyrics.ChineseText.toSimplified(text)
         if (offsetMs != 0L) text = com.xjcheng.musictageditor.core.lyrics.Lrc.offset(text, offsetMs)
         return text
     }

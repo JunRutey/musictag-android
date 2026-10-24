@@ -145,4 +145,13 @@ class BatchOpsTest {
         assertEquals(placeholders.size, placeholders.toSet().size)
         assertEquals(11, BatchField.entries.size)
     }
+
+    @Test
+    fun processLyricsCanConvertTraditionalToSimplified() {
+        val converted = BatchOps.processLyrics(
+            lyrics = "[00:01.00]後來\n",
+            toSimplified = true,
+        )
+        assertEquals("[00:01.00]后来\n", converted)
+    }
 }

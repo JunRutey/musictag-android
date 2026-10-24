@@ -23,6 +23,8 @@ kotlin {
 }
 
 dependencies {
+    // OpenCC dictionaries for traditional/simplified Chinese, rather than a hand-rolled table.
+    api(libs.opencc4j)
     testImplementation(libs.junit)
 }
 
