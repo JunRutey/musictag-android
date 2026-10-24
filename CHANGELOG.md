@@ -6,6 +6,43 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added (M5)
+
+* `:core:lyrics`: LRC parse/format/reformat/offset/strip/blank-lines/head-tags/metadata and
+  translation merging, 16 unit tests.
+* Settings: 46 keys declared once in `SettingsSchema`, rendered from that declaration,
+  stored under the original preference names where the semantics match, persisted once when
+  the screen leaves the foreground. `docs/SETTINGS.md` is generated from the schema.
+* Media library: `MediaLibrary` reads MediaStore (DATA or RELATIVE_PATH), `MediaFilters`
+  applies minimum duration / ignored directories / MP4 videos / query (8 tests), and
+  `SearchMediaActivity` is the real search screen the `SEARCH` intent opens.
+* Batch editing: `BatchOps` (field merge semantics, rename templates, lyric pipeline, 12
+  tests), `BatchRunner` (progress, cancellation, per-file failures, 7 tests), `BatchTagIo`,
+  a real `BatchService` with a progress notification and cancel action, and
+  `BatchEditSongsDetail` as its UI.
+* The home screen became a usable entry point: library, open file, online search, settings.
+
+### Added (M6, in progress)
+
+* `tools/intent_matrix.py` resolves the historical intents the way Android does (action,
+  categories, scheme, MIME, path patterns) against the built APK, asserts the winning
+  component for 16 probes including negative cases, checks explicit-component targets, the
+  searchable meta-data and the suggestions authority. CI runs it after the contract check
+  and regenerates `docs/INTENT_MATRIX.md`.
+* `scripts/device-intent-matrix.sh` replays the same probes through `adb`.
+
+### Fixed during M5/M6
+
+* `TagLibEngine` is an instance, not an object: the batch service had called it statically.
+* `getSystemService(Class)` needs API 23 while minSdk is 21; notifications now go through
+  `NotificationManagerCompat`, and notify failures no longer kill the service.
+* The MP4 rule: MediaStore reports `audio/mp4` for both m4a files and the audio track of an
+  mp4 video, so the extension decides (`src/.m4a` is audio, `src/.mp4`/`.m4v` are videos).
+* Batch name sanitising turned control characters into underscores; they are dropped now.
+* The intent matrix corrected three assumptions: `SEARCH` is discovered via meta-data (no
+  DEFAULT category), there is no `EDIT` filter, and the `*/*` path filter intentionally
+  lists only the formats whose MIME providers get wrong.
+
 ### Added (M4 backend, complete)
 
 All nine providers from the original application are implemented behind one interface:

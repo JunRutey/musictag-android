@@ -29,6 +29,15 @@ Status values: `todo` / `wip` / `done` / `dropped`.
 | 2.6 | Tag history (SQLite `tagshistory`) | M5 | todo | instrumented test |
 | 2.7 | Property view: file attributes and MediaStore attributes | M5 | todo | manual |
 
+## 2a. Intent resolution
+
+| Row | Capability | Status |
+|---|---|---|
+| 2a.1 | Every historical intent still resolves to the component it did in 1.2.5.2 | ✅ verified in CI (`tools/intent_matrix.py` against the built APK) |
+| 2a.2 | Negative cases: non-audio documents and `*/*`-only senders of typed formats resolve to nothing | ✅ asserted |
+| 2a.3 | Explicit-component calls, `android.app.searchable` meta-data and the `SearchSugg` authority | ✅ asserted |
+| 2a.4 | Same probes on a real device (`adb`) | ⏳ `scripts/device-intent-matrix.sh`, needs an emulator |
+
 ## 3. Cover art
 
 | # | Capability | Milestone | Status | Proof |
@@ -77,21 +86,21 @@ Status values: `todo` / `wip` / `done` / `dropped`.
 
 | # | Capability | Milestone | Status | Proof |
 |---|---|---|---|---|
-| 6.1 | Overwrite 11 fields across a selection | M5 | todo | instrumented test |
-| 6.2 | Save each field to tag vs to `.lrc`/file | M5 | todo | instrumented test |
-| 6.3 | 14 utility actions (lyric cleanup, CHT/CHS, clear tags, cover save-as, …) | M5 | todo | unit + instrumented |
-| 6.4 | Rename files mode / change tags mode | M5 | todo | unit test on templates |
-| 6.5 | Foreground service with progress and cancellation | M5 | todo | instrumented test |
-| 6.6 | MediaStore refresh service | M5 | todo | instrumented test |
+| 6.1 | Overwrite 11 fields across a selection | M5 | ✅ done | `BatchOps` (11 fields, overwrite/fill-missing) + `BatchRunner` tests |
+| 6.2 | Save each field to tag vs to `.lrc`/file | M5 | ⏳ per-field routing still open; tags are written today | pending |
+| 6.3 | 14 utility actions (lyric cleanup, CHT/CHS, clear tags, cover save-as, …) | M5 | ⏳ lyric cleanup done (`processLyrics`); CHT/CHS and cover save-as open | partial |
+| 6.4 | Rename files mode / change tags mode | M5 | ⏳ template engine done and tested (`BatchOps.rename`); the service does not rename files yet | partial |
+| 6.5 | Foreground service with progress and cancellation | M5 | ✅ done (`BatchService`, cancel action, `BatchRunner` cancellation test) | pending (needs a device) |
+| 6.6 | MediaStore refresh service | M5 | ⏳ every write-back already refreshes MediaStore (`DocumentWriter`); the standalone service is still a stub | partial |
 
 ## 7. Files and search
 
 | # | Capability | Milestone | Status |
 |---|---|---|---|
-| 7.1 | Rename / delete / share (FileProvider) | M5 | todo |
-| 7.2 | Local search screen | M5 | todo |
-| 7.3 | `SEARCH` intent + recent suggestions provider | M5 | todo |
-| 7.4 | Ignored directories, minimum duration, ignore MP4 videos | M2 | todo |
+| 7.1 | Rename / delete / share (FileProvider) | M5 | ⏳ FileProvider is declared and unchanged; the UI actions are open |
+| 7.2 | Local search screen | M5 | ✅ done (`SearchMediaActivity` + filters) |
+| 7.3 | `SEARCH` intent + recent suggestions provider | M5 | ✅ intent handled; suggestions provider declared and covered by the intent matrix |
+| 7.4 | Ignored directories, minimum duration, ignore MP4 videos | M2 | ✅ done (`MediaFilters`, 8 tests) |
 
 ## 8. Settings
 
