@@ -1,0 +1,16 @@
+{
+  "status": 1,
+  "errcode": 0,
+  "data": {
+    "total": 1,
+    "info": [
+      {
+        "hash": "A1B2C3D4E5F60718293A4B5C6D7E8F9012345678",
+        "songname": "晴天",
+        "singername": "周杰伦",
+        "album_name": "叶惠美",
+        "duration": 269
+      }
+    ]
+  }
+}

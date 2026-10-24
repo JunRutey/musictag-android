@@ -1,0 +1,12 @@
+{
+  "status": 1,
+  "candidates": [
+    {
+      "id": "123456789",
+      "accesskey": "ABCDEF0123456789",
+      "song": "晴天",
+      "singer": "周杰伦",
+      "duration": 269
+    }
+  ]
+}
