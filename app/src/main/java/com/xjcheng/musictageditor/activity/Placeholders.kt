@@ -20,9 +20,6 @@ class SearchMediaActivity :
 class BatchEditSongsDetail :
     PlaceholderActivity("Batch edit", "M5 — batch editing")
 
-class SettingsActivity :
-    PlaceholderActivity("Settings", "M2 — settings (47 keys)")
-
 class AlbumActivity :
     PlaceholderActivity("Album", "M2 — library browsing")
 

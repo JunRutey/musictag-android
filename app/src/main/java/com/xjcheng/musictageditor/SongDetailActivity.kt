@@ -128,7 +128,10 @@ class SongDetailActivity : ComponentActivity() {
     }
 
     private fun persistSettings() {
-        settings.save(Settings(writeId3v1 = ui.writeId3v1, id3v23 = ui.id3v23, dffId3 = true))
+        val updated = settings.load()
+            .with("write_id3v1", ui.writeId3v1)
+            .with("id3v2_mode", if (ui.id3v23) "3" else "4")
+        settings.save(updated)
     }
 
     private fun resolveDocumentUri(intent: Intent?): Uri? {

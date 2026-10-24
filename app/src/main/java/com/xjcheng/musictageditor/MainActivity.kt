@@ -5,50 +5,146 @@
 
 package com.xjcheng.musictageditor
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.xjcheng.musictageditor.activity.PlaceholderActivity
-import com.xjcheng.musictageditor.ui.M0Screen
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.xjcheng.musictageditor.activity.SearchActivity
+import com.xjcheng.musictageditor.activity.SettingsActivity
 import com.xjcheng.musictageditor.ui.theme.MusicTagTheme
 
 /**
  * Launcher screen.
  *
- * M0 only proves the app builds, installs, launches and owns the compatibility
- * surface. Library browsing lands in M2, online providers in M4.
+ * The original app opened straight into a library; that browser arrives with the media
+ * index, so for now this is the entry point that makes the rest reachable: pick a file to
+ * edit (the same editor the intents open), search tags online, or change settings. The
+ * compatibility surface stays live regardless of this screen.
  */
 class MainActivity : ComponentActivity() {
+
+    private val openFile = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        val uri = result.data?.data ?: return@registerForActivityResult
+        if (result.resultCode != Activity.RESULT_OK) return@registerForActivityResult
+        startEditor(uri)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             MusicTagTheme {
-                M0Screen(
-                    title = "Music Tag",
-                    milestone = "M0 scaffold · version ${BuildConfig.VERSION_NAME}",
-                    lines = listOf(
-                        "package: $packageName",
-                        "library browsing → M2",
-                        "tag engine (TagLib/JNI) → M1",
-                        "online providers → M4",
-                        "batch service → M5",
-                        "",
-                        "Compatibility surface is live: open an audio file from another",
-                        "app to see this build receive it in SongDetailActivity.",
-                    ),
+                HomeScreen(
+                    version = BuildConfig.VERSION_NAME,
+                    onOpenFile = { pickFile() },
+                    onSearch = { startActivity(Intent(this, SearchActivity::class.java)) },
+                    onSettings = { startActivity(Intent(this, SettingsActivity::class.java)) },
                 )
             }
         }
     }
 
-    override fun onNewIntent(intent: Intent) {
-        super.onNewIntent(intent)
-        // singleTop: a caller re-launching with a document URI is forwarded here.
-        // Routing to SongDetailActivity lands in M2.
-        PlaceholderActivity.trace("MainActivity.onNewIntent", intent)
+    private fun pickFile() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "audio/*"
+            putExtra(Intent.EXTRA_MIME_TYPES, AUDIO_TYPES)
+        }
+        openFile.launch(intent)
+    }
+
+    private fun startEditor(uri: android.net.Uri) {
+        startActivity(
+            Intent(this, SongDetailActivity::class.java)
+                .setAction(Intent.ACTION_VIEW)
+                .setData(uri)
+                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION),
+        )
+    }
+
+    private companion object {
+        val AUDIO_TYPES = arrayOf(
+            "audio/mpeg",
+            "audio/flac",
+            "audio/x-flac",
+            "audio/ogg",
+            "audio/mp4",
+            "audio/x-m4a",
+            "audio/x-ape",
+            "audio/x-wav",
+            "audio/aiff",
+            "audio/x-ms-wma",
+        )
+    }
+}
+
+@Composable
+private fun HomeScreen(
+    version: String,
+    onOpenFile: () -> Unit,
+    onSearch: () -> Unit,
+    onSettings: () -> Unit,
+) {
+    Surface(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
+            Text("Music Tag", style = MaterialTheme.typography.headlineMedium)
+            Text(
+                text = "version $version · package com.xjcheng.musictageditor",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            Button(onClick = onOpenFile, modifier = Modifier.fillMaxWidth()) {
+                Text("Open an audio file")
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                OutlinedButton(onClick = onSearch, modifier = Modifier.weight(1f)) {
+                    Text("Find tags online")
+                }
+                OutlinedButton(onClick = onSettings, modifier = Modifier.weight(1f)) {
+                    Text("Settings")
+                }
+            }
+            Spacer(modifier = Modifier.height(24.dp))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Compatibility: other apps can still open files here with VIEW, EDIT, " +
+                    "SEND and the system search intent; every historical activity, service and " +
+                    "provider is declared with its original name.",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = "Tags are written by upstream TagLib 2.0.2 behind the same JNI shape the " +
+                    "original used: MP3, FLAC, Ogg, APE and M4A are read and written, with artwork.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
