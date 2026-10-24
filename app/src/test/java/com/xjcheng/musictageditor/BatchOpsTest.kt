@@ -80,7 +80,8 @@ class BatchOpsTest {
         )
         // The separator is sanitised, so a template cannot create directories.
         assertEquals(
-            "03 Album_Song (2003)",
+            // Track numbers are expanded literally; only the separator is sanitised.
+            "3 Album_Song (2003)",
             BatchOps.rename("%n %l/%t (%y)", values, fallback = "file"),
         )
         assertEquals(
