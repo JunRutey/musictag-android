@@ -1,0 +1,8 @@
+[ti:Fixture Song]
+[ar:Fixture Artist]
+[al:Fixture Album]
+[offset:-500]
+[00:00.00]First line
+[00:12.34]Second line
+[00:30.00][00:31.00]Repeated chorus
+[01:02.50]Last line
