@@ -109,6 +109,7 @@ class ProviderRegistry(
             runCatching { provider.search(query, limitPerProvider) }
                 .onFailure { failures += ProviderFailure(provider.id, it.message ?: it.toString()) }
                 .getOrDefault(emptyList())
+                .take(limitPerProvider)  // a provider may ignore the limit; enforce it here
         }
     }
 
