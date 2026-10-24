@@ -56,7 +56,7 @@ jobs:
 
       - name: Upload instrumented test report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: androidTest-report-api${{ matrix.api-level }}
           path: app/build/reports/androidTests/connected
