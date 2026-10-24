@@ -95,9 +95,19 @@ Status values: `todo` / `wip` / `done` / `dropped`.
 
 ## 8. Settings
 
-47 keys carried over with their original semantics (names and defaults documented in
-`docs/SETTINGS.md`, produced in M2). UI is Compose; storage is a typed repository, not raw
-`SharedPreferences` reads scattered through activities.
+**46 keys** are declared once in `SettingsSchema` and rendered from that declaration;
+`docs/SETTINGS.md` is generated from the same source. Every key from the original
+`pref_settings.xml` whose semantics this app keeps is stored under its original name; the
+new keys (`write_id3v1`, `lastfm_api_key`, batch rename template, MediaStore rescan) are
+additive. Storage is a typed repository rather than scattered `SharedPreferences` reads,
+and the screen persists once when it leaves the foreground.
+
+| Row | Capability | Status |
+|---|---|---|
+| 8.1 | Settings screen grouped by area, generated from the schema | ✅ done |
+| 8.2 | 46 typed keys with defaults, round-tripped through storage | ✅ done (unit tested) |
+| 8.3 | Reset to defaults | ✅ done |
+| 8.4 | Original preference names preserved for a future import | ✅ done (asserted by test) |
 
 ## 9. Formats
 
