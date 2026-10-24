@@ -58,7 +58,7 @@ object NeteaseApi {
 
     fun parseSearch(text: String, limit: Int = 20): List<SearchResult> {
         val songs = runCatching {
-            json.parseToJsonElement(text).obj()["result"]?.obj()?.get("songs")?.jsonArray
+            json.parseToJsonElement(text).obj()?.get("result")?.obj()?.get("songs")?.jsonArray
         }.getOrNull() ?: return emptyList()
 
         return songs.take(limit).mapNotNull { element ->

@@ -165,6 +165,18 @@ def strip_literals(text: str) -> str:
                 if text[i] == "\n":
                     break
                 i += 1
+        elif char == "'":
+            # A char literal may *be* a double quote ('"'), which must not start a string.
+            j = i + 1
+            if j < length and text[j] == "\\":
+                j += 2
+            else:
+                j += 1
+            if j < length and text[j] == "'":
+                i = j + 1
+            else:
+                out.append(char)
+                i += 1
         else:
             out.append(char)
             i += 1
