@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-10-24
+
+First signed release, built from CI commit `537fc1c` and signed with
+`51:48:5C:4E:5E:A8:51:00:5C:D7:20:51:DF:BF:0A:C8:CE:64:F6:B2:11:59:9B:55:6E:70:4C:6A:D7:D7:9D:4D`.
+
+Includes everything marked done in `docs/PARITY.md`: the TagLib-based engine (MP3, FLAC,
+Ogg, APE, M4A read *and* write with artwork), the editor, nine online providers behind a
+priority merge, the library with its filters, batch editing in a foreground service, the
+46-key settings system, the lyric tooling, and the compatibility contract plus intent
+matrix verified on every push.
+
+Not in this release: rename/delete/share actions, `.lrc` side files, traditional/simplified
+conversion, the remaining batch utility actions, and device-level verification.
+
 ## [Unreleased]
 
 ### Added (M5)

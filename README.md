@@ -30,15 +30,16 @@ libraries, while preserving the parts of the old app that other apps depend on
 
 ## Install
 
-CI publishes an installable debug APK for every green build: **Actions → CI → the
-`app-debug` artifact**.
+Download the signed build from the
+[latest release](https://github.com/JunRutey/musictag-android/releases/latest):
 
-Release APKs are attached to GitHub Releases (tag `v*`, signed with the project key).
+- `musictag-android-1.0.0.apk` — release build, signed with the key whose certificate
+  SHA-256 is `51485c4e5ea851005cd72051dfbf0ac8ce64f6b211599b556e704c6ad7d79d4d`.
+- Uninstall the original 1.2.5.2 first: a different signature cannot be installed over it.
+  Tags stay in your files; old bookmarks/history/settings do not carry over.
 
-⚠️ **You must uninstall the original app first.** Android refuses to replace an app
-signed with a different key, and the original signing key is not available. Uninstalling
-does not touch the tags inside your audio files; it only clears the old app's settings,
-bookmarks and tag history.
+Every push also produces a debug APK (`Actions → CI → app-debug`) and an unsigned release
+APK (`app-release-unsigned`) that `docs/SIGNING.md` explains how to sign.
 
 ## Compatibility
 
