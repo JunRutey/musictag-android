@@ -105,6 +105,9 @@
     <string name="editor_artist_cover_none">No artist image</string>
     <string name="editor_artist_cover_present">Artist image present</string>
     <string name="editor_remove_artist_cover">Remove artist image</string>
+    <string name="editor_picture_artist_short">Artist</string>
+    <string name="editor_edit_picture">Edit image</string>
+    <string name="editor_file_section">File</string>
     <string name="editor_picture_single_container">%1$s keeps a single cover, so no artist image is offered.</string>
     <string name="action_share">Share</string>
     <string name="action_delete">Delete</string>

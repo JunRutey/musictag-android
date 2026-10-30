@@ -142,6 +142,7 @@ class SongDetailActivity : ComponentActivity() {
                     onDelete = ::deleteFile,
                     onShare = ::shareFile,
                     onSearchOnline = { openOnlineSearch() },
+                    onBack = { finish() },
                 )
             }
         }
