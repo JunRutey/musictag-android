@@ -18,6 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
 import com.xjcheng.musictageditor.core.tag.CoverEdit
 import com.xjcheng.musictageditor.core.tag.TagData
+import com.xjcheng.musictageditor.R
 import com.xjcheng.musictageditor.core.tag.TagEdit
 import com.xjcheng.musictageditor.core.tag.TagLibEngine
 import com.xjcheng.musictageditor.core.tag.WriteResult
@@ -71,7 +72,7 @@ class SongDetailActivity : ComponentActivity() {
                 runCatching { contentResolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull()
             }
             if (bytes == null || bytes.isEmpty()) {
-                ui = ui.copy(error = "could not read the selected image")
+                ui = ui.copy(error = getString(R.string.editor_error_read_image))
             } else {
                 coverMime = contentResolver.getType(uri) ?: "image/png"
                 ui = ui.copy(coverBytes = bytes, coverRemoved = false, coverDirty = true, error = null)
@@ -116,7 +117,7 @@ class SongDetailActivity : ComponentActivity() {
 
         val uri = resolveDocumentUri(intent)
         if (uri == null) {
-            ui = ui.copy(loading = false, error = "This activity expects an audio document (VIEW or SEND).")
+            ui = ui.copy(loading = false, error = getString(R.string.editor_error_no_document))
         } else {
             documentUri = uri
             load(uri)
@@ -174,7 +175,7 @@ class SongDetailActivity : ComponentActivity() {
             comment = candidate.comment ?: ui.edit.comment,
             lyrics = candidate.lyrics ?: ui.edit.lyrics,
         )
-        ui = ui.copy(edit = edit, message = "Tags filled from the online search")
+        ui = ui.copy(edit = edit, message = getString(R.string.editor_message_tags_filled))
         candidate.coverUrl?.let(::downloadCover)
     }
 
@@ -182,14 +183,14 @@ class SongDetailActivity : ComponentActivity() {
         lifecycleScope.launch {
             val bytes = withContext(Dispatchers.IO) { coverDownloader.fetch(url) }
             if (bytes == null || bytes.isEmpty()) {
-                ui = ui.copy(message = "Tags filled; the cover could not be downloaded")
+                ui = ui.copy(message = getString(R.string.editor_message_tags_filled_no_cover))
             } else {
                 coverMime = if (bytes.size > 3 && bytes[1] == 'P'.code.toByte()) "image/png" else "image/jpeg"
                 ui = ui.copy(
                     coverBytes = bytes,
                     coverDirty = true,
                     coverRemoved = false,
-                    message = "Tags and cover filled from the online search",
+                    message = getString(R.string.editor_message_tags_and_cover),
                 )
             }
         }
@@ -201,10 +202,10 @@ class SongDetailActivity : ComponentActivity() {
             val result = withContext(Dispatchers.IO) {
                 val resolved = DocumentSource.resolve(this@SongDetailActivity, uri)
                     ?: return@withContext LoadResult.Failed(
-                        "cannot open this document (no permission or empty file)"
+                        getString(R.string.editor_error_open_document)
                     )
                 val tag = engine.read(resolved.path)
-                    ?: return@withContext LoadResult.Failed("not a recognised audio container")
+                    ?: return@withContext LoadResult.Failed(getString(R.string.editor_error_unknown_container))
                 LoadResult.Ok(resolved, tag)
             }
             when (result) {
@@ -265,7 +266,7 @@ class SongDetailActivity : ComponentActivity() {
             ui = ui.copy(saving = true, error = null, message = null)
             val failure = withContext(Dispatchers.IO) {
                 when (val write = engine.write(current.path, edit)) {
-                    is WriteResult.Failure -> "write failed: ${write.message}"
+                    is WriteResult.Failure -> getString(R.string.editor_error_write_failed, write.message.orEmpty())
                     is WriteResult.Success -> {
                         when (val back = DocumentWriter.writeBack(this@SongDetailActivity, uri, current)) {
                             is DocumentWriter.Result.Success -> null
@@ -278,7 +279,7 @@ class SongDetailActivity : ComponentActivity() {
             if (failure != null) {
                 ui = ui.copy(error = failure)
             } else {
-                ui = ui.copy(message = "Saved")
+                ui = ui.copy(message = getString(R.string.editor_message_saved))
                 load(uri)
             }
         }

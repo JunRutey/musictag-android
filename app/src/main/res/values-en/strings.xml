@@ -85,4 +85,28 @@
     <string name="label_comment">Comment</string>
     <string name="label_lyrics">Lyrics</string>
     <string name="label_cover">Cover</string>
+
+    <string name="action_save">Save</string>
+    <string name="action_search_online">Search online</string>
+    <string name="editor_title_fallback">Tag editor</string>
+    <string name="editor_loading">Reading…</string>
+    <string name="editor_saving">Saving…</string>
+    <string name="editor_lyrics_lines">%1$d lines</string>
+    <string name="editor_cover_none">No artwork</string>
+    <string name="editor_cover_present">Artwork present</string>
+    <string name="editor_cover_changed">Artwork changed</string>
+    <string name="editor_cover_removed">Artwork removed</string>
+    <string name="editor_cover_pick">Change artwork</string>
+    <string name="editor_remove_cover">Remove artwork</string>
+    <string name="editor_write_id3v1">Also write ID3v1</string>
+    <string name="editor_use_id3v23">Use ID3v2.3</string>
+    <string name="editor_error_read_image">Could not read the selected image.</string>
+    <string name="editor_error_no_document">This activity expects an audio document (VIEW or SEND).</string>
+    <string name="editor_error_open_document">Cannot open this document (no permission or empty file).</string>
+    <string name="editor_error_unknown_container">Not a recognised audio container.</string>
+    <string name="editor_error_write_failed">Write failed: %1$s</string>
+    <string name="editor_message_saved">Saved.</string>
+    <string name="editor_message_tags_filled">Tags filled from the online search.</string>
+    <string name="editor_message_tags_filled_no_cover">Tags filled; the cover could not be downloaded.</string>
+    <string name="editor_message_tags_and_cover">Tags and cover filled from the online search.</string>
 </resources>

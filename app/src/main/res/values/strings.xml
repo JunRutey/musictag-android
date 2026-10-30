@@ -93,4 +93,29 @@
     <string name="label_comment">注释</string>
     <string name="label_lyrics">歌词</string>
     <string name="label_cover">封面</string>
+
+    <!-- 编辑器 -->
+    <string name="action_save">保存</string>
+    <string name="action_search_online">在线补全</string>
+    <string name="editor_title_fallback">标签编辑</string>
+    <string name="editor_loading">正在读取…</string>
+    <string name="editor_saving">正在保存…</string>
+    <string name="editor_lyrics_lines">%1$d 行</string>
+    <string name="editor_cover_none">无封面</string>
+    <string name="editor_cover_present">已有封面</string>
+    <string name="editor_cover_changed">封面已修改</string>
+    <string name="editor_cover_removed">封面已移除</string>
+    <string name="editor_cover_pick">更换封面</string>
+    <string name="editor_remove_cover">移除封面</string>
+    <string name="editor_write_id3v1">同时写入 ID3v1</string>
+    <string name="editor_use_id3v23">使用 ID3v2.3</string>
+    <string name="editor_error_read_image">无法读取所选图片。</string>
+    <string name="editor_error_no_document">该界面需要一个音频文档（VIEW 或 SEND）。</string>
+    <string name="editor_error_open_document">无法打开该文档（没有权限或文件为空）。</string>
+    <string name="editor_error_unknown_container">不是可识别的音频容器。</string>
+    <string name="editor_error_write_failed">写入失败：%1$s</string>
+    <string name="editor_message_saved">已保存。</string>
+    <string name="editor_message_tags_filled">已从在线搜索填充标签。</string>
+    <string name="editor_message_tags_filled_no_cover">标签已填充；封面下载失败。</string>
+    <string name="editor_message_tags_and_cover">已从在线搜索填充标签与封面。</string>
 </resources>
