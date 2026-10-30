@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.4] - 2026-10-31
+
+### 新增
+
+* 设置 → 关于新增「导出到「下载」」：把日志写成 Download/musictag-log-<时间>.txt，
+  不依赖系统分享面板；成功后显示保存路径，失败显示原因。
+  Android 10+ 走 MediaStore（带 IS_PENDING），旧版本写公共 Download 目录，
+  没有存储权限时退回应用外部目录。
+* docs/LOGGING.md：日志位置、应用内导出、adb/logcat 命令、无线调试步骤。
+
 ## [1.1.3] - 2026-10-31
 
 已发布：https://github.com/JunRutey/musictag-android/releases/tag/v1.1.3
