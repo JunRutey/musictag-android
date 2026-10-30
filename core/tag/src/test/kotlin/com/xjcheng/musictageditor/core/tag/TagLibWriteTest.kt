@@ -316,4 +316,87 @@ class TagLibWriteTest {
         assertEquals("one embedded picture expected", 1, after.pictures.size)
         assertArrayEquals(cover, after.pictures[0].data)
     }
+
+    @Test
+    fun writesATypedArtistPictureToMp3() {
+        val file = tempCopy("sample.mp3", ".mp3")
+        val before = engine.read(file.absolutePath)!!
+        val cover = coverFixture()
+        val edit = edited(before).copy(
+            pictures = listOf(
+                PictureEdit(cover, "image/png", TagPicture.FRONT_COVER),
+                PictureEdit(cover, "image/png", TagPicture.ARTIST),
+            ),
+        )
+        assertTrue(engine.write(file.absolutePath, edit).ok)
+
+        val after = engine.read(file.absolutePath)!!
+        assertEdited(after)
+        assertEquals(2, after.pictures.size)
+        assertEquals(setOf(TagPicture.FRONT_COVER, TagPicture.ARTIST), after.pictures.map { it.type }.toSet())
+    }
+
+    @Test
+    fun writesATypedArtistPictureToFlac() {
+        val file = tempCopy("sample.flac", ".flac")
+        val before = engine.read(file.absolutePath)!!
+        val cover = coverFixture()
+        val edit = edited(before).copy(
+            pictures = listOf(
+                PictureEdit(cover, "image/png", TagPicture.FRONT_COVER),
+                PictureEdit(cover, "image/png", TagPicture.ARTIST),
+                PictureEdit(cover, "image/png", TagPicture.BACK_COVER),
+            ),
+        )
+        assertTrue(engine.write(file.absolutePath, edit).ok)
+
+        val after = engine.read(file.absolutePath)!!
+        assertEquals(3, after.pictures.size)
+        assertEquals(
+            setOf(TagPicture.FRONT_COVER, TagPicture.ARTIST, TagPicture.BACK_COVER),
+            after.pictures.map { it.type }.toSet(),
+        )
+    }
+
+    @Test
+    fun mp4KeepsOnlyTheFrontCover() {
+        val file = tempCopy("sample.m4a", ".m4a")
+        val before = engine.read(file.absolutePath)!!
+        val cover = coverFixture()
+        val edit = edited(before).copy(
+            pictures = listOf(
+                PictureEdit(cover, "image/png", TagPicture.FRONT_COVER),
+                PictureEdit(cover, "image/png", TagPicture.ARTIST),
+            ),
+        )
+        assertTrue(engine.write(file.absolutePath, edit).ok)
+
+        val after = engine.read(file.absolutePath)!!
+        assertEquals(1, after.pictures.size)
+        assertEquals(TagPicture.FRONT_COVER, after.pictures.single().type)
+    }
+
+    @Test
+    fun emptyPictureListRemovesEveryPicture() {
+        val file = tempCopy("sample.flac", ".flac")
+        val before = engine.read(file.absolutePath)!!
+        val cover = coverFixture()
+
+        assertTrue(
+            engine.write(
+                file.absolutePath,
+                edited(before).copy(pictures = listOf(PictureEdit(cover, "image/png"))),
+            ).ok,
+        )
+        val withCover = engine.read(file.absolutePath)!!
+        assertEquals(1, withCover.pictures.size)
+
+        assertTrue(
+            engine.write(
+                file.absolutePath,
+                TagEdit.from(withCover).copy(pictures = emptyList()),
+            ).ok,
+        )
+        assertTrue(engine.read(file.absolutePath)!!.pictures.isEmpty())
+    }
 }

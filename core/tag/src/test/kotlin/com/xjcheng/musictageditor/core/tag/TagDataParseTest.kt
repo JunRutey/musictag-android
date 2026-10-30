@@ -25,7 +25,7 @@ class TagDataParseTest {
         track: String = "3",
         trackStr: String = "3/12",
         pictureCount: String = "1",
-        pictures: List<String> = listOf("image/png", "aGVsbG8="),
+        pictures: List<String> = listOf("image/png", "aGVsbG8=", "3"),
     ): Array<String> {
         val values = MutableList(21) { "" }
         values[0] = container
@@ -82,7 +82,26 @@ class TagDataParseTest {
         val tag = engine.parse(array())!!
         assertEquals(1, tag.pictures.size)
         assertEquals("image/png", tag.pictures[0].mimeType)
+        assertEquals(TagPicture.FRONT_COVER, tag.pictures[0].type)
         assertArrayEquals("hello".toByteArray(), tag.pictures[0].data)
+    }
+
+    @Test
+    fun decodesTypedPicturesAndDefaultsMissingTypes() {
+        val tag = engine.parse(
+            array(
+                pictureCount = "2",
+                pictures = listOf(
+                    "image/jpeg", "aGVsbG8=", "8",
+                    "image/jpeg", "d29ybGQ=", "",
+                ),
+            ),
+        )!!
+        assertEquals(2, tag.pictures.size)
+        assertEquals(TagPicture.ARTIST, tag.pictures[0].type)
+        // An engine revision that does not report a type is treated as a front cover.
+        assertEquals(TagPicture.FRONT_COVER, tag.pictures[1].type)
+        assertArrayEquals("world".toByteArray(), tag.pictures[1].data)
     }
 
     @Test

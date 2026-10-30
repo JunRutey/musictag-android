@@ -68,6 +68,8 @@ using TagLib::Tag;
 struct Picture {
     std::string mime;
     ByteVector data;
+    // ID3v2 picture type: 3 = front cover, 4 = back cover, 8 = artist, 0 = other.
+    int type = 3;
 };
 
 std::string utf8(const String &value) { return value.to8Bit(true); }
@@ -289,7 +291,8 @@ void collectPictures(File *file, const TagContext &context, std::vector<Picture>
     if (auto *flac = dynamic_cast<TagLib::FLAC::File *>(file)) {
         for (auto *picture : flac->pictureList()) {
             if (picture != nullptr) {
-                out.push_back({utf8(picture->mimeType()), picture->data()});
+                out.push_back({utf8(picture->mimeType()), picture->data(),
+                               static_cast<int>(picture->type())});
             }
         }
         return;
@@ -314,14 +317,21 @@ void collectPictures(File *file, const TagContext &context, std::vector<Picture>
                 return s;
             }();
             const std::string mime = lower.find(".png") != std::string::npos ? "image/png" : "image/jpeg";
-            out.push_back({mime, payload});
+            int type = 3;
+            if (lower.find("back") != std::string::npos) {
+                type = 4;
+            } else if (lower.find("artist") != std::string::npos) {
+                type = 8;
+            }
+            out.push_back({mime, payload, type});
         }
         return;
     }
     if (auto *comment = xiphTagOf(file)) {
         for (auto *picture : comment->pictureList()) {
             if (picture != nullptr) {
-                out.push_back({utf8(picture->mimeType()), picture->data()});
+                out.push_back({utf8(picture->mimeType()), picture->data(),
+                               static_cast<int>(picture->type())});
             }
         }
         return;
@@ -329,7 +339,8 @@ void collectPictures(File *file, const TagContext &context, std::vector<Picture>
     if (context.id3v2 != nullptr) {
         for (auto *frame : context.id3v2->frameList("APIC")) {
             if (auto *apic = dynamic_cast<TagLib::ID3v2::AttachedPictureFrame *>(frame)) {
-                out.push_back({utf8(apic->mimeType()), apic->picture()});
+                out.push_back({utf8(apic->mimeType()), apic->picture(),
+                               static_cast<int>(apic->type())});
             }
         }
         return;
@@ -696,31 +707,42 @@ TagLib::MP4::CoverArt::Format coverFormatFor(const std::string &mime) {
     return mime == "image/png" ? TagLib::MP4::CoverArt::PNG : TagLib::MP4::CoverArt::JPEG;
 }
 
-/**
- * Applies a cover edit: leave it alone, remove it, or replace it.
- *
- * Every container stores artwork differently, so this dispatches on the tag family:
- * ID3v2 keeps APIC frames, Xiph (FLAC, Ogg) keeps PICTURE blocks inside the comment,
- * MP4 keeps a "covr" item, APE keeps a binary "Cover Art (Front)" item.
- */
-void applyCover(File *file, const TagContext &context, bool given, const ByteVector &data,
-                const std::string &mime) {
-    if (!given) {
-        return;
+TagLib::FLAC::Picture::Type flacTypeOf(int type) {
+    return static_cast<TagLib::FLAC::Picture::Type>(type);
+}
+
+TagLib::ID3v2::AttachedPictureFrame::Type id3TypeOf(int type) {
+    return static_cast<TagLib::ID3v2::AttachedPictureFrame::Type>(type);
+}
+
+/** APE keys are the only place an APE file records a picture type. */
+String apeKeyFor(int type) {
+    switch (type) {
+        case 4: return String("Cover Art (Back)", String::UTF8);
+        case 8: return String("Cover Art (Artist)", String::UTF8);
+        default: return String("Cover Art (Front)", String::UTF8);
     }
+}
+
+/**
+ * Replaces the complete picture set.
+ *
+ * ID3v2, FLAC, Xiph and APE store typed pictures and are rewritten wholesale. MP4 and ASF
+ * hold a single cover item, so they keep the front cover and ignore the rest; the caller
+ * reports that limitation from the container name instead.
+ */
+void applyPictures(File *file, const std::vector<Picture> &pictures) {
     const TagFamily family = familyOf(file);
 
-    // FLAC stores artwork in PICTURE metadata blocks on the file, while Ogg keeps the
-    // base64 METADATA_BLOCK_PICTURE inside the comment. Both are "Xiph" for text, so the
-    // container has to be checked before falling through to the comment.
     if (auto *flac = dynamic_cast<TagLib::FLAC::File *>(file)) {
         flac->removePictures();
-        if (!data.isEmpty()) {
-            auto *picture = new TagLib::FLAC::Picture();
-            picture->setType(TagLib::FLAC::Picture::FrontCover);
-            picture->setMimeType(String(mime, String::UTF8));
-            picture->setData(data);
-            flac->addPicture(picture);  // FLAC::File takes ownership
+        for (const auto &picture : pictures) {
+            if (picture.data.isEmpty()) continue;
+            auto *block = new TagLib::FLAC::Picture();
+            block->setType(flacTypeOf(picture.type));
+            block->setMimeType(String(picture.mime, String::UTF8));
+            block->setData(picture.data);
+            flac->addPicture(block);  // FLAC::File takes ownership
         }
         return;
     }
@@ -729,12 +751,13 @@ void applyCover(File *file, const TagContext &context, bool given, const ByteVec
         auto *comment = xiphTagOf(file);
         if (comment == nullptr) return;
         comment->removeAllPictures();
-        if (!data.isEmpty()) {
-            auto *picture = new TagLib::FLAC::Picture();
-            picture->setType(TagLib::FLAC::Picture::FrontCover);
-            picture->setMimeType(String(mime, String::UTF8));
-            picture->setData(data);
-            comment->addPicture(picture);  // the comment takes ownership
+        for (const auto &picture : pictures) {
+            if (picture.data.isEmpty()) continue;
+            auto *block = new TagLib::FLAC::Picture();
+            block->setType(flacTypeOf(picture.type));
+            block->setMimeType(String(picture.mime, String::UTF8));
+            block->setData(picture.data);
+            comment->addPicture(block);  // the comment takes ownership
         }
         return;
     }
@@ -743,26 +766,14 @@ void applyCover(File *file, const TagContext &context, bool given, const ByteVec
         auto *tag = id3v2TagOf(file);
         if (tag == nullptr) return;
         tag->removeFrames("APIC");
-        if (!data.isEmpty()) {
+        for (const auto &picture : pictures) {
+            if (picture.data.isEmpty()) continue;
             auto *frame = new TagLib::ID3v2::AttachedPictureFrame();
-            frame->setMimeType(String(mime, String::UTF8));
-            frame->setType(TagLib::ID3v2::AttachedPictureFrame::FrontCover);
+            frame->setMimeType(String(picture.mime, String::UTF8));
+            frame->setType(id3TypeOf(picture.type));
             frame->setDescription(String());
-            frame->setPicture(data);
+            frame->setPicture(picture.data);
             tag->addFrame(frame);
-        }
-        return;
-    }
-
-    if (family == TagFamily::Mp4) {
-        auto *tag = mp4TagOf(file);
-        if (tag == nullptr) return;
-        if (data.isEmpty()) {
-            tag->removeItem("covr");
-        } else {
-            TagLib::MP4::CoverArtList list;
-            list.append(TagLib::MP4::CoverArt(coverFormatFor(mime), data));
-            tag->setItem("covr", TagLib::MP4::Item(list));
         }
         return;
     }
@@ -770,17 +781,87 @@ void applyCover(File *file, const TagContext &context, bool given, const ByteVec
     if (family == TagFamily::Ape) {
         auto *tag = apeTagOf(file);
         if (tag == nullptr) return;
-        const String key("Cover Art (Front)", String::UTF8);
-        if (data.isEmpty()) {
+        const auto &items = tag->itemListMap();
+        std::vector<String> existing;
+        for (auto it = items.begin(); it != items.end(); ++it) {
+            if (it->first.upper().startsWith("COVER ART")) existing.push_back(it->first);
+        }
+        for (const auto &key : existing) {
             tag->removeItem(key);
-        } else {
+        }
+        for (const auto &picture : pictures) {
+            if (picture.data.isEmpty()) continue;
+            const String key = apeKeyFor(picture.type);
             TagLib::ByteVector payload;
-            payload.append(ByteVector(mime == "image/png" ? "cover.png" : "cover.jpg"));
+            payload.append(TagLib::ByteVector(
+                picture.mime == "image/png" ? "cover.png" : "cover.jpg"));
             payload.append('\0');
-            payload.append(data);
+            payload.append(picture.data);
             tag->setItem(key, TagLib::APE::Item(key, payload, true));
         }
+        return;
     }
+
+    if (family == TagFamily::Mp4) {
+        auto *tag = mp4TagOf(file);
+        if (tag == nullptr) return;
+        const Picture *front = nullptr;
+        for (const auto &picture : pictures) {
+            if (picture.data.isEmpty()) continue;
+            if (picture.type == 3) {
+                front = &picture;
+                break;
+            }
+            if (front == nullptr) front = &picture;
+        }
+        if (front == nullptr) {
+            tag->removeItem("covr");
+        } else {
+            TagLib::MP4::CoverArtList list;
+            list.append(TagLib::MP4::CoverArt(coverFormatFor(front->mime), front->data));
+            tag->setItem("covr", TagLib::MP4::Item(list));
+        }
+        return;
+    }
+}
+
+/** Applies the text fields plus an optional picture edit and saves the file. */
+std::string writeTags(File *file, const std::vector<std::string> &values, jint options,
+                      bool picturesGiven, const std::vector<Picture> &pictures) {
+    const std::string textFailure = applyTextFields(file, values, options);
+    if (!textFailure.empty()) {
+        return textFailure;
+    }
+    if (picturesGiven) {
+        applyPictures(file, pictures);
+    }
+
+    bool saved = false;
+    if (auto *mpeg = dynamic_cast<TagLib::MPEG::File *>(file)) {
+        const bool wantV1 = (options & 1) != 0;
+        const bool hasV1 = mpeg->hasID3v1Tag();
+        int tags = TagLib::MPEG::File::ID3v2;
+        if (wantV1 || hasV1) {
+            tags |= TagLib::MPEG::File::ID3v1;
+            // Refresh ID3v1 from ID3v2 with overwrite=true. Letting save() merge both
+            // directions appends the old values and produces "a / b" titles.
+            TagLib::Tag::duplicate(mpeg->ID3v2Tag(false), mpeg->ID3v1Tag(true), true);
+        }
+        if (mpeg->hasAPETag()) {
+            tags |= TagLib::MPEG::File::APE;  // keep existing APE tags instead of stripping
+        }
+        const TagLib::ID3v2::Version version =
+            (options & 2) != 0 ? TagLib::ID3v2::v3 : TagLib::ID3v2::v4;
+        saved = mpeg->save(tags, TagLib::File::StripOthers, version,
+                           TagLib::File::DoNotDuplicate);
+    } else {
+        saved = file->save();
+    }
+
+    if (!saved) {
+        return "save failed (read-only file or unsupported tag)";
+    }
+    return {};
 }
 
 }  // namespace
@@ -802,7 +883,7 @@ Java_com_xjcheng_musictageditor_core_tag_NativeTagBridge_taglibVersion(JNIEnv *e
 //   14 lyrics,
 //   15 durationMs, 16 bitrateKbps, 17 sampleRateHz, 18 channels, 19 bitsPerSample,
 //   20 pictureCount,
-//   21.. per picture: mime, base64 data
+//   21.. per picture: mime, base64 data, type (ID3v2 picture type)
 JNIEXPORT jobjectArray JNICALL
 Java_com_xjcheng_musictageditor_core_tag_NativeTagBridge_readAll(JNIEnv *env, jclass, jstring path) {
     if (path == nullptr) {
@@ -885,6 +966,7 @@ Java_com_xjcheng_musictageditor_core_tag_NativeTagBridge_readAll(JNIEnv *env, jc
     for (const auto &picture : pictures) {
         fields.push_back(picture.mime);
         fields.push_back(base64(picture.data));
+        fields.push_back(std::to_string(picture.type));
     }
 
     jclass stringClass = env->FindClass("java/lang/String");
@@ -944,60 +1026,115 @@ Java_com_xjcheng_musictageditor_core_tag_NativeTagBridge_writeAll(
         return toJavaString(env, "unsupported container");
     }
     File *file = ref.file();
-    const TagContext context = classify(file);
 
-    const std::string textFailure = applyTextFields(file, values, options);
-    if (!textFailure.empty()) {
-        return toJavaString(env, textFailure);
-    }
-
-    bool coverGiven = cover != nullptr;
-    ByteVector coverData;
+    std::vector<Picture> pictures;
+    const bool coverGiven = cover != nullptr;
     if (coverGiven) {
         const jsize size = env->GetArrayLength(cover);
         if (size > 0) {
             jbyte *bytes = env->GetByteArrayElements(cover, nullptr);
             if (bytes != nullptr) {
-                coverData = ByteVector(reinterpret_cast<const char *>(bytes),
-                                       static_cast<unsigned int>(size));
+                ByteVector data(reinterpret_cast<const char *>(bytes),
+                                static_cast<unsigned int>(size));
                 env->ReleaseByteArrayElements(cover, bytes, JNI_ABORT);
+                std::string mime;
+                if (coverMime != nullptr) {
+                    const char *rawMime = env->GetStringUTFChars(coverMime, nullptr);
+                    if (rawMime != nullptr) {
+                        mime = rawMime;
+                        env->ReleaseStringUTFChars(coverMime, rawMime);
+                    }
+                }
+                pictures.push_back({mime, data, 3});
             }
         }
     }
-    std::string coverType;
-    if (coverMime != nullptr) {
-        const char *rawMime = env->GetStringUTFChars(coverMime, nullptr);
-        if (rawMime != nullptr) {
-            coverType = rawMime;
-            env->ReleaseStringUTFChars(coverMime, rawMime);
-        }
-    }
-    applyCover(file, context, coverGiven, coverData, coverType);
 
-    bool saved = false;
-    if (auto *mpeg = dynamic_cast<TagLib::MPEG::File *>(file)) {
-        const bool wantV1 = (options & 1) != 0;
-        const bool hasV1 = mpeg->hasID3v1Tag();
-        int tags = TagLib::MPEG::File::ID3v2;
-        if (wantV1 || hasV1) {
-            tags |= TagLib::MPEG::File::ID3v1;
-            // Refresh ID3v1 from ID3v2 with overwrite=true. Letting save() merge both
-            // directions appends the old values and produces "a / b" titles.
-            TagLib::Tag::duplicate(mpeg->ID3v2Tag(false), mpeg->ID3v1Tag(true), true);
-        }
-        if (mpeg->hasAPETag()) {
-            tags |= TagLib::MPEG::File::APE;  // keep existing APE tags instead of stripping
-        }
-        const TagLib::ID3v2::Version version =
-            (options & 2) != 0 ? TagLib::ID3v2::v3 : TagLib::ID3v2::v4;
-        saved = mpeg->save(tags, TagLib::File::StripOthers, version,
-                           TagLib::File::DoNotDuplicate);
-    } else {
-        saved = file->save();
+    const std::string failure = writeTags(file, values, options, coverGiven, pictures);
+    if (!failure.empty()) {
+        return toJavaString(env, failure);
+    }
+    return nullptr;
+}
+
+// Writes the thirteen text fields plus a complete typed picture set.
+//
+//   pictureMimes / pictureData / pictureTypes describe the pictures to store; an empty list
+//   removes every picture. MP4 and ASF keep only the front cover, which the Kotlin layer
+//   reports from the container name.
+//
+// Returns null on success, otherwise a human readable reason.
+JNIEXPORT jstring JNICALL
+Java_com_xjcheng_musictageditor_core_tag_NativeTagBridge_writeAllWithPictures(
+    JNIEnv *env, jclass, jstring path, jobjectArray fields, jobjectArray pictureMimes,
+    jobjectArray pictureData, jintArray pictureTypes, jint options) {
+    if (path == nullptr || fields == nullptr) {
+        return toJavaString(env, "missing path or fields");
+    }
+    if (env->GetArrayLength(fields) < 13) {
+        return toJavaString(env, "expected 13 fields");
     }
 
-    if (!saved) {
-        return toJavaString(env, "save failed (read-only file or unsupported tag)");
+    const char *rawPath = env->GetStringUTFChars(path, nullptr);
+    if (rawPath == nullptr) {
+        return toJavaString(env, "path conversion failed");
+    }
+    const std::string filePath(rawPath);
+    env->ReleaseStringUTFChars(path, rawPath);
+
+    std::vector<std::string> values(13);
+    for (jsize i = 0; i < 13; ++i) {
+        auto *element = static_cast<jstring>(env->GetObjectArrayElement(fields, i));
+        if (element != nullptr) {
+            values[static_cast<size_t>(i)] = jstringToUtf8(env, element);
+            env->DeleteLocalRef(element);
+        }
+    }
+
+    std::vector<Picture> pictures;
+    const jsize count = pictureData != nullptr ? env->GetArrayLength(pictureData) : 0;
+    for (jsize i = 0; i < count; ++i) {
+        auto bytes = static_cast<jbyteArray>(env->GetObjectArrayElement(pictureData, i));
+        if (bytes == nullptr) continue;
+        const jsize size = env->GetArrayLength(bytes);
+        if (size <= 0) {
+            env->DeleteLocalRef(bytes);
+            continue;
+        }
+        ByteVector data;
+        jbyte *raw = env->GetByteArrayElements(bytes, nullptr);
+        if (raw != nullptr) {
+            data = ByteVector(reinterpret_cast<const char *>(raw),
+                              static_cast<unsigned int>(size));
+            env->ReleaseByteArrayElements(bytes, raw, JNI_ABORT);
+        }
+        env->DeleteLocalRef(bytes);
+
+        std::string mime;
+        if (pictureMimes != nullptr) {
+            auto element = static_cast<jstring>(env->GetObjectArrayElement(pictureMimes, i));
+            if (element != nullptr) {
+                mime = jstringToUtf8(env, element);
+                env->DeleteLocalRef(element);
+            }
+        }
+        int type = 3;
+        if (pictureTypes != nullptr && env->GetArrayLength(pictureTypes) > i) {
+            jint value = 3;
+            env->GetIntArrayRegion(pictureTypes, i, 1, &value);
+            type = static_cast<int>(value);
+        }
+        pictures.push_back({mime, data, type});
+    }
+
+    FileRef ref(filePath.c_str(), false);
+    if (ref.isNull() || ref.file() == nullptr) {
+        return toJavaString(env, "unsupported container");
+    }
+
+    const std::string failure = writeTags(ref.file(), values, options, true, pictures);
+    if (!failure.empty()) {
+        return toJavaString(env, failure);
     }
     return nullptr;
 }

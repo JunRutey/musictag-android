@@ -21,10 +21,26 @@ class NativeTagBridge private constructor() {
          *   8 track, 9 trackStr, 10 disc, 11 discStr, 12 year, 13 comment,
          *   14 lyrics,
          *   15 durationMs, 16 bitrateKbps, 17 sampleRateHz, 18 channels, 19 bitsPerSample,
-         *   20 pictureCount, 21.. mime/base64 pairs.
+         *   20 pictureCount, 21.. mime/base64/type triplets (ID3v2 picture type).
          */
         @JvmStatic
         external fun readAll(path: String): Array<String>?
+
+        /**
+         * Writes the thirteen fields and a complete typed picture set.
+         *
+         * An empty picture list removes every picture. MP4 and ASF keep only the front
+         * cover. Returns null on success, otherwise a reason.
+         */
+        @JvmStatic
+        external fun writeAllWithPictures(
+            path: String,
+            fields: Array<String>,
+            pictureMimes: Array<String>,
+            pictureData: Array<ByteArray>,
+            pictureTypes: IntArray,
+            options: Int,
+        ): String?
 
         /**
          * Writes the twelve fields plus lyrics and an optional cover edit.

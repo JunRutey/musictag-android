@@ -55,18 +55,31 @@ data class AudioProperties(
     }
 }
 
-class TagPicture(val mimeType: String, val data: ByteArray) {
+class TagPicture(
+    val mimeType: String,
+    val data: ByteArray,
+    /** ID3v2 picture type: 3 front cover, 4 back cover, 8 artist, 0 other. */
+    val type: Int = FRONT_COVER,
+) {
     val size: Int get() = data.size
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is TagPicture) return false
-        return mimeType == other.mimeType && data.contentEquals(other.data)
+        return mimeType == other.mimeType && type == other.type && data.contentEquals(other.data)
     }
 
-    override fun hashCode(): Int = 31 * mimeType.hashCode() + data.contentHashCode()
+    override fun hashCode(): Int =
+        31 * (31 * mimeType.hashCode() + type) + data.contentHashCode()
 
-    override fun toString(): String = "TagPicture($mimeType, ${data.size} bytes)"
+    override fun toString(): String = "TagPicture($mimeType, type=$type, ${data.size} bytes)"
+
+    companion object {
+        const val OTHER = 0
+        const val FRONT_COVER = 3
+        const val BACK_COVER = 4
+        const val ARTIST = 8
+    }
 }
 
 /** Reads and writes tags of one file. */

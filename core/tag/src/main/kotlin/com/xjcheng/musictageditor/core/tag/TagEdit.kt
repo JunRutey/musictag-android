@@ -5,6 +5,13 @@
 
 package com.xjcheng.musictageditor.core.tag
 
+/** How a write should treat one typed picture. */
+class PictureEdit(
+    val data: ByteArray,
+    val mimeType: String,
+    val type: Int = TagPicture.FRONT_COVER,
+)
+
 /** How a write should treat the embedded cover. */
 sealed interface CoverEdit {
     /** Leave the existing artwork alone. */
@@ -37,6 +44,12 @@ data class TagEdit(
     val comment: String = "",
     val lyrics: String = "",
     val cover: CoverEdit = CoverEdit.Unchanged,
+    /**
+     * A complete typed picture set: null leaves artwork alone, an empty list removes every
+     * picture, otherwise the file ends up with exactly these pictures. When set it wins
+     * over [cover].
+     */
+    val pictures: List<PictureEdit>? = null,
     /** MP3 only: also write an ID3v1 tag alongside ID3v2. */
     val writeId3v1: Boolean = false,
     /** MP3 only: write ID3v2.3 instead of ID3v2.4. */

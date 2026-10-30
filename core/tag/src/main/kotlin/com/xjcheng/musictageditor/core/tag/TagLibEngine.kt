@@ -41,7 +41,19 @@ class TagLibEngine : TagEngine {
         if (edit.writeId3v1) options = options or OPTION_ID3V1
         if (edit.id3v23) options = options or OPTION_ID3V23
 
-        val error = NativeTagBridge.writeAll(path, edit.fields(), coverBytes, coverMime, options)
+        val pictures = edit.pictures
+        val error = if (pictures != null) {
+            NativeTagBridge.writeAllWithPictures(
+                path,
+                edit.fields(),
+                pictures.map { it.mimeType }.toTypedArray(),
+                pictures.map { it.data }.toTypedArray(),
+                pictures.map { it.type }.toIntArray(),
+                options,
+            )
+        } else {
+            NativeTagBridge.writeAll(path, edit.fields(), coverBytes, coverMime, options)
+        }
         return if (error == null) WriteResult.Success else WriteResult.Failure(error)
     }
 
@@ -57,11 +69,21 @@ class TagLibEngine : TagEngine {
         val pictureCount = number(PICTURE_COUNT)
         val pictures = ArrayList<TagPicture>(pictureCount.coerceAtLeast(0))
         for (index in 0 until pictureCount) {
-            val mime = text(PICTURES + index * 2)
-            val encoded = text(PICTURES + index * 2 + 1)
+            val base = PICTURES + index * PICTURE_STRIDE
+            val mime = text(base)
+            val encoded = text(base + 1)
+            val type = number(base + 2)
             if (encoded.isEmpty()) continue
             val bytes = Base64Codec.decode(encoded)
-            if (bytes.isNotEmpty()) pictures.add(TagPicture(mime, bytes))
+            if (bytes.isNotEmpty()) {
+                pictures.add(
+                    TagPicture(
+                        mimeType = mime,
+                        data = bytes,
+                        type = if (type > 0) type else TagPicture.FRONT_COVER,
+                    ),
+                )
+            }
         }
 
         return TagData(
@@ -114,6 +136,7 @@ class TagLibEngine : TagEngine {
         const val BITS_PER_SAMPLE = 19
         const val PICTURE_COUNT = 20
         const val PICTURES = 21
+        const val PICTURE_STRIDE = 3
         const val FIELD_COUNT = 21
 
         const val OPTION_ID3V1 = 1
