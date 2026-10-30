@@ -4,6 +4,15 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.2] - 2026-10-31
+
+### 修复
+
+* 点击歌曲不再闪退：读取与写入标签都加了异常兜底，失败时在编辑页显示原因（读取标签失败：…）
+  并在 logcat 以 MusicTagEditor 记录，而不是让应用退出。
+* 首字母索引改为启动器式滑动：在 A–Z/# 竖条上拖动即按手指位置跳转，
+  并显示 56dp 的字母气泡；单击仍然只跳一次。歌曲、艺术家、专辑三个列表共用。
+
 ## [1.1.1] - 2026-10-31
 
 已发布：https://github.com/JunRutey/musictag-android/releases/tag/v1.1.1
