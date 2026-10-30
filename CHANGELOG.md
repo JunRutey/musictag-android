@@ -6,6 +6,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [1.1.1] - 2026-10-31
 
+已发布：https://github.com/JunRutey/musictag-android/releases/tag/v1.1.1
+
+* APK：`musictag-1.1.1.apk`（9,632,119 字节，versionCode 2026103018、versionName 1.1.1，
+  CI 用既有密钥签名；`apksigner verify` 退出码 0，证书 SHA-256
+  `51485c4e5ea851005cd72051dfbf0ac8ce64f6b211599b556e704c6ad7d79d4d`）。
+* APK SHA-256：`8ff7efb9d7c8df8b5478a811c946ffc776c9631a5db2196cb142ea4d839797c5`。
+
 ### 移除
 
 * 手动批量编辑：整体删除字段编辑页与曲库入口（注册的 `BatchEditSongsDetail` 保留为占位，
