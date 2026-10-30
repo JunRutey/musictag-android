@@ -27,6 +27,7 @@ import com.xjcheng.musictageditor.core.tag.WriteResult
 import com.xjcheng.musictageditor.activity.SearchActivity
 import com.xjcheng.musictageditor.core.net.TagCandidate
 import com.xjcheng.musictageditor.io.FileOps
+import com.xjcheng.musictageditor.io.LyricsSidecar
 import com.xjcheng.musictageditor.service.RefreshMediaStoreService
 import com.xjcheng.musictageditor.io.CoverDownloader
 import com.xjcheng.musictageditor.io.DocumentSource
@@ -243,6 +244,21 @@ class SongDetailActivity : ComponentActivity() {
                 is LoadResult.Ok -> {
                     document = result.document
                     val tag = result.tag
+                    // A tag without lyrics falls back to the ".lrc" side file, if we can
+                    // reach the real path next to it.
+                    val sidecarLyrics = if (tag.lyrics.isBlank()) {
+                        LyricsSidecar.pathFor(this, uri)?.let { audioPath ->
+                            LyricsSidecar.read(
+                                audioPath = audioPath,
+                                settings = settings.load(),
+                                title = tag.title,
+                                artist = tag.artist,
+                                album = tag.album,
+                            )
+                        }
+                    } else {
+                        null
+                    }
                     val front = tag.pictures.firstOrNull { it.type == TagPicture.FRONT_COVER }
                         ?: tag.pictures.firstOrNull()
                     val artist = tag.pictures.firstOrNull { it.type == TagPicture.ARTIST }
@@ -252,7 +268,9 @@ class SongDetailActivity : ComponentActivity() {
                         container = tag.container,
                         tagFormat = tag.tagFormat,
                         audio = describeAudio(tag),
-                        edit = TagEdit.from(tag),
+                        edit = TagEdit.from(tag).let { edit ->
+                            if (sidecarLyrics != null) edit.copy(lyrics = sidecarLyrics) else edit
+                        },
                         original = tag,
                         coverBytes = front?.data,
                         artistCoverBytes = artist?.data,
@@ -332,9 +350,25 @@ class SongDetailActivity : ComponentActivity() {
                 ui = ui.copy(error = failure)
             } else {
                 ui = ui.copy(message = getString(R.string.editor_message_saved))
+                writeLyricsSidecar(uri)
                 load(uri)
             }
         }
+    }
+
+    /** Writes the ".lrc" side file when the setting is on and the real path is reachable. */
+    private fun writeLyricsSidecar(uri: Uri) {
+        val preferences = settings.load()
+        if (!preferences.saveLrcWithTags) return
+        val audioPath = LyricsSidecar.pathFor(this, uri) ?: return
+        LyricsSidecar.write(
+            audioPath = audioPath,
+            lyrics = ui.edit.lyrics,
+            settings = preferences,
+            title = ui.edit.title,
+            artist = ui.edit.artist,
+            album = ui.edit.album,
+        )
     }
 
     private fun renameTo(name: String) {
