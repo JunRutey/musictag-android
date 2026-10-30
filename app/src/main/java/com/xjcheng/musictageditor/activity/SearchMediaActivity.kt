@@ -20,6 +20,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import com.xjcheng.musictageditor.R
 import com.xjcheng.musictageditor.SongDetailActivity
 import com.xjcheng.musictageditor.media.MediaFilters
 import com.xjcheng.musictageditor.media.MediaLibrary
@@ -48,7 +49,7 @@ class SearchMediaActivity : ComponentActivity() {
 
     private val requestPermission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         ui = ui.copy(permissionGranted = granted)
-        if (granted) load() else ui = ui.copy(loading = false, message = "Permission denied.")
+        if (granted) load() else ui = ui.copy(loading = false, message = getString(R.string.library_permission_denied))
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -67,6 +68,7 @@ class SearchMediaActivity : ComponentActivity() {
                     onOpenTrack = ::openTrack,
                     onBatchEdit = ::openBatchEditor,
                     onSettings = { startActivity(Intent(this, SettingsActivity::class.java)) },
+                    onTabSelected = { tab -> ui = ui.copy(selectedTab = tab) },
                 )
             }
         }
@@ -81,7 +83,7 @@ class SearchMediaActivity : ComponentActivity() {
             val loaded = withContext(Dispatchers.IO) { runCatching { library.query() } }
             allTracks = loaded.getOrDefault(emptyList())
             ui = ui.copy(
-                message = loaded.exceptionOrNull()?.let { it.message ?: "Could not read the media library" },
+                message = if (loaded.isFailure) getString(R.string.library_error) else null,
             )
             applyFilter(loadRaw = true)
         }

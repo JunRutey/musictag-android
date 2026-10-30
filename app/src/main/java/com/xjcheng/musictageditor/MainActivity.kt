@@ -28,6 +28,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.xjcheng.musictageditor.activity.SearchActivity
 import com.xjcheng.musictageditor.activity.SearchMediaActivity
@@ -110,19 +111,19 @@ private fun HomeScreen(
 ) {
     Surface(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
-            Text("Music Tag", style = MaterialTheme.typography.headlineMedium)
+            Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineMedium)
             Text(
-                text = "version $version · package com.xjcheng.musictageditor",
+                text = stringResource(R.string.home_version, version, "com.xjcheng.musictageditor"),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(modifier = Modifier.height(24.dp))
             Button(onClick = onLibrary, modifier = Modifier.fillMaxWidth()) {
-                Text("Browse the library")
+                Text(stringResource(R.string.home_library))
             }
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedButton(onClick = onOpenFile, modifier = Modifier.fillMaxWidth()) {
-                Text("Open an audio file")
+                Text(stringResource(R.string.home_open_file))
             }
             Spacer(modifier = Modifier.height(8.dp))
             Row(
@@ -130,25 +131,22 @@ private fun HomeScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 OutlinedButton(onClick = onSearch, modifier = Modifier.weight(1f)) {
-                    Text("Find tags online")
+                    Text(stringResource(R.string.home_search))
                 }
                 OutlinedButton(onClick = onSettings, modifier = Modifier.weight(1f)) {
-                    Text("Settings")
+                    Text(stringResource(R.string.home_settings))
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))
             HorizontalDivider()
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Compatibility: other apps can still open files here with VIEW, EDIT, " +
-                    "SEND and the system search intent; every historical activity, service and " +
-                    "provider is declared with its original name.",
+                text = stringResource(R.string.home_compat),
                 style = MaterialTheme.typography.bodyMedium,
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Tags are written by upstream TagLib 2.0.2 behind the same JNI shape the " +
-                    "original used: MP3, FLAC, Ogg, APE and M4A are read and written, with artwork.",
+                text = stringResource(R.string.home_engine),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

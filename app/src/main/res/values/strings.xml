@@ -36,4 +36,24 @@
     <string name="label_unknown_artist">未知艺术家</string>
     <string name="tab_artists_pending">艺术家视图将在后续版本提供</string>
     <string name="tab_albums_pending">专辑视图将在后续版本提供</string>
+
+    <!-- 曲库排序与行内信息 -->
+    <string name="library_sort">排序</string>
+    <string name="library_bitrate">%1$d kbps</string>
+    <string name="label_unknown_album">未知专辑</string>
+    <string name="sort_title">标题</string>
+    <string name="sort_artist">艺术家</string>
+    <string name="sort_album">专辑</string>
+    <string name="sort_duration">时长</string>
+    <string name="sort_ascending">升序</string>
+    <string name="sort_descending">降序</string>
+
+    <!-- 首屏 -->
+    <string name="home_version">版本 %1$s · 包名 %2$s</string>
+    <string name="home_library">浏览曲库</string>
+    <string name="home_open_file">打开音频文件</string>
+    <string name="home_search">在线查找标签</string>
+    <string name="home_settings">设置</string>
+    <string name="home_compat">兼容性：其他应用仍可通过 VIEW、EDIT、SEND 和系统搜索打开本应用；所有历史组件名保持不变。</string>
+    <string name="home_engine">标签读写由上游 TagLib 2.0.2 完成，支持 MP3、FLAC、Ogg、APE、M4A 与封面。</string>
 </resources>
