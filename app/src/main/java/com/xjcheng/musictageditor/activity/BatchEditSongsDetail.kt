@@ -14,6 +14,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.xjcheng.musictageditor.R
 import com.xjcheng.musictageditor.batch.BatchEdit
 import com.xjcheng.musictageditor.batch.BatchField
 import com.xjcheng.musictageditor.batch.BatchMode
@@ -54,12 +55,12 @@ class BatchEditSongsDetail : ComponentActivity() {
 
     private fun startBatch() {
         if (uris.isEmpty()) {
-            ui = ui.copy(message = "No files were handed to the batch editor.")
+            ui = ui.copy(message = getString(R.string.batch_error_no_files))
             return
         }
         val values = ui.values.filterValues { it.isNotBlank() }.mapKeys { it.key }
         if (values.isEmpty()) {
-            ui = ui.copy(message = "Fill in at least one field to write.")
+            ui = ui.copy(message = getString(R.string.batch_error_no_fields))
             return
         }
         val edit = BatchEdit(

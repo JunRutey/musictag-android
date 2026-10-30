@@ -7,17 +7,17 @@ package com.xjcheng.musictageditor.batch
 
 /** The eleven editable text fields, in the order the editor and the native layer use. */
 enum class BatchField(val label: String, val placeholder: Char) {
-    TITLE("Title", 't'),
-    ARTIST("Artist", 'a'),
-    ALBUM("Album", 'l'),
-    ALBUM_ARTIST("Album artist", 'A'),
-    GENRE("Genre", 'g'),
-    COMPOSER("Composer", 'c'),
-    TRACK("Track", 'n'),
-    DISC("Disc", 'd'),
-    YEAR("Year", 'y'),
-    COMMENT("Comment", 'm'),
-    LYRICS("Lyrics", 'L'),
+    TITLE("标题", 't'),
+    ARTIST("艺术家", 'a'),
+    ALBUM("专辑", 'l'),
+    ALBUM_ARTIST("专辑艺术家", 'A'),
+    GENRE("流派", 'g'),
+    COMPOSER("作曲", 'c'),
+    TRACK("音轨", 'n'),
+    DISC("碟号", 'd'),
+    YEAR("年份", 'y'),
+    COMMENT("注释", 'm'),
+    LYRICS("歌词", 'L'),
 }
 
 enum class BatchMode {

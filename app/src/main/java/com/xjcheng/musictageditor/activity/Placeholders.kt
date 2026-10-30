@@ -14,12 +14,6 @@ package com.xjcheng.musictageditor.activity
  * Compose screens while the class names stay put.
  */
 
-class AlbumActivity :
-    PlaceholderActivity("Album", "M2 — library browsing")
-
-class ArtistActivity :
-    PlaceholderActivity("Artist", "M2 — library browsing")
-
 class SearchWebPictureActivity :
     PlaceholderActivity("Search cover art", "M4 — online providers")
 

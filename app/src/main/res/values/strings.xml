@@ -118,4 +118,14 @@
     <string name="editor_message_tags_filled">已从在线搜索填充标签。</string>
     <string name="editor_message_tags_filled_no_cover">标签已填充；封面下载失败。</string>
     <string name="editor_message_tags_and_cover">已从在线搜索填充标签与封面。</string>
+
+    <!-- 批量编辑 -->
+    <string name="batch_title">批量编辑</string>
+    <string name="batch_summary">%1$d 首 · %2$d 个字段待写入</string>
+    <string name="batch_fill_missing">只填充缺失项</string>
+    <string name="batch_fill_missing_summary">已有标签保持不变。</string>
+    <string name="action_write_tags">写入标签</string>
+    <string name="batch_apply_hint">只写入已填写的字段。</string>
+    <string name="batch_error_no_files">没有文件交给批量编辑器。</string>
+    <string name="batch_error_no_fields">至少填写一个字段。</string>
 </resources>
