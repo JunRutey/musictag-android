@@ -26,6 +26,8 @@ import com.xjcheng.musictageditor.core.tag.TagPicture
 import com.xjcheng.musictageditor.core.tag.WriteResult
 import com.xjcheng.musictageditor.activity.SearchActivity
 import com.xjcheng.musictageditor.core.net.TagCandidate
+import com.xjcheng.musictageditor.io.FileOps
+import com.xjcheng.musictageditor.service.RefreshMediaStoreService
 import com.xjcheng.musictageditor.io.CoverDownloader
 import com.xjcheng.musictageditor.io.DocumentSource
 import com.xjcheng.musictageditor.io.DocumentWriter
@@ -135,6 +137,9 @@ class SongDetailActivity : ComponentActivity() {
                         persistSettings()
                     },
                     onSave = { save() },
+                    onRename = ::renameTo,
+                    onDelete = ::deleteFile,
+                    onShare = ::shareFile,
                     onSearchOnline = { openOnlineSearch() },
                 )
             }
@@ -289,8 +294,9 @@ class SongDetailActivity : ComponentActivity() {
         }
         // Any typed-picture edit is written as a complete set, so the front cover and the
         // artist image cannot silently drop each other.
-        val pictures = if (ui.picturesDirty || ui.artistCoverBytes != null) {
-            buildList {
+        val pictures: List<PictureEdit>? =
+            if (ui.picturesDirty || ui.artistCoverBytes != null) {
+                buildList<PictureEdit> {
                 if (!ui.coverRemoved) {
                     ui.coverBytes?.let { add(PictureEdit(it, coverMime, TagPicture.FRONT_COVER)) }
                 }
@@ -328,6 +334,36 @@ class SongDetailActivity : ComponentActivity() {
                 ui = ui.copy(message = getString(R.string.editor_message_saved))
                 load(uri)
             }
+        }
+    }
+
+    private fun renameTo(name: String) {
+        val current = document ?: return
+        val uri = documentUri ?: return
+        when (FileOps.rename(this, uri, name, current.displayName)) {
+            FileOps.Result.Ok -> load(uri)
+            is FileOps.Result.Failed -> ui = ui.copy(error = getString(R.string.editor_error_rename))
+        }
+    }
+
+    private fun deleteFile() {
+        val current = document ?: return
+        val uri = documentUri ?: return
+        when (FileOps.delete(this, uri)) {
+            FileOps.Result.Ok -> {
+                RefreshMediaStoreService.start(this, listOf(current.path))
+                finish()
+            }
+            is FileOps.Result.Failed -> ui = ui.copy(error = getString(R.string.editor_error_delete))
+        }
+    }
+
+    private fun shareFile() {
+        val current = document ?: return
+        val uri = documentUri ?: return
+        when (FileOps.share(this, uri, current.mimeType)) {
+            FileOps.Result.Ok -> Unit
+            is FileOps.Result.Failed -> ui = ui.copy(error = getString(R.string.editor_error_share))
         }
     }
 }

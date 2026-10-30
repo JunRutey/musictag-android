@@ -114,6 +114,16 @@
     <string name="editor_artist_cover_present">已有艺术家图片</string>
     <string name="editor_remove_artist_cover">移除艺术家图片</string>
     <string name="editor_picture_single_container">%1$s 只保留一张封面，因此不提供艺术家图片。</string>
+    <string name="action_share">分享</string>
+    <string name="action_delete">删除</string>
+    <string name="action_cancel">取消</string>
+    <string name="editor_rename">重命名文件</string>
+    <string name="editor_rename_confirm">确定重命名</string>
+    <string name="editor_delete">删除文件</string>
+    <string name="editor_delete_confirm">确认删除</string>
+    <string name="editor_error_rename">重命名失败。</string>
+    <string name="editor_error_delete">删除失败。</string>
+    <string name="editor_error_share">分享失败。</string>
     <string name="editor_error_read_image">无法读取所选图片。</string>
     <string name="editor_error_no_document">该界面需要一个音频文档（VIEW 或 SEND）。</string>
     <string name="editor_error_open_document">无法打开该文档（没有权限或文件为空）。</string>

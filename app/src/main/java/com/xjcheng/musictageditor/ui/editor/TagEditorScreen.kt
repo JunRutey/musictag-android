@@ -17,7 +17,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
@@ -38,7 +42,9 @@ import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.icons.useful.Delete
 import top.yukonga.miuix.kmp.icon.icons.useful.Save
+import top.yukonga.miuix.kmp.icon.icons.useful.Share
 import top.yukonga.miuix.kmp.icon.icons.useful.Search
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -106,7 +112,15 @@ fun TagEditorScreen(
     onId3v23Change: (Boolean) -> Unit,
     onSave: () -> Unit,
     onSearchOnline: () -> Unit,
+    onRename: (String) -> Unit = {},
+    onDelete: () -> Unit = {},
+    onShare: () -> Unit = {},
 ) {
+    var renameText by rememberSaveable(state.documentName) {
+        mutableStateOf(state.documentName)
+    }
+    var confirmDelete by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -114,6 +128,12 @@ fun TagEditorScreen(
                 actions = {
                     IconButton(onClick = onSearchOnline) {
                         Icon(MiuixIcons.Useful.Search, stringResource(R.string.action_search_online))
+                    }
+                    IconButton(onClick = onShare) {
+                        Icon(MiuixIcons.Useful.Share, stringResource(R.string.action_share))
+                    }
+                    IconButton(onClick = { confirmDelete = true }) {
+                        Icon(MiuixIcons.Useful.Delete, stringResource(R.string.action_delete))
                     }
                     IconButton(onClick = onSave, enabled = !state.saving) {
                         Icon(MiuixIcons.Useful.Save, stringResource(R.string.action_save))
@@ -238,6 +258,39 @@ fun TagEditorScreen(
                 enabled = !state.saving,
                 onClick = onSave,
             )
+
+            BasicComponent(
+                title = stringResource(R.string.editor_rename),
+                summary = state.documentName,
+                bottomAction = {
+                    InlineField(value = renameText, onValueChange = { renameText = it })
+                },
+            )
+            BasicComponent(
+                title = stringResource(R.string.editor_rename_confirm),
+                enabled = renameText.isNotBlank() && renameText != state.documentName,
+                onClick = { onRename(renameText) },
+            )
+
+            if (confirmDelete) {
+                BasicComponent(
+                    title = stringResource(R.string.editor_delete_confirm),
+                    summary = state.documentName,
+                    onClick = {
+                        confirmDelete = false
+                        onDelete()
+                    },
+                )
+                BasicComponent(
+                    title = stringResource(R.string.action_cancel),
+                    onClick = { confirmDelete = false },
+                )
+            } else {
+                BasicComponent(
+                    title = stringResource(R.string.editor_delete),
+                    onClick = { confirmDelete = true },
+                )
+            }
         }
     }
 }

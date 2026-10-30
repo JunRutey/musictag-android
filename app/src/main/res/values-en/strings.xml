@@ -105,6 +105,16 @@
     <string name="editor_artist_cover_present">Artist image present</string>
     <string name="editor_remove_artist_cover">Remove artist image</string>
     <string name="editor_picture_single_container">%1$s keeps a single cover, so no artist image is offered.</string>
+    <string name="action_share">Share</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="editor_rename">Rename file</string>
+    <string name="editor_rename_confirm">Rename</string>
+    <string name="editor_delete">Delete file</string>
+    <string name="editor_delete_confirm">Confirm delete</string>
+    <string name="editor_error_rename">Rename failed.</string>
+    <string name="editor_error_delete">Delete failed.</string>
+    <string name="editor_error_share">Share failed.</string>
     <string name="editor_error_read_image">Could not read the selected image.</string>
     <string name="editor_error_no_document">This activity expects an audio document (VIEW or SEND).</string>
     <string name="editor_error_open_document">Cannot open this document (no permission or empty file).</string>
