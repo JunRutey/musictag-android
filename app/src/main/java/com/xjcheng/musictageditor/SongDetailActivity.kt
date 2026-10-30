@@ -17,10 +17,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
 import com.xjcheng.musictageditor.core.tag.CoverEdit
+import com.xjcheng.musictageditor.core.tag.PictureEdit
 import com.xjcheng.musictageditor.core.tag.TagData
 import com.xjcheng.musictageditor.R
 import com.xjcheng.musictageditor.core.tag.TagEdit
 import com.xjcheng.musictageditor.core.tag.TagLibEngine
+import com.xjcheng.musictageditor.core.tag.TagPicture
 import com.xjcheng.musictageditor.core.tag.WriteResult
 import com.xjcheng.musictageditor.activity.SearchActivity
 import com.xjcheng.musictageditor.core.net.TagCandidate
@@ -80,6 +82,25 @@ class SongDetailActivity : ComponentActivity() {
         }
     }
 
+    private val pickArtistCover = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri == null) return@registerForActivityResult
+        lifecycleScope.launch {
+            val bytes = withContext(Dispatchers.IO) {
+                runCatching { contentResolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull()
+            }
+            if (bytes == null || bytes.isEmpty()) {
+                ui = ui.copy(error = getString(R.string.editor_error_read_image))
+            } else {
+                ui = ui.copy(
+                    artistCoverBytes = bytes,
+                    artistCoverMime = contentResolver.getType(uri) ?: "image/png",
+                    picturesDirty = true,
+                    error = null,
+                )
+            }
+        }
+    }
+
     private sealed interface LoadResult {
         data class Ok(val document: LocalDocument, val tag: TagData) : LoadResult
         data class Failed(val message: String) : LoadResult
@@ -100,6 +121,10 @@ class SongDetailActivity : ComponentActivity() {
                     onPickCover = { pickCover.launch("image/*") },
                     onRemoveCover = {
                         ui = ui.copy(coverBytes = null, coverRemoved = true, coverDirty = true)
+                    },
+                    onPickArtistCover = { pickArtistCover.launch("image/*") },
+                    onRemoveArtistCover = {
+                        ui = ui.copy(artistCoverBytes = null, picturesDirty = true)
                     },
                     onWriteId3v1Change = { checked ->
                         ui = ui.copy(writeId3v1 = checked)
@@ -213,7 +238,10 @@ class SongDetailActivity : ComponentActivity() {
                 is LoadResult.Ok -> {
                     document = result.document
                     val tag = result.tag
-                    coverMime = tag.pictures.firstOrNull()?.mimeType ?: "image/png"
+                    val front = tag.pictures.firstOrNull { it.type == TagPicture.FRONT_COVER }
+                        ?: tag.pictures.firstOrNull()
+                    val artist = tag.pictures.firstOrNull { it.type == TagPicture.ARTIST }
+                    coverMime = front?.mimeType ?: "image/png"
                     ui = EditorUiState(
                         documentName = result.document.displayName,
                         container = tag.container,
@@ -221,7 +249,10 @@ class SongDetailActivity : ComponentActivity() {
                         audio = describeAudio(tag),
                         edit = TagEdit.from(tag),
                         original = tag,
-                        coverBytes = tag.pictures.firstOrNull()?.data,
+                        coverBytes = front?.data,
+                        artistCoverBytes = artist?.data,
+                        artistCoverMime = artist?.mimeType ?: "image/png",
+                        supportsTypedPictures = tag.container !in SINGLE_COVER_CONTAINERS,
                         isMp3 = tag.container == "MPEG",
                         writeId3v1 = ui.writeId3v1,
                         id3v23 = ui.id3v23 || tag.tagFormat.startsWith("ID3v2.3"),
@@ -256,8 +287,23 @@ class SongDetailActivity : ComponentActivity() {
             ui.coverDirty -> ui.coverBytes?.let { CoverEdit.Replace(it, coverMime) } ?: CoverEdit.Remove
             else -> CoverEdit.Unchanged
         }
+        // Any typed-picture edit is written as a complete set, so the front cover and the
+        // artist image cannot silently drop each other.
+        val pictures = if (ui.picturesDirty || ui.artistCoverBytes != null) {
+            buildList {
+                if (!ui.coverRemoved) {
+                    ui.coverBytes?.let { add(PictureEdit(it, coverMime, TagPicture.FRONT_COVER)) }
+                }
+                ui.artistCoverBytes?.let {
+                    add(PictureEdit(it, ui.artistCoverMime, TagPicture.ARTIST))
+                }
+            }
+        } else {
+            null
+        }
         val edit = ui.edit.copy(
-            cover = coverEdit,
+            cover = if (pictures != null) CoverEdit.Unchanged else coverEdit,
+            pictures = pictures,
             writeId3v1 = ui.writeId3v1,
             id3v23 = ui.id3v23,
         )
@@ -285,3 +331,6 @@ class SongDetailActivity : ComponentActivity() {
         }
     }
 }
+
+/** Containers that hold one cover item only, so no artist image can be stored. */
+private val SINGLE_COVER_CONTAINERS = setOf("MP4", "ASF")

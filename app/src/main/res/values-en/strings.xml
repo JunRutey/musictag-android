@@ -100,6 +100,11 @@
     <string name="editor_remove_cover">Remove artwork</string>
     <string name="editor_write_id3v1">Also write ID3v1</string>
     <string name="editor_use_id3v23">Use ID3v2.3</string>
+    <string name="editor_artist_cover">Artist image</string>
+    <string name="editor_artist_cover_none">No artist image</string>
+    <string name="editor_artist_cover_present">Artist image present</string>
+    <string name="editor_remove_artist_cover">Remove artist image</string>
+    <string name="editor_picture_single_container">%1$s keeps a single cover, so no artist image is offered.</string>
     <string name="editor_error_read_image">Could not read the selected image.</string>
     <string name="editor_error_no_document">This activity expects an audio document (VIEW or SEND).</string>
     <string name="editor_error_open_document">Cannot open this document (no permission or empty file).</string>

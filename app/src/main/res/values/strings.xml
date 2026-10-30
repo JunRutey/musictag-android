@@ -109,6 +109,11 @@
     <string name="editor_remove_cover">移除封面</string>
     <string name="editor_write_id3v1">同时写入 ID3v1</string>
     <string name="editor_use_id3v23">使用 ID3v2.3</string>
+    <string name="editor_artist_cover">艺术家图片</string>
+    <string name="editor_artist_cover_none">无艺术家图片</string>
+    <string name="editor_artist_cover_present">已有艺术家图片</string>
+    <string name="editor_remove_artist_cover">移除艺术家图片</string>
+    <string name="editor_picture_single_container">%1$s 只保留一张封面，因此不提供艺术家图片。</string>
     <string name="editor_error_read_image">无法读取所选图片。</string>
     <string name="editor_error_no_document">该界面需要一个音频文档（VIEW 或 SEND）。</string>
     <string name="editor_error_open_document">无法打开该文档（没有权限或文件为空）。</string>

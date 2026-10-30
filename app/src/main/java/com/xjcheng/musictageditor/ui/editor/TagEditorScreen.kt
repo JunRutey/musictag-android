@@ -72,6 +72,13 @@ data class EditorUiState(
     /** The user picked or removed artwork, so the write must touch the cover. */
     val coverDirty: Boolean = false,
     val coverRemoved: Boolean = false,
+    /** A second, typed picture written as the artist image. */
+    val artistCoverBytes: ByteArray? = null,
+    val artistCoverMime: String = "image/png",
+    /** Any picture change at all: the write then replaces the whole typed picture set. */
+    val picturesDirty: Boolean = false,
+    /** False for containers that hold a single cover (MP4, ASF). */
+    val supportsTypedPictures: Boolean = true,
     val isMp3: Boolean = false,
     val writeId3v1: Boolean = false,
     val id3v23: Boolean = false,
@@ -93,6 +100,8 @@ fun TagEditorScreen(
     onLyricsChange: (String) -> Unit,
     onPickCover: () -> Unit,
     onRemoveCover: () -> Unit,
+    onPickArtistCover: () -> Unit,
+    onRemoveArtistCover: () -> Unit,
     onWriteId3v1Change: (Boolean) -> Unit,
     onId3v23Change: (Boolean) -> Unit,
     onSave: () -> Unit,
@@ -194,6 +203,21 @@ fun TagEditorScreen(
 
             CoverRow(state = state, onPickCover = onPickCover, onRemoveCover = onRemoveCover)
 
+            if (state.supportsTypedPictures) {
+                ArtistCoverRow(
+                    state = state,
+                    onPick = onPickArtistCover,
+                    onRemove = onRemoveArtistCover,
+                )
+            } else {
+                Text(
+                    text = stringResource(R.string.editor_picture_single_container, state.container),
+                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                )
+            }
+
             if (state.isMp3) {
                 BasicComponent(
                     title = stringResource(R.string.editor_write_id3v1),
@@ -268,6 +292,57 @@ private fun CoverRow(
             title = stringResource(R.string.editor_remove_cover),
             enabled = !state.coverRemoved,
             onClick = onRemoveCover,
+        )
+    }
+}
+
+/** The typed artist picture, offered only where the container stores more than one image. */
+@Composable
+private fun ArtistCoverRow(
+    state: EditorUiState,
+    onPick: () -> Unit,
+    onRemove: () -> Unit,
+) {
+    val bitmap = remember(state.artistCoverBytes) {
+        state.artistCoverBytes?.let { bytes ->
+            runCatching {
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+            }.getOrNull()
+        }
+    }
+    BasicComponent(
+        title = stringResource(R.string.editor_artist_cover),
+        summary = if (bitmap != null) {
+            stringResource(R.string.editor_artist_cover_present)
+        } else {
+            stringResource(R.string.editor_artist_cover_none)
+        },
+        leftAction = {
+            val image = bitmap
+            if (image != null) {
+                Image(
+                    bitmap = image,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(RoundedCornerShape(6.dp)),
+                )
+            }
+        },
+        rightActions = {
+            Text(
+                text = stringResource(R.string.editor_cover_pick),
+                color = MiuixTheme.colorScheme.primary,
+                fontSize = 13.sp,
+            )
+        },
+        onClick = onPick,
+    )
+    if (bitmap != null) {
+        BasicComponent(
+            title = stringResource(R.string.editor_remove_artist_cover),
+            onClick = onRemove,
         )
     }
 }
