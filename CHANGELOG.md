@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [1.1.2] - 2026-10-31
 
+已发布：https://github.com/JunRutey/musictag-android/releases/tag/v1.1.2
+
+* APK：`musictag-1.1.2.apk`（9,633,047 字节，versionName 1.1.2，`apksigner verify` 退出码 0，
+  证书 SHA-256 `51485c4e5ea851005cd72051dfbf0ac8ce64f6b211599b556e704c6ad7d79d4d`）。
+* APK SHA-256：`11e5c601cc6cc24429ed4255b6ea68d0dc7126d129f4d5e66c1193cf9a756996`。
+
 ### 修复
 
 * 点击歌曲不再闪退：读取与写入标签都加了异常兜底，失败时在编辑页显示原因（读取标签失败：…）
