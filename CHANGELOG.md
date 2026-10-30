@@ -4,6 +4,21 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.3] - 2026-10-31
+
+### 新增
+
+* 应用内详细日志：写入 iles/logs/app.log（512 KiB 轮转，保留一份归档），
+  同时镜像到 logcat 的 MusicTag/<tag>；未捕获异常会在进程结束前写入完整堆栈。
+* 设置 → 关于新增「导出日志」（系统分享面板，摘要显示当前日志大小）与「清空日志」；
+  FileProvider 只暴露 iles/logs。
+* 编辑器会记录打开、读取、保存、重命名、删除、分享以及所有失败原因。
+
+### 修复
+
+* 深色主题可以手动切换了：dark_theme 改为快照状态（Appearance），切换后所有界面立刻重绘；
+  之前的值被 emember 缓存，切了也不会刷新。
+
 ## [1.1.2] - 2026-10-31
 
 已发布：https://github.com/JunRutey/musictag-android/releases/tag/v1.1.2
