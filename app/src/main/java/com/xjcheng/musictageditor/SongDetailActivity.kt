@@ -359,9 +359,10 @@ class SongDetailActivity : ComponentActivity() {
     }
 
     private fun shareFile() {
-        val current = document ?: return
+        document ?: return
         val uri = documentUri ?: return
-        when (FileOps.share(this, uri, current.mimeType)) {
+        val mimeType = contentResolver.getType(uri) ?: "audio/*"
+        when (FileOps.share(this, uri, mimeType)) {
             FileOps.Result.Ok -> Unit
             is FileOps.Result.Failed -> ui = ui.copy(error = getString(R.string.editor_error_share))
         }
