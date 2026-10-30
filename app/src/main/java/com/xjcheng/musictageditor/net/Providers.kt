@@ -22,8 +22,9 @@ import com.xjcheng.musictageditor.settings.Settings
  * Wires the providers together for the app.
  *
  * The four Chinese services are the primary catalogue; Apple Music, iTunes and MusicBrainz
- * (with Cover Art Archive) are the international fallback. Priority comes from the
- * `tags_sources_*` settings, so the order is user-editable without a rebuild.
+ * (with Cover Art Archive) are the international fallback. The priority order lives in
+ * [MergePolicy.DEFAULT]: the source-priority text settings were removed because editing them
+ * had no visible effect on the result.
  *
  * Kept out of the activities so the same registry can be reused by the batch service and,
  * later, by tests that swap in a fake transport.
@@ -32,11 +33,6 @@ object Providers {
 
     fun registry(settings: Settings): ProviderRegistry {
         val transport = OkHttpTransport()
-        val policy = MergePolicy.fromSettings(
-            tagSources = settings.tagsSourcesCombination,
-            coverSources = settings.tagsSourcesPicture,
-            lyricSources = settings.tagsSourcesLyric,
-        )
         return ProviderRegistry(
             listOf(
                 NeteaseProvider(transport),
@@ -53,7 +49,7 @@ object Providers {
                 MusicBrainzProvider(transport),
                 CoverArtArchive(transport),
             ),
-            policy,
+            MergePolicy.DEFAULT,
         )
     }
 }

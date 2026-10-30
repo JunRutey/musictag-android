@@ -18,6 +18,7 @@
 
     <!-- 曲库 -->
     <string name="song_list_title">歌曲（%1$d）</string>
+    <string name="list_title_count">%1$s（%2$d）</string>
     <string name="tab_songs">歌曲</string>
     <string name="tab_artists">艺术家</string>
     <string name="tab_albums">专辑</string>
@@ -132,6 +133,7 @@
     <string name="placeholder_batch_cover">为选中项选择封面</string>
     <string name="placeholder_note_providers">在线补全已并入「在线查找标签」页。</string>
     <string name="placeholder_note_batch">批量功能见曲库右上角的「批量编辑」。</string>
+    <string name="placeholder_note_batch_removed">手动批量编辑已移除，改为按文件自动匹配标签。</string>
     <string name="placeholder_note_filters">曲库过滤条件在「设置 → 曲库」里。</string>
     <string name="placeholder_note_donate">此构建不包含捐赠功能。</string>
     <string name="placeholder_note_crop">裁剪功能尚未提供，可在编辑器里直接更换封面。</string>

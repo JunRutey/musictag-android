@@ -37,12 +37,6 @@ class SettingsSchemaTest {
     fun originalKeyNamesArePreserved() {
         // Names from the original pref_settings.xml, where the semantics match.
         val expected = listOf(
-            "is_show_filetags_image",
-            "is_show_albumart_image",
-            "is_show_folder_image",
-            "tags_sources_combination",
-            "tags_sources_picture",
-            "tags_sources_lyric",
             "download_lyric_translations",
             "download_lyric_translations_t2s_mode",
             "connectors_lyric_and_tlyric",
@@ -59,19 +53,8 @@ class SettingsSchemaTest {
             "dirpath_of_ignore_medias",
             "video_of_ignore_medias",
             "dark_theme",
-            "allow_black_theme",
-            "primary_color",
-            "accent_color",
-            "tab_items",
-            "web_search_criteria",
             "web_search_items_limit_count",
-            "picture_in_file_tags_size_limit",
-            "picture_in_file_tags_format_limit",
             "id3v2_mode",
-            "allow_comment_tag_write_163key",
-            "allow_edit_dff_file_tags",
-            "always_show_batch_buttons",
-            "force_replace_albumart",
         )
         for (key in expected) {
             assertNotNull("missing original key $key", SettingsSchema.spec(key))
@@ -138,34 +121,35 @@ class SettingsSchemaTest {
         assertEquals("jp", settings.appleRegion)
         assertEquals(600, settings.appleCoverSize)
         assertEquals(" | ", settings.connectorLyricTranslation)
-        assertEquals(SettingsSchema.DEFAULT_TAG_SOURCES, settings.tagsSourcesCombination)
-        assertEquals("netease,qq,kugou,kuwo", SettingsSchema.DEFAULT_LYRIC_SOURCES)
-        // The retuned defaults put Apple first for artwork and keep the Chinese four on top.
-        assertTrue(settings.tagsSourcesPicture.startsWith("apple,"))
-        assertEquals(
-            listOf("netease", "qq", "kuwo", "kugou"),
-            settings.tagsSourcesCombination.split(',').take(4),
-        )
         assertTrue("the retired Last.fm key must be gone", SettingsSchema.spec("lastfm_api_key") == null)
-        assertFalse(settings.tagsSourcesCombination.contains("lastfm"))
-        assertFalse(settings.tagsSourcesCombination.contains("vgmdb"))
     }
 
     @Test
-    fun defaultsMatchTheProviderMergeOrders() {
-        // The schema strings and core:net's built-in orders must not drift apart.
-        assertEquals(
-            MergePolicy.TAG_ORDER.joinToString(",") { it.key },
-            SettingsSchema.DEFAULT_TAG_SOURCES,
+    fun retiredKeysAreNoLongerDeclared() {
+        // 1.1.1 removed the preferences that changed nothing when toggled.
+        val retired = listOf(
+            "tags_sources_combination",
+            "tags_sources_picture",
+            "tags_sources_lyric",
+            "web_search_criteria",
+            "primary_color",
+            "accent_color",
+            "allow_black_theme",
+            "enable_animations",
+            "tab_items",
+            "always_show_batch_buttons",
+            "media_store_rescan",
+            "keep_screen_on_while_batch",
         )
-        assertEquals(
-            MergePolicy.COVER_ORDER.joinToString(",") { it.key },
-            SettingsSchema.DEFAULT_COVER_SOURCES,
-        )
-        assertEquals(
-            MergePolicy.LYRIC_ORDER.joinToString(",") { it.key },
-            SettingsSchema.DEFAULT_LYRIC_SOURCES,
-        )
+        for (key in retired) {
+            assertNull("retired key still declared: $key", SettingsSchema.spec(key))
+        }
+    }
+
+    @Test
+    fun schemaStaysDeliberatelySmall() {
+        // The screen is meant to be scannable: keep it well under the original 48 entries.
+        assertEquals(28, SettingsSchema.specs.size)
     }
 
     @Test

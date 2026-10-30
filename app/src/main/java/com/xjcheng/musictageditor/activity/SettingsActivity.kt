@@ -36,7 +36,6 @@ class SettingsActivity : ComponentActivity() {
                 SettingsScreen(
                     settings = settings,
                     onUpdate = { key, value -> settings = settings.with(key, value) },
-                    onReset = { settings = repository.reset() },
                     onBack = { finish() },
                 )
             }

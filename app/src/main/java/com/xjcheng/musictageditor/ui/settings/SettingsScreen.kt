@@ -35,7 +35,6 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.icons.useful.Back
-import top.yukonga.miuix.kmp.icon.icons.useful.Restore
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
@@ -50,7 +49,6 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun SettingsScreen(
     settings: Settings,
     onUpdate: (String, Any?) -> Unit,
-    onReset: () -> Unit,
     onBack: () -> Unit,
 ) {
     Scaffold(
@@ -60,11 +58,6 @@ fun SettingsScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(MiuixIcons.Useful.Back, stringResource(R.string.action_back))
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onReset) {
-                        Icon(MiuixIcons.Useful.Restore, stringResource(R.string.action_reset))
                     }
                 },
             )

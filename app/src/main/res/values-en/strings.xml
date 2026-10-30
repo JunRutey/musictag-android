@@ -15,6 +15,7 @@
     <string name="m0_not_implemented">Not implemented yet</string>
 
     <string name="song_list_title">Songs (%1$d)</string>
+    <string name="list_title_count">%1$s (%2$d)</string>
     <string name="tab_songs">Songs</string>
     <string name="tab_artists">Artists</string>
     <string name="tab_albums">Albums</string>
@@ -122,6 +123,7 @@
     <string name="placeholder_batch_cover">Choose a cover for the selection</string>
     <string name="placeholder_note_providers">Online matching now lives in the \"Find tags online\" screen.</string>
     <string name="placeholder_note_batch">Batch editing lives behind the batch action in the library.</string>
+    <string name="placeholder_note_batch_removed">Manual batch editing is gone; batch auto-match replaces it.</string>
     <string name="placeholder_note_filters">Library filters live in Settings → Library.</string>
     <string name="placeholder_note_donate">This build does not include donations.</string>
     <string name="placeholder_note_crop">Cropping is not offered yet; change the artwork in the editor.</string>

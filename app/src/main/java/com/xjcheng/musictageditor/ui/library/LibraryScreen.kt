@@ -66,7 +66,6 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.icons.useful.Edit
 import top.yukonga.miuix.kmp.icon.icons.useful.Order
 import top.yukonga.miuix.kmp.icon.icons.useful.Personal
 import top.yukonga.miuix.kmp.icon.icons.useful.Play
@@ -115,12 +114,9 @@ fun LibraryScreen(
     onRefresh: () -> Unit,
     onRequestPermission: () -> Unit,
     onOpenTrack: (MediaTrack) -> Unit,
-    onBatchEdit: () -> Unit,
     onSettings: () -> Unit,
     onTabSelected: (Int) -> Unit = {},
 ) {
-    var searchOpen by rememberSaveable { mutableStateOf(false) }
-    var sortOpen by rememberSaveable { mutableStateOf(false) }
     var sort by rememberSaveable { mutableStateOf(LibrarySort.TITLE) }
     var ascending by rememberSaveable { mutableStateOf(true) }
 
@@ -133,32 +129,32 @@ fun LibraryScreen(
         }.toMap()
     }
 
+    val libraryTitle = when (state.selectedTab) {
+        TAB_ARTISTS -> stringResource(
+            R.string.list_title_count,
+            stringResource(R.string.tab_artists),
+            remember(state.tracks) { MediaGrouping.artists(state.tracks) }.size,
+        )
+        TAB_ALBUMS -> stringResource(
+            R.string.list_title_count,
+            stringResource(R.string.tab_albums),
+            remember(state.tracks) { MediaGrouping.albums(state.tracks) }.size,
+        )
+        else -> stringResource(R.string.song_list_title, state.tracks.size)
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = stringResource(R.string.song_list_title, state.tracks.size),
+                title = libraryTitle,
                 navigationIcon = {
                     IconButton(onClick = onSettings) {
                         Icon(MiuixIcons.Useful.Settings, stringResource(R.string.action_settings))
                     }
                 },
                 actions = {
-                    IconButton(onClick = { searchOpen = !searchOpen }) {
-                        Icon(MiuixIcons.Useful.Search, stringResource(R.string.library_filter_hint))
-                    }
-                    IconButton(onClick = {
-                        if (sortOpen) sortOpen = false else {
-                            sortOpen = true
-                            searchOpen = false
-                        }
-                    }) {
-                        Icon(MiuixIcons.Useful.Order, stringResource(R.string.library_sort))
-                    }
                     IconButton(onClick = onRefresh) {
                         Icon(MiuixIcons.Useful.Refresh, stringResource(R.string.action_refresh))
-                    }
-                    IconButton(onClick = onBatchEdit, enabled = state.tracks.isNotEmpty()) {
-                        Icon(MiuixIcons.Useful.Edit, stringResource(R.string.action_batch_edit))
                     }
                 },
             )
@@ -176,14 +172,14 @@ fun LibraryScreen(
         },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            if (searchOpen) {
+            // The filter and the sort chips stay visible on the song list and are hidden on
+            // the artist/album browsers, which have their own (alphabetical) ordering.
+            if (state.selectedTab == TAB_SONGS) {
                 LibrarySearchField(
                     value = state.query,
                     onValueChange = onQueryChange,
                     modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                 )
-            }
-            if (sortOpen) {
                 SortBar(
                     sort = sort,
                     ascending = ascending,

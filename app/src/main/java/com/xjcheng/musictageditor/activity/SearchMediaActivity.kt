@@ -66,7 +66,6 @@ class SearchMediaActivity : ComponentActivity() {
                     onRefresh = { load() },
                     onRequestPermission = { requestPermission.launch(audioPermission()) },
                     onOpenTrack = ::openTrack,
-                    onBatchEdit = ::openBatchEditor,
                     onSettings = { startActivity(Intent(this, SettingsActivity::class.java)) },
                     onTabSelected = { tab -> ui = ui.copy(selectedTab = tab) },
                 )
@@ -103,16 +102,6 @@ class SearchMediaActivity : ComponentActivity() {
             query = ui.query,
         )
         ui = ui.copy(loading = false, tracks = filtered)
-    }
-
-    private fun openBatchEditor() {
-        startActivity(
-            Intent(this, BatchEditSongsDetail::class.java)
-                .putStringArrayListExtra(
-                    BatchEditSongsDetail.EXTRA_URIS,
-                    ArrayList(ui.tracks.map { it.uri }),
-                ),
-        )
     }
 
     private fun openTrack(track: MediaTrack) {
