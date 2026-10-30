@@ -10,10 +10,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme as materialDarkColorScheme
 import androidx.compose.material3.lightColorScheme as materialLightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import com.xjcheng.musictageditor.settings.SettingsRepository
+import com.xjcheng.musictageditor.settings.Appearance
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.theme.darkColorScheme as miuixDarkColorScheme
 import top.yukonga.miuix.kmp.theme.lightColorScheme as miuixLightColorScheme
@@ -35,9 +35,9 @@ private val MaterialDarkColors = materialDarkColorScheme(
 /**
  * App theme.
  *
- * The `dark_theme` preference is honoured here, so the switch in the settings screen has a
- * visible effect; the system setting still wins when it is dark. Miuix is the primary
- * design language and Material 3 stays nested for the placeholder shell.
+ * The `dark_theme` preference is read through [Appearance], a snapshot state, so the switch in
+ * the settings screen repaints every open screen immediately instead of being cached in a
+ * `remember`. The system setting still wins when it is dark.
  */
 @Composable
 fun MusicTagTheme(
@@ -45,10 +45,9 @@ fun MusicTagTheme(
     content: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
-    val prefersDark = remember(context) {
-        SettingsRepository(context.applicationContext).load().darkTheme
-    }
-    val dark = darkTheme ?: (prefersDark || isSystemInDarkTheme())
+    LaunchedEffect(context) { Appearance.refresh(context) }
+
+    val dark = darkTheme ?: (Appearance.darkTheme || isSystemInDarkTheme())
     val miuixColors = if (dark) miuixDarkColorScheme() else miuixLightColorScheme()
     val materialColors = if (dark) MaterialDarkColors else MaterialLightColors
     MiuixTheme(colors = miuixColors) {

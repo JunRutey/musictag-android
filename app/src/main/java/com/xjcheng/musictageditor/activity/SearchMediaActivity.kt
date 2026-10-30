@@ -24,6 +24,7 @@ import com.xjcheng.musictageditor.R
 import com.xjcheng.musictageditor.SongDetailActivity
 import com.xjcheng.musictageditor.media.MediaFilters
 import com.xjcheng.musictageditor.media.MediaLibrary
+import com.xjcheng.musictageditor.logging.AppLog
 import com.xjcheng.musictageditor.media.MediaTrack
 import com.xjcheng.musictageditor.settings.SettingsRepository
 import com.xjcheng.musictageditor.ui.library.LibraryScreen
@@ -54,6 +55,7 @@ class SearchMediaActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        AppLog.init(this)
         ui = ui.copy(
             query = intent?.getStringExtra(SearchManager.QUERY).orEmpty(),
             permissionGranted = hasAudioPermission(),
@@ -105,6 +107,7 @@ class SearchMediaActivity : ComponentActivity() {
     }
 
     private fun openTrack(track: MediaTrack) {
+        AppLog.i("Library", "open ${track.title} (${track.uri})")
         val parsed = Uri.parse(track.uri)
         startActivity(
             Intent(this, SongDetailActivity::class.java)

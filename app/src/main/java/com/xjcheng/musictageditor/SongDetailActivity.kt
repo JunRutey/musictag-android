@@ -9,7 +9,6 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -20,6 +19,7 @@ import androidx.lifecycle.lifecycleScope
 import com.xjcheng.musictageditor.core.tag.CoverEdit
 import com.xjcheng.musictageditor.core.tag.PictureEdit
 import com.xjcheng.musictageditor.core.tag.TagData
+import com.xjcheng.musictageditor.logging.AppLog
 import com.xjcheng.musictageditor.R
 import com.xjcheng.musictageditor.core.tag.TagEdit
 import com.xjcheng.musictageditor.core.tag.TagLibEngine
@@ -114,6 +114,9 @@ class SongDetailActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        AppLog.init(this)
+        AppLog.i(TAG, "open action=${intent?.action} data=${intent?.data}")
+        AppLog.i(TAG, "startup ${TAG}")
 
         val initialSettings = settings.load()
         ui = ui.copy(writeId3v1 = initialSettings.writeId3v1, id3v23 = initialSettings.id3v23)
@@ -248,7 +251,7 @@ class SongDetailActivity : ComponentActivity() {
                         )
                     LoadResult.Ok(resolved, tag)
                 }.getOrElse { error ->
-                    Log.w(TAG, "cannot read tags for $uri", error)
+                    AppLog.w(TAG, "cannot read tags for $uri", error)
                     LoadResult.Failed(
                         getString(
                             R.string.editor_error_native,
@@ -374,7 +377,7 @@ class SongDetailActivity : ComponentActivity() {
                         }
                     }
                 }.getOrElse { error ->
-                    Log.w(TAG, "cannot write tags for $uri", error)
+                    AppLog.w(TAG, "cannot write tags for $uri", error)
                     getString(
                         R.string.editor_error_write_crashed,
                         error.message ?: error.javaClass.simpleName,
@@ -385,6 +388,7 @@ class SongDetailActivity : ComponentActivity() {
             if (failure != null) {
                 ui = ui.copy(error = failure)
             } else {
+                AppLog.i(TAG, "tags saved for $uri")
                 ui = ui.copy(message = getString(R.string.editor_message_saved))
                 writeLyricsSidecar(uri)
                 load(uri)

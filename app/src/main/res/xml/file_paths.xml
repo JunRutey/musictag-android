@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Shared paths: the exported log lives under files/logs so FileProvider can hand a
+  content:// URI to the system share sheet without exposing anything else.
+-->
+<paths>
+    <files-path name="logs" path="logs/" />
+    <cache-path name="cache" path="." />
+</paths>

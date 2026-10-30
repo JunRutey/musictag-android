@@ -61,6 +61,10 @@
     <!-- 通用动作 -->
     <string name="action_back">返回</string>
     <string name="action_reset">重置</string>
+        <string name="settings_export_log">导出日志</string>
+    <string name="settings_clear_log">清空日志</string>
+    <string name="settings_log_size">当前日志大小：%1$s</string>
+    <string name="settings_log_empty">暂无日志</string>
     <string name="settings_about">关于</string>
     <string name="settings_repository">项目仓库</string>
     <string name="settings_version">版本</string>

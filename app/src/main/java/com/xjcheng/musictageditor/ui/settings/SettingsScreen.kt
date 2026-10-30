@@ -50,7 +50,10 @@ fun SettingsScreen(
     settings: Settings,
     versionName: String,
     repositoryUrl: String,
+    logSummary: String,
     onOpenRepository: () -> Unit,
+    onExportLog: () -> Unit,
+    onClearLog: () -> Unit,
     onUpdate: (String, Any?) -> Unit,
     onBack: () -> Unit,
 ) {
@@ -81,6 +84,19 @@ fun SettingsScreen(
                     title = stringResource(R.string.settings_repository),
                     summary = repositoryUrl,
                     onClick = onOpenRepository,
+                )
+            }
+            item(key = "about-log") {
+                BasicComponent(
+                    title = stringResource(R.string.settings_export_log),
+                    summary = logSummary,
+                    onClick = onExportLog,
+                )
+            }
+            item(key = "about-clear-log") {
+                BasicComponent(
+                    title = stringResource(R.string.settings_clear_log),
+                    onClick = onClearLog,
                 )
             }
             item(key = "about-version") {
