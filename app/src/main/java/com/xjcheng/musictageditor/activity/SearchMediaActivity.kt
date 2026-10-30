@@ -105,10 +105,14 @@ class SearchMediaActivity : ComponentActivity() {
     }
 
     private fun openTrack(track: MediaTrack) {
+        val parsed = Uri.parse(track.uri)
         startActivity(
             Intent(this, SongDetailActivity::class.java)
                 .setAction(Intent.ACTION_VIEW)
-                .setData(Uri.parse(track.uri))
+                .setData(parsed)
+                // Redundant for our own reader, but it keeps the intent valid for any other
+                // audio handler a caller may route through, so the entry point stays compatible.
+                .putExtra(Intent.EXTRA_STREAM, parsed)
                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION),
         )
     }

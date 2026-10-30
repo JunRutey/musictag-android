@@ -55,6 +55,9 @@
 
     <string name="action_back">Back</string>
     <string name="action_reset">Reset</string>
+    <string name="settings_about">About</string>
+    <string name="settings_repository">Project repository</string>
+    <string name="settings_version">Version</string>
     <string name="settings_footer">%1$d preferences, stored in musictag_settings.</string>
 
     <string name="search_title">Find tags online</string>
@@ -135,7 +138,10 @@
     <string name="batch_channel_name">Batch tag writing</string>
     <string name="editor_error_read_image">Could not read the selected image.</string>
     <string name="editor_error_no_document">This activity expects an audio document (VIEW or SEND).</string>
-    <string name="editor_error_open_document">Cannot open this document (no permission or empty file).</string>
+    <string name="editor_error_open_document">Cannot open this file: it may have been moved or deleted.</string>
+    <string name="editor_error_no_permission">No permission to read this file. Grant music/storage access and retry.</string>
+    <string name="editor_error_empty_file">The file is empty, so there is nothing to read.</string>
+    <string name="editor_error_unsupported_uri">This address is not a readable file; open the song from the library or a file manager.</string>
     <string name="editor_error_unknown_container">Not a recognised audio container.</string>
     <string name="editor_error_write_failed">Write failed: %1$s</string>
     <string name="editor_message_saved">Saved.</string>

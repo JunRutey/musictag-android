@@ -28,6 +28,8 @@ import com.xjcheng.musictageditor.activity.SearchActivity
 import com.xjcheng.musictageditor.core.net.TagCandidate
 import com.xjcheng.musictageditor.io.FileOps
 import com.xjcheng.musictageditor.io.LyricsSidecar
+import com.xjcheng.musictageditor.io.ResolveFailure
+import com.xjcheng.musictageditor.io.ResolveResult
 import com.xjcheng.musictageditor.service.RefreshMediaStoreService
 import com.xjcheng.musictageditor.io.CoverDownloader
 import com.xjcheng.musictageditor.io.DocumentSource
@@ -232,10 +234,10 @@ class SongDetailActivity : ComponentActivity() {
         lifecycleScope.launch {
             ui = ui.copy(loading = true, error = null, message = null)
             val result = withContext(Dispatchers.IO) {
-                val resolved = DocumentSource.resolve(this@SongDetailActivity, uri)
-                    ?: return@withContext LoadResult.Failed(
-                        getString(R.string.editor_error_open_document)
-                    )
+                val resolved = when (val outcome = DocumentSource.resolveDetailed(this@SongDetailActivity, uri)) {
+                    is ResolveResult.Ok -> outcome.document
+                    is ResolveResult.Failed -> return@withContext LoadResult.Failed(outcome.reason.message())
+                }
                 val tag = engine.read(resolved.path)
                     ?: return@withContext LoadResult.Failed(getString(R.string.editor_error_unknown_container))
                 LoadResult.Ok(resolved, tag)
@@ -286,6 +288,16 @@ class SongDetailActivity : ComponentActivity() {
             }
         }
     }
+
+    /** Turns a staging failure into a sentence that says what to do about it. */
+    private fun ResolveFailure.message(): String = getString(
+        when (this) {
+            ResolveFailure.NO_PERMISSION -> R.string.editor_error_no_permission
+            ResolveFailure.EMPTY_FILE -> R.string.editor_error_empty_file
+            ResolveFailure.UNSUPPORTED_URI -> R.string.editor_error_unsupported_uri
+            ResolveFailure.UNREADABLE -> R.string.editor_error_open_document
+        },
+    )
 
     private fun describeAudio(tag: TagData): String = buildString {
         if (tag.audio.durationMs > 0) append("${tag.audio.durationMs / 1000}s")

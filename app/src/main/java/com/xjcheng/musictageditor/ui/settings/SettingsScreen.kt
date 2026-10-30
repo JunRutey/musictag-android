@@ -48,6 +48,9 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun SettingsScreen(
     settings: Settings,
+    versionName: String,
+    repositoryUrl: String,
+    onOpenRepository: () -> Unit,
     onUpdate: (String, Any?) -> Unit,
     onBack: () -> Unit,
 ) {
@@ -71,6 +74,20 @@ fun SettingsScreen(
                 items(specs, key = { it.key }) { spec ->
                     SettingRow(spec = spec, settings = settings, onUpdate = onUpdate)
                 }
+            }
+            item(key = "header-about") { GroupTitle(stringResource(R.string.settings_about)) }
+            item(key = "about-repository") {
+                BasicComponent(
+                    title = stringResource(R.string.settings_repository),
+                    summary = repositoryUrl,
+                    onClick = onOpenRepository,
+                )
+            }
+            item(key = "about-version") {
+                BasicComponent(
+                    title = stringResource(R.string.settings_version),
+                    summary = versionName,
+                )
             }
             item(key = "footer") {
                 Text(
