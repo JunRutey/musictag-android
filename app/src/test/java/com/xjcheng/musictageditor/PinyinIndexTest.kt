@@ -61,8 +61,9 @@ class PinyinIndexTest {
     fun rankOrderPutsHashAfterTheAlphabet() {
         assertEquals(0, PinyinIndex.rankOf("Always"))
         assertEquals(25, PinyinIndex.rankOf("周杰伦"))
-        assertEquals(26, PinyinIndex.rankOf("123"))
-        assertEquals(26, PinyinIndex.rankOf(""))
+        // The `#` bucket comes after `Z`, which is what the string compare got wrong.
+        assertEquals(PinyinIndex.sections.size, PinyinIndex.rankOf("123"))
+        assertEquals(PinyinIndex.sections.size, PinyinIndex.rankOf(""))
     }
 
     @Test
