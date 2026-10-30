@@ -9,6 +9,7 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -234,13 +235,27 @@ class SongDetailActivity : ComponentActivity() {
         lifecycleScope.launch {
             ui = ui.copy(loading = true, error = null, message = null)
             val result = withContext(Dispatchers.IO) {
-                val resolved = when (val outcome = DocumentSource.resolveDetailed(this@SongDetailActivity, uri)) {
-                    is ResolveResult.Ok -> outcome.document
-                    is ResolveResult.Failed -> return@withContext LoadResult.Failed(outcome.reason.message())
+                // Anything the native engine or a provider throws must land as a message on
+                // this screen: an exception here used to take the whole app down.
+                runCatching {
+                    val resolved = when (val outcome = DocumentSource.resolveDetailed(this@SongDetailActivity, uri)) {
+                        is ResolveResult.Ok -> outcome.document
+                        is ResolveResult.Failed -> return@runCatching LoadResult.Failed(outcome.reason.message())
+                    }
+                    val tag = engine.read(resolved.path)
+                        ?: return@runCatching LoadResult.Failed(
+                            getString(R.string.editor_error_unknown_container),
+                        )
+                    LoadResult.Ok(resolved, tag)
+                }.getOrElse { error ->
+                    Log.w(TAG, "cannot read tags for $uri", error)
+                    LoadResult.Failed(
+                        getString(
+                            R.string.editor_error_native,
+                            error.message ?: error.javaClass.simpleName,
+                        ),
+                    )
                 }
-                val tag = engine.read(resolved.path)
-                    ?: return@withContext LoadResult.Failed(getString(R.string.editor_error_unknown_container))
-                LoadResult.Ok(resolved, tag)
             }
             when (result) {
                 is LoadResult.Failed -> ui = ui.copy(loading = false, error = result.message)
@@ -348,14 +363,22 @@ class SongDetailActivity : ComponentActivity() {
         lifecycleScope.launch {
             ui = ui.copy(saving = true, error = null, message = null)
             val failure = withContext(Dispatchers.IO) {
-                when (val write = engine.write(current.path, edit)) {
-                    is WriteResult.Failure -> getString(R.string.editor_error_write_failed, write.message.orEmpty())
-                    is WriteResult.Success -> {
-                        when (val back = DocumentWriter.writeBack(this@SongDetailActivity, uri, current)) {
-                            is DocumentWriter.Result.Success -> null
-                            is DocumentWriter.Result.Failure -> back.message
+                runCatching {
+                    when (val write = engine.write(current.path, edit)) {
+                        is WriteResult.Failure -> getString(R.string.editor_error_write_failed, write.message.orEmpty())
+                        is WriteResult.Success -> {
+                            when (val back = DocumentWriter.writeBack(this@SongDetailActivity, uri, current)) {
+                                is DocumentWriter.Result.Success -> null
+                                is DocumentWriter.Result.Failure -> back.message
+                            }
                         }
                     }
+                }.getOrElse { error ->
+                    Log.w(TAG, "cannot write tags for $uri", error)
+                    getString(
+                        R.string.editor_error_write_crashed,
+                        error.message ?: error.javaClass.simpleName,
+                    )
                 }
             }
             ui = ui.copy(saving = false)
@@ -418,3 +441,5 @@ class SongDetailActivity : ComponentActivity() {
 
 /** Containers that hold one cover item only, so no artist image can be stored. */
 private val SINGLE_COVER_CONTAINERS = setOf("MP4", "ASF")
+
+private const val TAG = "MusicTagEditor"

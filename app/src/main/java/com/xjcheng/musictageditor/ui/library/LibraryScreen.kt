@@ -6,6 +6,12 @@
 package com.xjcheng.musictageditor.ui.library
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.input.pointer.pointerInput
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -601,7 +607,13 @@ private fun SortChip(label: String, selected: Boolean, onClick: () -> Unit) {
     )
 }
 
-/** Right-edge A–Z/# index. Tapping a letter scrolls the list to that section. */
+/**
+ * Right-edge A–Z/# index.
+ *
+ * Dragging along the column scrubs the list the way a launcher app-drawer does: the letter
+ * under the finger jumps the list and a bubble shows which section is under it. A single tap
+ * still jumps once.
+ */
 @Composable
 private fun AlphabetBar(
     letters: List<String>,
@@ -611,27 +623,78 @@ private fun AlphabetBar(
 ) {
     if (letters.size < 2) return
     val scope = rememberCoroutineScope()
+    var bubble by remember { mutableStateOf<String?>(null) }
 
-    Column(
-        modifier = modifier
-            .padding(end = 2.dp)
-            .background(MiuixTheme.colorScheme.surface.copy(alpha = 0.8f))
-            .padding(horizontal = 2.dp, vertical = 4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(1.dp),
-    ) {
-        for (letter in letters) {
-            Text(
-                text = letter,
-                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
-                fontSize = 9.sp,
-                modifier = Modifier
-                    .clickable {
-                        val index = letterIndex[letter] ?: return@clickable
-                        scope.launch { listState.scrollToItem(index) }
+    fun jump(letter: String) {
+        bubble = letter
+        val index = letterIndex[letter] ?: return
+        scope.launch { listState.scrollToItem(index) }
+    }
+
+    fun letterAt(y: Float, height: Int): String? {
+        if (height <= 0) return null
+        val ratio = (y / height).coerceIn(0f, 0.9999f)
+        return letters.getOrNull((ratio * letters.size).toInt())
+    }
+
+    Box(modifier = modifier) {
+        Column(
+            modifier = Modifier
+                .pointerInput(letters, letterIndex) {
+                    detectVerticalDragGestures(
+                        onDragStart = { offset ->
+                            letterAt(offset.y, size.height)?.let(::jump)
+                        },
+                        onDragEnd = { bubble = null },
+                        onDragCancel = { bubble = null },
+                    ) { change, _ ->
+                        change.consume()
+                        val letter = letterAt(change.position.y, size.height)
+                        if (letter != null && letter != bubble) jump(letter)
                     }
-                    .padding(horizontal = 3.dp),
-            )
+                }
+                .pointerInput(letters, letterIndex) {
+                    detectTapGestures { offset ->
+                        letterAt(offset.y, size.height)?.let { letter ->
+                            jump(letter)
+                            scope.launch {
+                                delay(450)
+                                bubble = null
+                            }
+                        }
+                    }
+                }
+                .background(MiuixTheme.colorScheme.surface.copy(alpha = 0.8f))
+                .padding(horizontal = 4.dp, vertical = 6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(1.dp),
+        ) {
+            for (letter in letters) {
+                Text(
+                    text = letter,
+                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                    fontSize = 9.sp,
+                    modifier = Modifier.padding(horizontal = 3.dp),
+                )
+            }
+        }
+        bubble?.let { current ->
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .offset(x = (-64).dp)
+                    .size(56.dp)
+                    .clip(CircleShape)
+                    .background(MiuixTheme.colorScheme.primary),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = current,
+                    color = Color.White,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
         }
     }
 }
