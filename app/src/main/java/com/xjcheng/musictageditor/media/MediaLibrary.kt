@@ -28,6 +28,15 @@ class MediaLibrary(private val context: Context) {
             add(MediaStore.Audio.Media.ALBUM)
             add(MediaStore.Audio.Media.DURATION)
             add(MediaStore.Audio.Media.MIME_TYPE)
+            add(MediaStore.Audio.Media.DISPLAY_NAME)
+            add(MediaStore.Audio.Media.SIZE)
+            add(MediaStore.Audio.Media.TRACK)
+            add(MediaStore.Audio.Media.YEAR)
+            @Suppress("DEPRECATION")
+            add(MediaStore.Audio.Media.ALBUM_ID)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                add(MediaStore.Audio.Media.BITRATE)
+            }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 add(MediaStore.Audio.Media.RELATIVE_PATH)
             } else {
@@ -48,6 +57,16 @@ class MediaLibrary(private val context: Context) {
             val albumColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
             val durationColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
             val mimeColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.MIME_TYPE)
+            val nameColumn = cursor.getColumnIndex(MediaStore.Audio.Media.DISPLAY_NAME)
+            val sizeColumn = cursor.getColumnIndex(MediaStore.Audio.Media.SIZE)
+            val trackColumn = cursor.getColumnIndex(MediaStore.Audio.Media.TRACK)
+            val yearColumn = cursor.getColumnIndex(MediaStore.Audio.Media.YEAR)
+            val albumIdColumn = cursor.getColumnIndex(MediaStore.Audio.Media.ALBUM_ID)
+            val bitrateColumn = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                cursor.getColumnIndex(MediaStore.Audio.Media.BITRATE)
+            } else {
+                -1
+            }
             val pathColumn = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.RELATIVE_PATH)
             } else {
@@ -66,11 +85,26 @@ class MediaLibrary(private val context: Context) {
                     durationMs = cursor.getLong(durationColumn),
                     path = cursor.getString(pathColumn).orEmpty(),
                     mimeType = cursor.getString(mimeColumn).orEmpty(),
+                    displayName = nameColumn.optionalString(cursor).orEmpty(),
+                    albumId = albumIdColumn.optionalLong(cursor),
+                    sizeBytes = sizeColumn.optionalLong(cursor),
+                    track = trackColumn.optionalInt(cursor),
+                    year = yearColumn.optionalInt(cursor),
+                    bitrateBps = bitrateColumn.optionalInt(cursor),
                 )
             }
         }
         return tracks
     }
+
+    private fun Int.optionalString(cursor: android.database.Cursor): String? =
+        if (this < 0) null else cursor.getString(this)
+
+    private fun Int.optionalLong(cursor: android.database.Cursor): Long =
+        if (this < 0) 0L else cursor.getLong(this)
+
+    private fun Int.optionalInt(cursor: android.database.Cursor): Int =
+        if (this < 0) 0 else cursor.getInt(this)
 
     /** MediaStore uses the literal string `<unknown>` for missing artist/album. */
     private fun String.unknownAsEmpty(): String = if (this == "<unknown>") "" else this
