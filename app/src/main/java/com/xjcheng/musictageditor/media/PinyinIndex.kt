@@ -59,13 +59,21 @@ object PinyinIndex {
 
     /** Music-store style ordering: numeric tracks first, then `#`. */
     fun compare(a: String, b: String): Int {
-        val rankA = rank(initialOf(a))
-        val rankB = rank(initialOf(b))
+        val rankA = rankOf(a)
+        val rankB = rankOf(b)
         if (rankA != rankB) return rankA.compareTo(rankB)
         val keyOrder = sortKeyOf(a).compareTo(sortKeyOf(b))
         if (keyOrder != 0) return keyOrder
         return a.compareTo(b, ignoreCase = true)
     }
+
+    /**
+     * Section position of a title: 0–25 for `A`–`Z`, then the `#` bucket.
+     *
+     * Sorting by the initial *string* would put `#` (0x23) before `A`, which is why call
+     * sites use this rank instead of comparing the bucket labels.
+     */
+    fun rankOf(text: String): Int = rank(initialOf(text))
 
     private fun rank(initial: String): Int = if (initial == OTHER) sections.size else initial[0] - 'A'
 

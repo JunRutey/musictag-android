@@ -89,7 +89,12 @@ class StringResourceParityTest {
             setOf(RegexOption.DOT_MATCHES_ALL),
         )
 
-        /** Keys allowed to stay ASCII in the default (Chinese) locale, with the reason. */
-        val ASCII_ALLOWED: Set<String> = emptySet()
+        /**
+         * Keys allowed to stay ASCII in the default (Chinese) locale.
+         *
+         * `library_bitrate` is a numeric value plus the "kbps" unit, which is written the
+         * same way in Chinese UIs.
+         */
+        val ASCII_ALLOWED: Set<String> = setOf("library_bitrate")
     }
 }

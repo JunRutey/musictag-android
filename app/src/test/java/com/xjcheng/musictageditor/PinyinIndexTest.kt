@@ -58,6 +58,14 @@ class PinyinIndexTest {
     }
 
     @Test
+    fun rankOrderPutsHashAfterTheAlphabet() {
+        assertEquals(0, PinyinIndex.rankOf("Always"))
+        assertEquals(25, PinyinIndex.rankOf("周杰伦"))
+        assertEquals(26, PinyinIndex.rankOf("123"))
+        assertEquals(26, PinyinIndex.rankOf(""))
+    }
+
+    @Test
     fun sectionsCoverTheAlphabetThenHash() {
         assertEquals(27, PinyinIndex.sections.size)
         assertEquals("A", PinyinIndex.sections.first())

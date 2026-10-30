@@ -557,12 +557,12 @@ internal fun buildEntries(tracks: List<MediaTrack>, sort: LibrarySort, ascending
     if (tracks.isEmpty()) return emptyList()
     val keys = tracks.associate { it.id to PinyinIndex.sortKeyOf(it.title) }
     val comparator = when (sort) {
-        LibrarySort.TITLE -> compareBy<MediaTrack> { PinyinIndex.initialOf(it.title) }
+        LibrarySort.TITLE -> compareBy<MediaTrack> { PinyinIndex.rankOf(it.title) }
             .thenBy { keys[it.id] ?: "" }
-        LibrarySort.ARTIST -> compareBy<MediaTrack> { PinyinIndex.initialOf(it.artist) }
+        LibrarySort.ARTIST -> compareBy<MediaTrack> { PinyinIndex.rankOf(it.artist) }
             .thenBy { PinyinIndex.sortKeyOf(it.artist) }
             .thenBy { keys[it.id] ?: "" }
-        LibrarySort.ALBUM -> compareBy<MediaTrack> { PinyinIndex.initialOf(it.album) }
+        LibrarySort.ALBUM -> compareBy<MediaTrack> { PinyinIndex.rankOf(it.album) }
             .thenBy { PinyinIndex.sortKeyOf(it.album) }
             .thenBy { keys[it.id] ?: "" }
         LibrarySort.DURATION -> compareBy<MediaTrack> { it.durationMs }
