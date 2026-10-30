@@ -26,6 +26,41 @@ TagLib (audio metadata library, linked into the native tag engine)
   https://taglib.org/ and the corresponding source archive is pinned in
   native/taglib/CMakeLists.txt. Files under MPL-1.1 remain under MPL-1.1.
 
+Miuix (MIUI/HyperOS design language for Compose)
+  Copyright 2025, compose-miuix-ui contributors
+  License: Apache License 2.0
+  Consumed as the published artifact top.yukonga.miuix.kmp:miuix:0.7.2 (unmodified),
+  pinned in gradle/libs.versions.toml.
+
+pinyin4j (Hanzi to pinyin conversion for the library index)
+  Copyright 2003-2016, pinyin4j contributors (SourceForge project pinyin4j)
+  Consumed as com.belerweb:pinyin4j:2.5.1 (unmodified).
+  LICENSE: OPEN ITEM. The Maven artifact's own POM declares BSD
+  (http://opensource.org/licenses/bsd-license.html), while the upstream SourceForge
+  project also publishes under GPL v2 or later. The jar ships no licence file of its own.
+  This dependency is used only for the A-Z/# index and the pinyin sort key; if the BSD
+  grant cannot be confirmed, it will be replaced by com.github.houbb:pinyin (Apache-2.0,
+  same author as the OpenCC4J dictionary already in use) before 1.1.0 is tagged.
+
+OpenCC4J (traditional/simplified Chinese conversion)
+  Copyright houbb (https://github.com/houbb/opencc4j)
+  License: Apache License 2.0
+  Consumed as com.github.houbb:opencc4j:1.8.0 (unmodified).
+
+--------------------------------------------------------------------------------
+Protocol references (no code copied)
+--------------------------------------------------------------------------------
+
+The Apple Music source was written from the behaviour publicly observable in the Apple
+Music web player: the site's index script carries a short-lived developer JWT, and the
+catalog API accepts that JWT. No code, no resources and no tokens from any third-party
+plugin repository were copied; in particular, Replica0110/Lyrico-Plugins declares no
+licence, so only its documented protocol surface informed this implementation.
+
+Replica0110/Lyrico (Apache-2.0) was read for layout and field-routing ideas (row metrics,
+typed picture kinds, tag alias rules). Any such influence is re-expressed in this
+project's own architecture and tested independently; see docs/UI.md and docs/SOURCES.md.
+
 --------------------------------------------------------------------------------
 Not included
 --------------------------------------------------------------------------------

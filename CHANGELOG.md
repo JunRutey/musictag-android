@@ -4,6 +4,42 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 未发布
+
+界面改为 Miuix（MIUI/HyperOS 设计语言）并默认简体中文；搜索源收敛为四个中文源加英文兜底。
+本节之后的条目保持英文，1.1.0 起的新条目用中文书写。
+
+### 新增
+
+* 曲库主界面：48dp 圆角封面（MediaStore `albumart`，内存 LRU）、格式角标（FLAC/MP3/M4A…）、
+  `艺术家 - 专辑` 副标题、时长与 kbps 列、A–Z/# 拼音索引条、按标题/艺术家/专辑/时长排序、
+  底部「歌曲 / 艺术家 / 专辑」三 Tab、搜索胶囊。排序与分组是纯函数并有单测
+  （`LibraryEntriesTest`、`MediaGroupingTest`、`PinyinIndexTest`）。
+* Apple Music 源：从网页播放器公开的 index 脚本解析短期开发者令牌（带 60 秒安全边界与
+  401 强制刷新），查询 `amp-api.music.apple.com` 的区域化目录，按设置重写封面尺寸；
+  录制 fixture 覆盖搜索、详情、令牌挑选与 401 重试。
+* `tags_sources_*` 设置真正生效：`MergePolicy.fromSettings` 决定合并顺序，未知、重复与
+  已下线的来源键被忽略而不是抛错。
+* `MediaTrack` 增加文件名、专辑 id、文件大小、音轨、年份与码率；码率缺失时按
+  `大小×8/时长` 推导。
+
+### 变更
+
+* 设计语言换成 Miuix 0.7.2（Apache-2.0），Compose BOM 随之从 2025.06.01 抬到 2025.10.00
+  （Compose 1.9.3 / Material3 1.4.0）。Miuix 0.7.2 是仍能被钉住的 Kotlin 2.2.0 编译器读取的
+  最后一个版本（0.8+ 使用 Kotlin 2.3 metadata）。
+* `minSdk` 21 → 24：Miuix 0.7.2 声明 `minSdkVersion 24`，这是可用的最低门槛（0.6.1/0.5.2
+  是 26，0.8.8 虽然 23 但需要更新的 Kotlin）。安装下限变为 Android 7.0，调用契约不变。
+* 默认语言改为简体中文：`values/strings.xml` 是中文，`values-en/` 为英文，
+  `StringResourceParityTest` 强制两套键完全一致、默认值含中文、格式参数匹配。
+* 设置项文案改为中文，共 48 项（新增 `apple_region`、`apple_language`、`apple_cover_size`），
+  `docs/SETTINGS.md` 同步重写。
+
+### 移除
+
+* VGMdb 与 Last.fm 源（Provider、API 客户端、fixture、测试以及 `lastfm_api_key` 设置）。
+  旧配置里的 `vgmdb`/`lastfm` 键会被静默忽略。
+
 ## [1.0.0] - 2026-10-24
 
 First signed release, built from CI commit `537fc1c` and signed with
