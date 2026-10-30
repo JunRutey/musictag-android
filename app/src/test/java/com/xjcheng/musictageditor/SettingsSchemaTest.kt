@@ -5,6 +5,7 @@
 
 package com.xjcheng.musictageditor
 
+import com.xjcheng.musictageditor.core.net.MergePolicy
 import com.xjcheng.musictageditor.settings.SettingType
 import com.xjcheng.musictageditor.settings.Settings
 import com.xjcheng.musictageditor.settings.SettingsSchema
@@ -138,7 +139,7 @@ class SettingsSchemaTest {
         assertEquals(600, settings.appleCoverSize)
         assertEquals(" | ", settings.connectorLyricTranslation)
         assertEquals(SettingsSchema.DEFAULT_TAG_SOURCES, settings.tagsSourcesCombination)
-        assertEquals("netease,qq,kuwo,kugou", SettingsSchema.DEFAULT_LYRIC_SOURCES)
+        assertEquals("netease,qq,kugou,kuwo", SettingsSchema.DEFAULT_LYRIC_SOURCES)
         // The retuned defaults put Apple first for artwork and keep the Chinese four on top.
         assertTrue(settings.tagsSourcesPicture.startsWith("apple,"))
         assertEquals(
@@ -148,6 +149,23 @@ class SettingsSchemaTest {
         assertTrue("the retired Last.fm key must be gone", SettingsSchema.spec("lastfm_api_key") == null)
         assertFalse(settings.tagsSourcesCombination.contains("lastfm"))
         assertFalse(settings.tagsSourcesCombination.contains("vgmdb"))
+    }
+
+    @Test
+    fun defaultsMatchTheProviderMergeOrders() {
+        // The schema strings and core:net's built-in orders must not drift apart.
+        assertEquals(
+            MergePolicy.TAG_ORDER.joinToString(",") { it.key },
+            SettingsSchema.DEFAULT_TAG_SOURCES,
+        )
+        assertEquals(
+            MergePolicy.COVER_ORDER.joinToString(",") { it.key },
+            SettingsSchema.DEFAULT_COVER_SOURCES,
+        )
+        assertEquals(
+            MergePolicy.LYRIC_ORDER.joinToString(",") { it.key },
+            SettingsSchema.DEFAULT_LYRIC_SOURCES,
+        )
     }
 
     @Test
