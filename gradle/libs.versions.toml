@@ -13,7 +13,7 @@ navigationCompose = "2.9.1"
 coreKtx = "1.16.0"
 coroutines = "1.11.0"
 okhttp = "4.12.0"
-serialization = "1.7.3"
+serialization = "1.12.0"
 opencc4j = "1.8.0"
 # Miuix 0.7.2 is the last release built with Kotlin 2.2.x metadata, so it is the newest
 # version the pinned Kotlin 2.2.0 compiler can consume.
