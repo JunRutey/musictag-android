@@ -3,7 +3,10 @@
 # and CI (not the developer machine) is the source of truth for resolution.
 agp = "8.10.1"
 kotlin = "2.2.0"
-composeBom = "2025.06.01"
+# Compose 1.9.3 / Material3 1.4.0. This is the newest Compose line that Miuix 0.7.2
+# itself was built against (see docs/UI.md); Miuix 0.8+ needs Kotlin >= 2.3 metadata,
+# which the pinned Kotlin 2.2.0 compiler cannot read.
+composeBom = "2025.10.00"
 activityCompose = "1.10.1"
 lifecycle = "2.9.1"
 navigationCompose = "2.9.1"
@@ -12,6 +15,10 @@ coroutines = "1.11.0"
 okhttp = "4.12.0"
 serialization = "1.7.3"
 opencc4j = "1.8.0"
+# Miuix 0.7.2 is the last release built with Kotlin 2.2.x metadata, so it is the newest
+# version the pinned Kotlin 2.2.0 compiler can consume.
+miuix = "0.7.2"
+pinyin4j = "2.5.1"
 junit = "4.13.2"
 androidxTestExtJunit = "1.2.1"
 espresso = "3.6.1"
@@ -39,6 +46,8 @@ kotlinx-coroutines-test = { group = "org.jetbrains.kotlinx", name = "kotlinx-cor
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
 opencc4j = { group = "com.github.houbb", name = "opencc4j", version.ref = "opencc4j" }
+miuix = { group = "top.yukonga.miuix.kmp", name = "miuix", version.ref = "miuix" }
+pinyin4j = { group = "com.belerweb", name = "pinyin4j", version.ref = "pinyin4j" }
 
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExtJunit" }

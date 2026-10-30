@@ -137,6 +137,9 @@ dependencies {
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    // MIUI/HyperOS design language. Pinned to the last Kotlin 2.2-compatible release.
+    implementation(libs.miuix)
+    implementation(libs.pinyin4j)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
 

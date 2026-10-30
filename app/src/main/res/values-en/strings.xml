@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- English translation. Key set must match values/strings.xml exactly. -->
+    <string name="app_name">Music Tag</string>
+
+    <string name="title_activity_settings">Settings</string>
+    <string name="menuitem_websearch">Search cover art</string>
+    <string name="menuitem_searchalltags">Search tags online</string>
+    <string name="menuitem_choose_from_song_tags">Choose from song tags</string>
+    <string name="perf_title_dirpath_of_ignore_medias">By directory path</string>
+    <string name="label_croppicture">Crop picture</string>
+
+    <string name="search_hint">Search music</string>
+
+    <string name="m0_not_implemented">Not implemented yet</string>
+
+    <string name="song_list_title">Songs (%1$d)</string>
+    <string name="tab_songs">Songs</string>
+    <string name="tab_artists">Artists</string>
+    <string name="tab_albums">Albums</string>
+    <string name="action_settings">Settings</string>
+    <string name="action_refresh">Refresh</string>
+    <string name="action_batch_edit">Batch edit</string>
+    <string name="library_count">%1$d tracks</string>
+    <string name="library_filter_hint">Filter by title, artist or album</string>
+    <string name="library_permission_reason">Reading the library needs access to audio files.</string>
+    <string name="action_grant">Allow access</string>
+    <string name="library_permission_denied">Audio access was denied.</string>
+    <string name="library_empty">No songs found</string>
+    <string name="library_loading">Reading the library…</string>
+    <string name="library_error">Could not read the media library</string>
+    <string name="label_unknown_title">(untitled)</string>
+    <string name="label_unknown_artist">Unknown artist</string>
+    <string name="tab_artists_pending">The artist view arrives in a later release</string>
+    <string name="tab_albums_pending">The album view arrives in a later release</string>
+</resources>
