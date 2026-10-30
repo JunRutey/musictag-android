@@ -247,7 +247,7 @@ class SongDetailActivity : ComponentActivity() {
                     // A tag without lyrics falls back to the ".lrc" side file, if we can
                     // reach the real path next to it.
                     val sidecarLyrics = if (tag.lyrics.isBlank()) {
-                        LyricsSidecar.pathFor(this, uri)?.let { audioPath ->
+                        LyricsSidecar.pathFor(this@SongDetailActivity, uri)?.let { audioPath ->
                             LyricsSidecar.read(
                                 audioPath = audioPath,
                                 settings = settings.load(),
