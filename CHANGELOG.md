@@ -4,7 +4,14 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.1.0] - 未发布
+## [1.1.0] - 2026-10-31
+
+已发布：https://github.com/JunRutey/musictag-android/releases/tag/v1.1.0
+
+* APK：`musictag-1.1.0.apk`（9,644,561 字节，versionCode 2026103016、versionName 1.1.0，
+  由 CI 用既有密钥签名；`apksigner verify` 通过，证书 SHA-256
+  `51485c4e5ea851005cd72051dfbf0ac8ce64f6b211599b556e704c6ad7d79d4d`）。
+* APK SHA-256：`a758fd0e35ffbbee2c1dd1c0f5d5007485bee7a3b8838468690d23b04bcf031f`。
 
 界面改为 Miuix（MIUI/HyperOS 设计语言）并默认简体中文；搜索源收敛为四个中文源加英文兜底。
 本节之后的条目保持英文，1.1.0 起的新条目用中文书写。
