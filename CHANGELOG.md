@@ -4,6 +4,35 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-10-31
+
+### 移除
+
+* 手动批量编辑：整体删除字段编辑页与曲库入口（注册的 `BatchEditSongsDetail` 保留为占位，
+  类名与 `EXTRA_URIS` 不变）。批量自动匹配留待下一版。
+* 12 个“改了没反应”的设置项：三个来源优先级字符串、`web_search_criteria`、主色、强调色、
+  动画、黑主题、`tab_items`、手动批量开关、媒体库扫描、批量常亮。设置从 48 项精简到 28 项。
+* 设置页右上角的重置按钮。
+* 启动后的首页：`MainActivity` 直接进入曲库。
+* 曲库顶栏的搜索/排序图标：搜索框与排序胶囊改为常驻（仅在歌曲页显示）。
+
+### 修复
+
+* 深色主题开关现在真的生效（主题此前只读系统状态，从不读 `dark_theme`）。
+* 曲库点击歌曲进入编辑器：暂存文件名不再把中文标题全部抹成 `____`（加了 URI 哈希，避免两首
+  中文名互相覆盖）；`content://` 读取增加文件描述符兜底；打不开时区分“没有权限 / 文件为空 /
+  地址不可读 / 已移动或删除”并直接显示原因。
+* 曲库标题跟随 Tab：`歌曲（120）`、`艺术家（12 项）`、`专辑（8 项）`。
+
+### 新增
+
+* 艺术家 / 专辑页：每行 48dp 封面 + 名称 + 数量，加入 A–Z/# 首字母分组与右侧索引条，
+  与歌曲页一致。
+* 编辑页按表单重排：左侧 132dp 封面卡（歌曲名 + 艺术家 + 封面/艺术家图片切换 + 分辨率胶囊 +
+  编辑图片/移除）、字段改为圆角填充框（11sp 小标签 + 16sp 值）、右下角常驻 56dp 圆形“在线查找”
+  按钮、`文件` 分组收纳重命名/分享/删除；不引入评级等本应用没有的功能。
+* 设置页新增「关于」：项目仓库链接（点击打开 GitHub）与当前版本号。
+
 ## [1.1.0] - 2026-10-31
 
 已发布：https://github.com/JunRutey/musictag-android/releases/tag/v1.1.0

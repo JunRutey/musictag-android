@@ -29,8 +29,8 @@ android {
         // consume) declares minSdk 24, and the library harness has no override for that.
         minSdk = 24
         targetSdk = 35
-        versionCode = (project.findProperty("versionCode") as String?)?.toInt() ?: 2
-        versionName = (project.findProperty("versionName") as String?) ?: "1.1.0"
+        versionCode = (project.findProperty("versionCode") as String?)?.toInt() ?: 3
+        versionName = (project.findProperty("versionName") as String?) ?: "1.1.1"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // x86 is dead weight for a sideloaded utility; arm64 + armv7 + emulator x86_64.
