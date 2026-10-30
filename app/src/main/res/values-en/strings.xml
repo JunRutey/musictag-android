@@ -115,6 +115,19 @@
     <string name="editor_error_rename">Rename failed.</string>
     <string name="editor_error_delete">Delete failed.</string>
     <string name="editor_error_share">Share failed.</string>
+
+    <string name="placeholder_not_implemented">Not implemented yet</string>
+    <string name="placeholder_launch_intent">Launch intent</string>
+    <string name="placeholder_search_lyric">Search lyrics</string>
+    <string name="placeholder_batch_cover">Choose a cover for the selection</string>
+    <string name="placeholder_note_providers">Online matching now lives in the \"Find tags online\" screen.</string>
+    <string name="placeholder_note_batch">Batch editing lives behind the batch action in the library.</string>
+    <string name="placeholder_note_filters">Library filters live in Settings → Library.</string>
+    <string name="placeholder_note_donate">This build does not include donations.</string>
+    <string name="placeholder_note_crop">Cropping is not offered yet; change the artwork in the editor.</string>
+    <string name="batch_notification_title">Writing tags</string>
+    <string name="batch_notification_progress">%1$d of %2$d</string>
+    <string name="batch_channel_name">Batch tag writing</string>
     <string name="editor_error_read_image">Could not read the selected image.</string>
     <string name="editor_error_no_document">This activity expects an audio document (VIEW or SEND).</string>
     <string name="editor_error_open_document">Cannot open this document (no permission or empty file).</string>

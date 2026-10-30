@@ -266,6 +266,23 @@ def check_workflows() -> None:
     notes.append(f"workflows: {len(list(wf.glob('*.yml')))} files")
 
 
+def check_copy_gate() -> None:
+    """User-visible copy must come from resources, so Chinese stays the default."""
+    root = ROOT / "app" / "src" / "main" / "java"
+    pattern = re.compile(r'(Text|BasicComponent)\(\s*(title|summary)?\s*=?\s*"[A-Za-z]')
+    offenders = []
+    for path in sorted(root.rglob("*.kt")):
+        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+            if pattern.search(line):
+                offenders.append(f"{path.relative_to(ROOT)}:{number}")
+    if offenders:
+        errors.append(
+            "hardcoded user-visible copy (use stringResource/R.string): " + ", ".join(offenders)
+        )
+    else:
+        notes.append("copy: no hardcoded UI literals in app/src/main/java")
+
+
 def main() -> int:
     check_xml()
     check_manifest()
@@ -273,6 +290,7 @@ def main() -> int:
     check_workflows()
     check_fixtures()
     check_native_build()
+    check_copy_gate()
 
     for note in notes:
         print(f"ok   {note}")

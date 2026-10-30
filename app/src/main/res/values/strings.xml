@@ -124,6 +124,20 @@
     <string name="editor_error_rename">重命名失败。</string>
     <string name="editor_error_delete">删除失败。</string>
     <string name="editor_error_share">分享失败。</string>
+
+    <!-- 占位屏与后台通知 -->
+    <string name="placeholder_not_implemented">尚未实现</string>
+    <string name="placeholder_launch_intent">启动 Intent</string>
+    <string name="placeholder_search_lyric">搜索歌词</string>
+    <string name="placeholder_batch_cover">为选中项选择封面</string>
+    <string name="placeholder_note_providers">在线补全已并入「在线查找标签」页。</string>
+    <string name="placeholder_note_batch">批量功能见曲库右上角的「批量编辑」。</string>
+    <string name="placeholder_note_filters">曲库过滤条件在「设置 → 曲库」里。</string>
+    <string name="placeholder_note_donate">此构建不包含捐赠功能。</string>
+    <string name="placeholder_note_crop">裁剪功能尚未提供，可在编辑器里直接更换封面。</string>
+    <string name="batch_notification_title">正在写入标签</string>
+    <string name="batch_notification_progress">已处理 %1$d / %2$d</string>
+    <string name="batch_channel_name">批量标签写入</string>
     <string name="editor_error_read_image">无法读取所选图片。</string>
     <string name="editor_error_no_document">该界面需要一个音频文档（VIEW 或 SEND）。</string>
     <string name="editor_error_open_document">无法打开该文档（没有权限或文件为空）。</string>

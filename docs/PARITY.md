@@ -6,6 +6,29 @@ not the same pixels: the UI is rebuilt in Compose.
 
 Status values: `todo` / `wip` / `done` / `dropped`.
 
+## 0. 1.1.0 实际状态（以此表为准）
+
+下面按能力组给出 1.1.0 的真实状态；第 1 节之后的逐行表格是最初的计划清单，行内状态
+尚未逐条回填，请以本表为准。
+
+| 能力组 | 状态 | 证据 |
+|---|---|---|
+| 曲库浏览：歌曲/艺术家/专辑三 Tab、拼音分组与索引、四种排序 | done | `LibraryEntriesTest`、`PinyinIndexTest`、`MediaGroupingTest` |
+| 曲库行：封面、格式角标、时长与码率 | done | `AlbumArtLoader`（无真机验证，见 docs/UI.md） |
+| 标签编辑：10 个字段 + 歌词 + 封面 + 艺术家图片 | done | `TagLibWriteTest`（MP3/FLAC/M4A/APE/Ogg 往返） |
+| ID3v1 / ID3v2.3 选项 | done | `SettingsSchemaTest`、`TagLibWriteTest.honoursId3v23Option` |
+| 在线搜索与合并：网易/QQ/酷我/酷狗 + Apple/iTunes/MusicBrainz | done | `:core:net` 71+ 用例、`ProviderRegistryTest` |
+| 封面来源与优先级设置 | done | `MergePolicy.fromSettings` 测试、`docs/SOURCES.md` |
+| 歌词：LRC 解析/格式化/偏移/去时间戳/繁简转换 | done | `:core:lyrics` 22 用例 |
+| `.lrc` 侧文件：命名模式、模板、编码、读写 | done | `LyricsSidecarTest` |
+| 批量编辑：11 字段、覆盖/补缺、前台服务 | done | `BatchOpsTest`、`BatchRunnerTest` |
+| 文件操作：重命名/删除/分享/媒体库刷新 | done | 代码路径 + 契约校验（无真机验证） |
+| 设置：48 项、Schema 单源渲染 | done | `SettingsSchemaTest` |
+| 兼容：组件名、intent-filter、16 探针矩阵 | done | `docs/MANIFEST_CONTRACT.json`、`docs/INTENT_MATRIX.md` |
+| 多选、书签/抽屉、列表面板密度、字符集选择、从文件名补全 | todo | 未实现，列为后续工作 |
+| 捐赠 | dropped | 保留占位 Activity 以免显式调用崩溃 |
+
+
 ## 1. Library browsing
 
 | # | Capability | Milestone | Status | Proof |

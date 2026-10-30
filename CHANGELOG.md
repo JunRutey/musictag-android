@@ -40,6 +40,24 @@ All notable changes to this project are documented here. The format follows
 * VGMdb 与 Last.fm 源（Provider、API 客户端、fixture、测试以及 `lastfm_api_key` 设置）。
   旧配置里的 `vgmdb`/`lastfm` 键会被静默忽略。
 
+### 新增（M11 / M12 收尾）
+
+* 编辑器：Miuix 顶栏（在线补全 / 分享 / 删除 / 保存）、十个行内字段、歌词多行编辑、
+  封面与「艺术家图片」两个图片槽、MP3 的 ID3v1 / ID3v2.3 开关、底部重命名与删除动作。
+* 设置、在线搜索、批量编辑全部换成 Miuix 行并中文化（48 项设置、来源筛选、只填充缺失项等）。
+* 艺术家 / 专辑不再是占位页：共享 `GroupBrowserActivity` 按拼音分组，点击后把名字作为查询交给曲库。
+* 标签引擎支持**类型化图片**：`readAll` 返回图片类型，新增 `writeAllWithPictures`；
+  ID3v2/FLAC/Xiph/APE 可写前封面、封底、艺术家图，MP4 只保留前封面。
+* 文件操作：`io/FileOps` 提供重命名（保留扩展名、MediaStore 与 SAF 两条路径）、删除、分享；
+  `RefreshMediaStoreService` 变成真实的后台扫描服务。
+* `.lrc` 侧文件：`io/LyricsSidecar` 支持 same / artist-title / custom 三种命名、`%t/%a/%l`
+  模板、可配置编码，保存后按设置写侧文件，标签无歌词时回退读取。
+* 中文优先的文案体系：133 个双语字符串键，`StringResourceParityTest` 校验键集合、
+  中文默认值与格式参数；`selfcheck.py` 新增「禁止硬编码 UI 文案」闸门。
+* 文档：`docs/SOURCES.md`（源与 Apple 令牌流程）、`docs/UI.md`（界面与未验证项）、
+  `docs/PARITY.md` 增补 1.1.0 实况表。
+
+
 ## [1.0.0] - 2026-10-24
 
 First signed release, built from CI commit `537fc1c` and signed with

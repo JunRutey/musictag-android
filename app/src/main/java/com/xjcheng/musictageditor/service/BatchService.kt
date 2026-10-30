@@ -7,6 +7,7 @@ package com.xjcheng.musictageditor.service
 
 import android.app.Notification
 import android.app.NotificationChannel
+import com.xjcheng.musictageditor.R
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
@@ -179,8 +180,8 @@ class BatchService : Service() {
         )
         return NotificationCompat.Builder(this, CHANNEL)
             .setSmallIcon(android.R.drawable.stat_sys_download)
-            .setContentTitle("Writing tags")
-            .setContentText(current ?: "$processed of $total")
+            .setContentTitle(getString(R.string.batch_notification_title))
+            .setContentText(current ?: getString(R.string.batch_notification_progress, processed, total))
             .setProgress(total, processed, total <= 0)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
@@ -193,7 +194,7 @@ class BatchService : Service() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         if (notifications.getNotificationChannel(CHANNEL) != null) return
         notifications.createNotificationChannel(
-            NotificationChannel(CHANNEL, "Batch tag writing", NotificationManager.IMPORTANCE_LOW),
+            NotificationChannel(CHANNEL, getString(R.string.batch_channel_name), NotificationManager.IMPORTANCE_LOW),
         )
     }
 
