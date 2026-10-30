@@ -55,7 +55,9 @@
 
     <string name="action_back">Back</string>
     <string name="action_reset">Reset</string>
-        <string name="settings_export_log">Export log</string>
+        <string name="settings_export_download">Export to Downloads</string>
+    <string name="settings_export_failed">Export failed: %1$s</string>
+    <string name="settings_export_log">Export log</string>
     <string name="settings_clear_log">Clear log</string>
     <string name="settings_log_size">Current log size: %1$s</string>
     <string name="settings_log_empty">No log yet</string>

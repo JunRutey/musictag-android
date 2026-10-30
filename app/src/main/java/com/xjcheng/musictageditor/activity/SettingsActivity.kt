@@ -17,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.core.content.FileProvider
 import com.xjcheng.musictageditor.R
 import com.xjcheng.musictageditor.logging.AppLog
+import com.xjcheng.musictageditor.logging.LogExporter
 import com.xjcheng.musictageditor.settings.Appearance
 import com.xjcheng.musictageditor.settings.Settings
 import com.xjcheng.musictageditor.settings.SettingsRepository
@@ -36,6 +37,7 @@ class SettingsActivity : ComponentActivity() {
     private val repository by lazy { SettingsRepository(this) }
     private var settings by mutableStateOf(Settings())
     private var logBytes by mutableStateOf(0L)
+    private var exportSummary by mutableStateOf("")
 
     private fun appVersion(): String = runCatching {
         packageManager.getPackageInfo(packageName, 0).versionName
@@ -74,6 +76,18 @@ class SettingsActivity : ComponentActivity() {
         }
     }
 
+    private fun exportToDownloads() {
+        when (val result = LogExporter.export(this)) {
+            is LogExporter.Result.Saved -> {
+                exportSummary = result.displayPath
+                logBytes = AppLog.sizeBytes(this)
+            }
+            is LogExporter.Result.Failed -> {
+                exportSummary = getString(R.string.settings_export_failed, result.reason)
+            }
+        }
+    }
+
     private fun clearLog() {
         AppLog.clear(this)
         logBytes = AppLog.sizeBytes(this)
@@ -92,8 +106,10 @@ class SettingsActivity : ComponentActivity() {
                     versionName = appVersion(),
                     repositoryUrl = REPOSITORY_URL,
                     logSummary = logSummary(),
+                    exportSummary = exportSummary,
                     onOpenRepository = { openRepository() },
                     onExportLog = { exportLog() },
+                    onExportToDownloads = { exportToDownloads() },
                     onClearLog = { clearLog() },
                     onUpdate = { key, value ->
                         settings = settings.with(key, value)

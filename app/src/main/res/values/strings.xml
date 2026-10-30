@@ -61,7 +61,9 @@
     <!-- 通用动作 -->
     <string name="action_back">返回</string>
     <string name="action_reset">重置</string>
-        <string name="settings_export_log">导出日志</string>
+        <string name="settings_export_download">导出到「下载」</string>
+    <string name="settings_export_failed">导出失败：%1$s</string>
+    <string name="settings_export_log">导出日志</string>
     <string name="settings_clear_log">清空日志</string>
     <string name="settings_log_size">当前日志大小：%1$s</string>
     <string name="settings_log_empty">暂无日志</string>
