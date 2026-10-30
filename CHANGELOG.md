@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [1.1.3] - 2026-10-31
 
+已发布：https://github.com/JunRutey/musictag-android/releases/tag/v1.1.3
+
+* APK：`musictag-1.1.3.apk`（9,651,648 字节，versionName 1.1.3，`apksigner verify` 退出码 0，
+  证书 SHA-256 `51485c4e5ea851005cd72051dfbf0ac8ce64f6b211599b556e704c6ad7d79d4d`）。
+* APK SHA-256：`6e3a23edbead178c5fed6a6e0d2bc61162ae24ac72f0203cef9f79912c60a1e8`。
+
 ### 新增
 
 * 应用内详细日志：写入 iles/logs/app.log（512 KiB 轮转，保留一份归档），
