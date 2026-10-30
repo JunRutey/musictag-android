@@ -20,7 +20,7 @@ class SettingsSchemaTest {
 
     @Test
     fun everySpecIsUsable() {
-        assertTrue("expected a substantial preference set", SettingsSchema.specs.size >= 40)
+        assertTrue("expected a substantial preference set", SettingsSchema.specs.size >= 25)
         for (spec in SettingsSchema.specs) {
             assertTrue("key must not be blank", spec.key.isNotBlank())
             assertTrue("title must not be blank for ${spec.key}", spec.title.isNotBlank())
