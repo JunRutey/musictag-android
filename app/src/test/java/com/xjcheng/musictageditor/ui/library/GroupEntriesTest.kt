@@ -32,7 +32,7 @@ class GroupEntriesTest {
     @Test
     fun chineseTitlesUseThePinyinInitial() {
         val entries = buildGroupEntries(
-            listOf(row("爱情转移"), row("半岛铁盒"), row("Always Online")),
+            listOf(row("爱情转移"), row("Always Online"), row("半岛铁盒")),
         )
         assertEquals(listOf("A", "B"), letters(entries))
     }
