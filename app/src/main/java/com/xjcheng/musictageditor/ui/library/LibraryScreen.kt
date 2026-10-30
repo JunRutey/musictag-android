@@ -358,41 +358,158 @@ private fun SongRow(track: MediaTrack, onOpenTrack: (MediaTrack) -> Unit) {
     }
 }
 
+/** One artist or album row: artwork, name, and the count underneath. */
+internal data class LibraryGroupRow(
+    val title: String,
+    val summary: String,
+    val albumId: Long,
+    val open: () -> Unit,
+)
+
+/** A header letter or a row, in the order the list renders them. */
+internal sealed interface GroupEntry {
+    data class Header(val letter: String) : GroupEntry
+    data class Row(val row: LibraryGroupRow) : GroupEntry
+}
+
+/** Groups rows by pinyin initial and inserts one header per initial, in A–Z/# order. */
+internal fun buildGroupEntries(rows: List<LibraryGroupRow>): List<GroupEntry> {
+    val entries = ArrayList<GroupEntry>(rows.size + PinyinIndex.sections.size)
+    var current: String? = null
+    for (row in rows) {
+        val initial = PinyinIndex.initialOf(row.title)
+        if (initial != current) {
+            entries += GroupEntry.Header(initial)
+            current = initial
+        }
+        entries += GroupEntry.Row(row)
+    }
+    return entries
+}
+
 @Composable
 private fun ArtistList(tracks: List<MediaTrack>, onOpenArtist: (ArtistGroup) -> Unit) {
     val artists = remember(tracks) { MediaGrouping.artists(tracks) }
-    if (artists.isEmpty()) {
-        Hint(stringResource(R.string.library_empty))
-        return
-    }
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
-        items(artists, key = { it.name }) { artist ->
-            BasicComponent(
-                title = artist.name.ifBlank { stringResource(R.string.label_unknown_artist) },
-                summary = stringResource(R.string.library_count, artist.trackCount),
-                onClick = { onOpenArtist(artist) },
+    val countFormat = stringResource(R.string.library_count)
+    val rows = remember(artists, countFormat) {
+        artists.map { artist ->
+            LibraryGroupRow(
+                title = artist.name,
+                summary = countFormat.format(artist.trackCount),
+                albumId = artist.albumId,
+                open = { onOpenArtist(artist) },
             )
         }
     }
+    GroupList(rows, emptyLabel = stringResource(R.string.label_unknown_artist))
 }
 
 @Composable
 private fun AlbumList(tracks: List<MediaTrack>, onOpenAlbum: (AlbumGroup) -> Unit) {
     val albums = remember(tracks) { MediaGrouping.albums(tracks) }
-    if (albums.isEmpty()) {
+    val countFormat = stringResource(R.string.library_count)
+    val rows = remember(albums, countFormat) {
+        albums.map { album ->
+            LibraryGroupRow(
+                title = album.name,
+                summary = listOf(album.artist, countFormat.format(album.trackCount))
+                    .filter { it.isNotBlank() }
+                    .joinToString(" · "),
+                albumId = album.albumId,
+                open = { onOpenAlbum(album) },
+            )
+        }
+    }
+    GroupList(rows, emptyLabel = stringResource(R.string.label_unknown_album))
+}
+
+@Composable
+private fun GroupList(rows: List<LibraryGroupRow>, emptyLabel: String) {
+    if (rows.isEmpty()) {
         Hint(stringResource(R.string.library_empty))
         return
     }
-    LazyColumn(modifier = Modifier.fillMaxSize()) {
-        items(albums, key = { "${it.name}\u0000${it.artist}" }) { album ->
-            BasicComponent(
-                title = album.name.ifBlank { stringResource(R.string.label_unknown_album) },
-                summary = listOf(
-                    album.artist.ifBlank { stringResource(R.string.label_unknown_artist) },
-                    stringResource(R.string.library_count, album.trackCount),
-                ).joinToString(" · "),
-                onClick = { onOpenAlbum(album) },
+    val entries = remember(rows) { buildGroupEntries(rows) }
+    val listState = rememberLazyListState()
+    val letterIndex = remember(entries) {
+        entries.withIndex()
+            .mapNotNull { (index, entry) ->
+                (entry as? GroupEntry.Header)?.let { it.letter to index }
+            }
+            .toMap()
+    }
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(state = listState, modifier = Modifier.fillMaxSize()) {
+            items(entries.size) { index ->
+                when (val entry = entries[index]) {
+                    is GroupEntry.Header -> SectionHeader(entry.letter)
+                    is GroupEntry.Row -> GroupRow(
+                        row = entry.row,
+                        fallbackTitle = emptyLabel,
+                    )
+                }
+            }
+        }
+        AlphabetBar(
+            letters = PinyinIndex.sections,
+            listState = listState,
+            letterIndex = letterIndex,
+            modifier = Modifier.align(Alignment.CenterEnd),
+        )
+    }
+}
+
+@Composable
+private fun GroupRow(row: LibraryGroupRow, fallbackTitle: String) {
+    val context = LocalContext.current
+    val loader = remember(context) { AlbumArtLoader.get(context) }
+    var cover by remember(row.albumId) { mutableStateOf(loader.cached(row.albumId)) }
+    LaunchedEffect(row.albumId) {
+        if (cover == null && row.albumId > 0) cover = loader.load(row.albumId)
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { row.open() }
+            .padding(start = 16.dp, end = 20.dp, top = 8.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(RoundedCornerShape(6.dp))
+                .background(MiuixTheme.colorScheme.secondaryContainer),
+            contentAlignment = Alignment.Center,
+        ) {
+            val bitmap = cover
+            if (bitmap != null) {
+                Image(
+                    bitmap = bitmap,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                )
+            }
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = row.title.ifBlank { fallbackTitle },
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = MiuixTheme.colorScheme.onSurface,
+                fontSize = 16.sp,
             )
+            if (row.summary.isNotBlank()) {
+                Text(
+                    text = row.summary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                    fontSize = 13.sp,
+                )
+            }
         }
     }
 }
