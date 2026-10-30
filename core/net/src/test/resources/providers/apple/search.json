@@ -1,0 +1,70 @@
+{
+  "results": {
+    "songs": {
+      "href": "/v1/catalog/cn/search?types=songs&term=qingtian",
+      "next": null,
+      "data": [
+        {
+          "id": "1440833098",
+          "type": "songs",
+          "href": "/v1/catalog/cn/songs/1440833098",
+          "attributes": {
+            "name": "晴天",
+            "artistName": "周杰伦",
+            "albumName": "叶惠美",
+            "releaseDate": "2003-07-31",
+            "trackNumber": 3,
+            "discNumber": 1,
+            "composerName": "周杰伦",
+            "genreNames": [
+              "国语流行",
+              "流行"
+            ],
+            "durationInMillis": 269000,
+            "artwork": {
+              "url": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/aa/bb/cc/{w}x{h}bb.jpg",
+              "width": 3000,
+              "height": 3000
+            },
+            "playParams": {
+              "id": "1440833098",
+              "kind": "song"
+            }
+          }
+        },
+        {
+          "id": "1440833099",
+          "type": "songs",
+          "href": "/v1/catalog/cn/songs/1440833099",
+          "attributes": {
+            "name": "Always Online",
+            "artistName": "林俊杰",
+            "albumName": "JJ陆",
+            "releaseDate": "2008-10-24",
+            "trackNumber": 4,
+            "discNumber": 1,
+            "genreNames": [
+              "国语流行"
+            ],
+            "durationInMillis": 225000,
+            "artwork": {
+              "url": "https://is1-ssl.mzstatic.com/image/thumb/Music126/v4/dd/ee/ff/{w}x{h}bb.jpg",
+              "width": 1400,
+              "height": 1400
+            }
+          }
+        }
+      ]
+    }
+  },
+  "meta": {
+    "results": {
+      "order": [
+        "songs"
+      ],
+      "rawOrder": [
+        "songs"
+      ]
+    }
+  }
+}

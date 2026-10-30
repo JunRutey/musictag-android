@@ -71,15 +71,51 @@ class ProviderRegistryTest {
             ),
         )
 
-        // Title/artist prefer the Chinese services; album-level fields prefer curated sources.
+        // Every field now follows the configured tag order (NetEase first, then the
+        // international fallbacks), so iTunes beats MusicBrainz for the album here.
         assertEquals("网易歌手", merged.artist)
-        assertEquals("MB Album", merged.album)
+        assertEquals("iTunes Album", merged.album)
         assertEquals("1999", merged.year)
         assertEquals("4/10", merged.track)
         assertEquals("Pop", merged.genre)
         assertEquals("[00:01.00] 网易歌词", merged.lyrics)
         assertEquals("https://caa/front", merged.coverUrl)
         assertNull(merged.composer)
+    }
+
+    @Test
+    fun parseOrderIgnoresUnknownRetiredAndDuplicateKeys() {
+        assertEquals(
+            listOf(ProviderId.NETEASE, ProviderId.APPLE, ProviderId.QQ),
+            MergePolicy.parseOrder(" qqmusic,netease,vgmdb,lastfm,apple,netease,qq "),
+        )
+        assertTrue(MergePolicy.parseOrder("").isEmpty())
+    }
+
+    @Test
+    fun fromSettingsUsesTheConfiguredOrders() {
+        val policy = MergePolicy.fromSettings(
+            tagSources = "musicbrainz,netease",
+            coverSources = "coverartarchive,apple",
+            lyricSources = "kugou,netease",
+        )
+        assertEquals(listOf(ProviderId.MUSICBRAINZ, ProviderId.NETEASE), policy.priorityFor(MergeField.ARTIST))
+        assertEquals(listOf(ProviderId.COVER_ART_ARCHIVE, ProviderId.APPLE), policy.priorityFor(MergeField.COVER))
+        assertEquals(listOf(ProviderId.KUGOU, ProviderId.NETEASE), policy.priorityFor(MergeField.LYRICS))
+    }
+
+    @Test
+    fun emptySettingsFallBackToTheBuiltInOrders() {
+        val policy = MergePolicy.fromSettings("", "unknown-source", "")
+        assertEquals(MergePolicy.TAG_ORDER, policy.priorityFor(MergeField.TITLE))
+        assertEquals(MergePolicy.COVER_ORDER, policy.priorityFor(MergeField.COVER))
+        assertEquals(MergePolicy.LYRIC_ORDER, policy.priorityFor(MergeField.LYRICS))
+        // Apple's artwork is the highest resolution, so it leads the default cover order.
+        assertEquals(ProviderId.APPLE, MergePolicy.COVER_ORDER.first())
+        assertEquals(
+            listOf(ProviderId.NETEASE, ProviderId.QQ, ProviderId.KUWO, ProviderId.KUGOU),
+            MergePolicy.TAG_ORDER.take(4),
+        )
     }
 
     @Test

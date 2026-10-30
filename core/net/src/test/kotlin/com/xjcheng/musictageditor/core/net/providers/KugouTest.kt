@@ -5,10 +5,8 @@
 
 package com.xjcheng.musictageditor.core.net.providers
 
-import com.xjcheng.musictageditor.core.net.Provider
 import com.xjcheng.musictageditor.core.net.ProviderId
 import com.xjcheng.musictageditor.core.net.SearchQuery
-import com.xjcheng.musictageditor.core.net.SearchResult
 import com.xjcheng.musictageditor.core.net.http.HttpTransport
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -84,46 +82,5 @@ class KugouApiTest {
         assertEquals(3, transport.urls.size)
         assertTrue(transport.urls[1].contains("hash=A1B2C3D4"))
         assertTrue(transport.urls[2].contains("accesskey=ABCDEF0123456789"))
-    }
-}
-
-class VgmdbApiTest {
-
-    @Test
-    fun parsesAlbumLinksDeduplicated() {
-        val results = VgmdbApi.parseSearch(fixture("/providers/vgmdb/search.html"))
-        assertEquals(2, results.size)
-        assertEquals("1234", results[0].id)
-        assertEquals("叶惠美", results[0].title)
-        assertEquals("Some & Album", results[1].title)
-        assertEquals(ProviderId.VGMDB, results[0].provider)
-    }
-
-    @Test
-    fun parsesAlbumPage() {
-        val candidate = VgmdbApi.parseAlbum(fixture("/providers/vgmdb/album.html"))
-        assertEquals("叶惠美", candidate.title)
-        assertEquals("周杰伦", candidate.artist)
-        assertEquals("2003", candidate.year)
-    }
-
-    @Test
-    fun toleratesMissingMarkup() {
-        assertTrue(VgmdbApi.parseSearch("<html></html>").isEmpty())
-        assertTrue(VgmdbApi.parseAlbum("<html></html>").isEmpty())
-        assertTrue(VgmdbApi.parseSearch("").isEmpty())
-    }
-
-    @Test
-    fun providerUsesTheAlbumPage() {
-        val transport = Stub { url ->
-            if (url.contains("/search")) fixture("/providers/vgmdb/search.html")
-            else fixture("/providers/vgmdb/album.html")
-        }
-        val provider = VgmdbProvider(transport)
-        val results = provider.search(SearchQuery(title = "叶惠美"), limit = 1)
-        assertEquals(1, results.size)
-        assertEquals("叶惠美", provider.detail(results[0]).album)
-        assertTrue(transport.urls.last().endsWith("/album/1234"))
     }
 }

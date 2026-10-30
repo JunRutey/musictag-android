@@ -25,9 +25,9 @@ enum class MergeField {
 /**
  * Which provider wins for each field.
  *
- * The original app had a per-source priority list; this keeps the same idea but makes it
- * explicit and testable. Curated databases win for album-level fields, while the Chinese
- * services win for title/artist and lyrics, and Cover Art Archive wins for artwork.
+ * The order is user-editable through the `tags_sources_combination` / `tags_sources_picture`
+ * / `tags_sources_lyric` settings; [fromSettings] turns those comma separated keys into a
+ * policy and silently ignores unknown or retired provider names.
  */
 data class MergePolicy(
     val order: Map<MergeField, List<ProviderId>> = DEFAULT_ORDER,
@@ -36,36 +36,77 @@ data class MergePolicy(
         order[field] ?: DEFAULT_ORDER.getValue(field)
 
     companion object {
-        private val CHINESE_TAGS = listOf(
-            ProviderId.NETEASE, ProviderId.QQ, ProviderId.KUWO, ProviderId.KUGOU,
-            ProviderId.ITUNES, ProviderId.MUSICBRAINZ, ProviderId.VGMDB, ProviderId.LASTFM,
-        )
-        private val CURATED = listOf(
-            ProviderId.MUSICBRAINZ, ProviderId.ITUNES, ProviderId.VGMDB,
-            ProviderId.NETEASE, ProviderId.QQ, ProviderId.KUWO, ProviderId.KUGOU,
-            ProviderId.LASTFM,
+        /** Four Chinese services first, then the international fallbacks. */
+        val TAG_ORDER: List<ProviderId> = listOf(
+            ProviderId.NETEASE,
+            ProviderId.QQ,
+            ProviderId.KUWO,
+            ProviderId.KUGOU,
+            ProviderId.APPLE,
+            ProviderId.ITUNES,
+            ProviderId.MUSICBRAINZ,
         )
 
-        val DEFAULT_ORDER: Map<MergeField, List<ProviderId>> = mapOf(
-            MergeField.TITLE to CHINESE_TAGS,
-            MergeField.ARTIST to CHINESE_TAGS,
-            MergeField.ALBUM to CURATED,
-            MergeField.ALBUM_ARTIST to CURATED,
-            MergeField.GENRE to CURATED,
-            MergeField.COMPOSER to CURATED,
-            MergeField.TRACK to CURATED,
-            MergeField.DISC to CURATED,
-            MergeField.YEAR to CURATED,
-            MergeField.COMMENT to CURATED,
-            MergeField.LYRICS to listOf(
-                ProviderId.NETEASE, ProviderId.QQ, ProviderId.KUGOU, ProviderId.KUWO,
-            ),
-            MergeField.LYRICS_TRANSLATION to listOf(ProviderId.NETEASE, ProviderId.QQ),
-            MergeField.COVER to listOf(
-                ProviderId.COVER_ART_ARCHIVE, ProviderId.ITUNES, ProviderId.NETEASE,
-                ProviderId.QQ, ProviderId.MUSICBRAINZ, ProviderId.KUWO,
-            ),
+        /** Apple returns the highest resolution artwork, so it leads the cover order. */
+        val COVER_ORDER: List<ProviderId> = listOf(
+            ProviderId.APPLE,
+            ProviderId.NETEASE,
+            ProviderId.QQ,
+            ProviderId.ITUNES,
+            ProviderId.COVER_ART_ARCHIVE,
+            ProviderId.KUWO,
+            ProviderId.MUSICBRAINZ,
+            ProviderId.KUGOU,
         )
+
+        val LYRIC_ORDER: List<ProviderId> = listOf(
+            ProviderId.NETEASE,
+            ProviderId.QQ,
+            ProviderId.KUGOU,
+            ProviderId.KUWO,
+        )
+
+        val DEFAULT_ORDER: Map<MergeField, List<ProviderId>> =
+            MergeField.entries.associateWith { field ->
+                when (field) {
+                    MergeField.LYRICS, MergeField.LYRICS_TRANSLATION -> LYRIC_ORDER
+                    MergeField.COVER -> COVER_ORDER
+                    else -> TAG_ORDER
+                }
+            }
+
+        /**
+         * Parses a settings value such as `netease,qq,apple`.
+         *
+         * Separators are tolerated (`;` and whitespace too) and duplicates are removed so a
+         * hand-edited preference cannot make one provider win twice.
+         */
+        fun parseOrder(text: String): List<ProviderId> =
+            text.split(',', ';', ' ', '\n')
+                .asSequence()
+                .mapNotNull { ProviderId.fromKey(it) }
+                .distinct()
+                .toList()
+
+        /** Builds a policy from the three stored source orders, falling back per field. */
+        fun fromSettings(
+            tagSources: String = "",
+            coverSources: String = "",
+            lyricSources: String = "",
+        ): MergePolicy {
+            val tags = parseOrder(tagSources).ifEmpty { TAG_ORDER }
+            val covers = parseOrder(coverSources).ifEmpty { COVER_ORDER }
+            val lyrics = parseOrder(lyricSources).ifEmpty { LYRIC_ORDER }
+            return MergePolicy(
+                MergeField.entries.associateWith { field ->
+                    when (field) {
+                        MergeField.LYRICS, MergeField.LYRICS_TRANSLATION -> lyrics
+                        MergeField.COVER -> covers
+                        else -> tags
+                    }
+                },
+            )
+        }
 
         val DEFAULT = MergePolicy()
     }
@@ -99,11 +140,12 @@ class ProviderRegistry(
     }
 
     /**
-     * Runs [query] against every provider that offers tags, concatenating the results in
-     * provider-priority order and keeping at most [limitPerProvider] rows from each.
+     * Runs [query] against every provider that offers tags, in the configured priority
+     * order, keeping at most [limitPerProvider] rows from each.
      */
     fun searchAll(query: SearchQuery, limitPerProvider: Int = 10): List<SearchResult> {
-        val ordered = MergePolicy.DEFAULT_ORDER.getValue(MergeField.TITLE)
+        val ordered = (policy.priorityFor(MergeField.TITLE) + byId.keys)
+            .distinct()
             .mapNotNull { byId[it] }
         return ordered.filter { Provider.Capability.TAGS in it.capabilities }.flatMap { provider ->
             runCatching { provider.search(query, limitPerProvider) }

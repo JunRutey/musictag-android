@@ -11,7 +11,6 @@ import com.xjcheng.musictageditor.core.net.SearchQuery
 import com.xjcheng.musictageditor.core.net.SearchResult
 import com.xjcheng.musictageditor.core.net.http.HttpTransport
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -152,52 +151,6 @@ class MusicBrainzApiTest {
         assertTrue(MusicBrainzApi.parseSearch("junk").isEmpty())
         assertTrue(MusicBrainzApi.parseDetail("{}").isEmpty())
         assertTrue(MusicBrainzApi.parseRecording("junk").toString().contains("TagCandidate"))
-    }
-}
-
-class LastFmApiTest {
-
-    @Test
-    fun parsesTrackSearch() {
-        val results = LastFmApi.parseSearch(fixture("/providers/lastfm/search.json"))
-        assertEquals(2, results.size)
-        val first = results[0]
-        assertEquals(ProviderId.LASTFM, first.provider)
-        assertEquals("晴天", first.title)
-        assertEquals("周杰伦", first.artist)
-        assertEquals("周杰伦" to "晴天", LastFmApi.splitId(first.id))
-    }
-
-    @Test
-    fun parsesTrackInfoWithGenre() {
-        val candidate = LastFmApi.parseTrackInfo(fixture("/providers/lastfm/trackinfo.json"))
-        assertEquals("晴天", candidate.title)
-        assertEquals("叶惠美", candidate.album)
-        assertEquals("mandopop", candidate.genre)
-    }
-
-    @Test
-    fun providerIsInertWithoutAKey() {
-        val transport = StubTransport { "{}" }
-        val provider = LastFmProvider(transport, apiKey = "")
-        assertTrue(provider.search(SearchQuery(title = "x"), 5).isEmpty())
-        assertTrue(transport.urls.isEmpty())
-        assertTrue(provider.detail(SearchResult(ProviderId.LASTFM, "a\u0000b", "t", "a", "")).isEmpty())
-    }
-
-    @Test
-    fun providerUsesTheInjectedKey() {
-        val transport = StubTransport { url ->
-            if (url.contains("track.search")) fixture("/providers/lastfm/search.json")
-            else fixture("/providers/lastfm/trackinfo.json")
-        }
-        val provider = LastFmProvider(transport, apiKey = "test-key")
-        val results = provider.search(SearchQuery(title = "晴天"), limit = 5)
-        assertEquals(2, results.size)
-        assertEquals("晴天", provider.detail(results[0]).title)
-        assertTrue(transport.urls.all { it.contains("api_key=test-key") })
-        // The provider can supply tags and lyrics-free metadata only.
-        assertFalse(provider.capabilities.contains(Provider.Capability.COVER))
     }
 }
 

@@ -53,35 +53,3 @@ class MusicBrainzProvider(private val transport: HttpTransport) : Provider {
             transport.get(MusicBrainzApi.recordingUrl(result.id), MusicBrainzApi.HEADERS),
         )
 }
-
-/**
- * Last.fm: tags and a genre-ish vocabulary.
- *
- * The API needs a key. It is injected rather than hard-coded; with no key the provider is
- * simply inert, which keeps the app free of a built-in third-party credential.
- */
-class LastFmProvider(
-    private val transport: HttpTransport,
-    private val apiKey: String,
-) : Provider {
-
-    override val id: ProviderId = ProviderId.LASTFM
-
-    override val capabilities: Set<Provider.Capability> = setOf(Provider.Capability.TAGS)
-
-    override fun search(query: SearchQuery, limit: Int): List<SearchResult> {
-        if (apiKey.isBlank()) return emptyList()
-        return LastFmApi.parseSearch(
-            transport.get(LastFmApi.searchUrl(query, limit, apiKey)),
-            limit,
-        )
-    }
-
-    override fun detail(result: SearchResult): TagCandidate {
-        if (apiKey.isBlank()) return TagCandidate()
-        val (artist, track) = LastFmApi.splitId(result.id)
-        return LastFmApi.parseTrackInfo(
-            transport.get(LastFmApi.trackInfoUrl(artist, track, apiKey)),
-        )
-    }
-}

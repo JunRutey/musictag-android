@@ -129,13 +129,25 @@ class SettingsSchemaTest {
         val settings = SettingsSchema.defaults
             .with("id3v2_mode", "3")
             .with("web_search_items_limit_count", 7)
-            .with("lastfm_api_key", "abc")
+            .with("apple_region", "jp")
+            .with("apple_cover_size", 600)
             .with("connectors_lyric_and_tlyric", " | ")
         assertTrue(settings.id3v23)
         assertEquals(7, settings.searchLimit)
-        assertEquals("abc", settings.lastFmApiKey)
+        assertEquals("jp", settings.appleRegion)
+        assertEquals(600, settings.appleCoverSize)
         assertEquals(" | ", settings.connectorLyricTranslation)
-        assertEquals("musicbrainz,itunes,netease,qq,kuwo,kugou,vgmdb,lastfm", settings.tagsSourcesCombination)
+        assertEquals(SettingsSchema.DEFAULT_TAG_SOURCES, settings.tagsSourcesCombination)
+        assertEquals("netease,qq,kuwo,kugou", SettingsSchema.DEFAULT_LYRIC_SOURCES)
+        // The retuned defaults put Apple first for artwork and keep the Chinese four on top.
+        assertTrue(settings.tagsSourcesPicture.startsWith("apple,"))
+        assertEquals(
+            listOf("netease", "qq", "kuwo", "kugou"),
+            settings.tagsSourcesCombination.split(',').take(4),
+        )
+        assertTrue("the retired Last.fm key must be gone", SettingsSchema.spec("lastfm_api_key") == null)
+        assertFalse(settings.tagsSourcesCombination.contains("lastfm"))
+        assertFalse(settings.tagsSourcesCombination.contains("vgmdb"))
     }
 
     @Test

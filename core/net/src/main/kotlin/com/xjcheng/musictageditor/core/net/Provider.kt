@@ -5,17 +5,32 @@
 
 package com.xjcheng.musictageditor.core.net
 
-/** The online sources the original application queried. */
-enum class ProviderId(val displayName: String) {
-    NETEASE("NetEase Cloud Music"),
-    QQ("QQ Music"),
-    KUWO("Kuwo"),
-    KUGOU("Kugou (lyrics)"),
-    MUSICBRAINZ("MusicBrainz"),
-    VGMDB("VGMdb"),
-    ITUNES("iTunes Search"),
-    COVER_ART_ARCHIVE("Cover Art Archive"),
-    LASTFM("Last.fm"),
+/**
+ * The online sources the app queries.
+ *
+ * Four Chinese services carry the catalogue the app is built for; Apple Music, iTunes and
+ * MusicBrainz are the fallback for non-Chinese repertoire. VGMdb and Last.fm were dropped
+ * in 1.1.0 (see docs/SOURCES.md).
+ *
+ * [key] is the stable identifier used by the `tags_sources_*` settings strings, so the
+ * stored order survives enum renames.
+ */
+enum class ProviderId(val key: String, val displayName: String) {
+    NETEASE("netease", "网易云音乐"),
+    QQ("qq", "QQ 音乐"),
+    KUWO("kuwo", "酷我音乐"),
+    KUGOU("kugou", "酷狗音乐"),
+    APPLE("apple", "Apple Music"),
+    ITUNES("itunes", "iTunes"),
+    MUSICBRAINZ("musicbrainz", "MusicBrainz"),
+    COVER_ART_ARCHIVE("coverartarchive", "Cover Art Archive"),
+    ;
+
+    companion object {
+        /** Tolerant lookup: unknown or legacy keys return null instead of throwing. */
+        fun fromKey(key: String): ProviderId? =
+            entries.firstOrNull { it.key == key.trim().lowercase() }
+    }
 }
 
 /** What the user is searching for. */
