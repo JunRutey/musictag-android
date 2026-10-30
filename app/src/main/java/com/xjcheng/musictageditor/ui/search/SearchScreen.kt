@@ -5,33 +5,37 @@
 
 package com.xjcheng.musictageditor.ui.search
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.xjcheng.musictageditor.R
 import com.xjcheng.musictageditor.core.net.SearchResult
 import com.xjcheng.musictageditor.core.net.TagCandidate
+import top.yukonga.miuix.kmp.basic.BasicComponent
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.icons.useful.Back
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /** What the search screen renders. */
 data class SearchUiState(
@@ -47,6 +51,13 @@ data class SearchUiState(
     val failures: List<String> = emptyList(),
 )
 
+/**
+ * Online tag search, in Miuix.
+ *
+ * The three query fields are always visible; the results list shows one row per hit with
+ * its source, and selecting a row previews every field the source returned before the user
+ * decides to apply it.
+ */
 @Composable
 fun SearchScreen(
     state: SearchUiState,
@@ -60,81 +71,110 @@ fun SearchScreen(
     onDismissCandidate: () -> Unit,
     onCancel: () -> Unit,
 ) {
-    Surface(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
-                Text("Find tags online", style = MaterialTheme.typography.titleMedium)
-                OutlinedTextField(
-                    value = state.title,
-                    onValueChange = onTitleChange,
-                    label = { Text("Title") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                )
-                OutlinedTextField(
-                    value = state.artist,
-                    onValueChange = onArtistChange,
-                    label = { Text("Artist") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                )
-                OutlinedTextField(
-                    value = state.album,
-                    onValueChange = onAlbumChange,
-                    label = { Text("Album (optional)") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Button(onClick = onSearch, enabled = !state.searching && state.title.isNotBlank()) {
-                        Text("Search")
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = stringResource(R.string.search_title),
+                navigationIcon = {
+                    IconButton(onClick = onCancel) {
+                        Icon(MiuixIcons.Useful.Back, stringResource(R.string.action_back))
                     }
-                    OutlinedButton(
-                        onClick = onAutoMatch,
-                        enabled = !state.searching && state.title.isNotBlank(),
-                    ) {
-                        Text("Auto match all sources")
-                    }
-                    if (state.searching) {
-                        CircularProgressIndicator(modifier = Modifier.size(20.dp))
-                    }
-                }
-                state.error?.let { message ->
-                    Text(
-                        text = message,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(top = 8.dp),
-                    )
-                }
-                if (state.failures.isNotEmpty()) {
-                    Text(
-                        text = "Some sources did not answer: ${state.failures.joinToString()}",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(top = 4.dp),
-                    )
-                }
+                },
+            )
+        },
+    ) { padding ->
+        Column(modifier = Modifier.fillMaxWidth().padding(padding)) {
+            QueryFields(
+                state = state,
+                onTitleChange = onTitleChange,
+                onArtistChange = onArtistChange,
+                onAlbumChange = onAlbumChange,
+            )
+            BasicComponent(
+                title = stringResource(R.string.action_search),
+                enabled = !state.searching && state.title.isNotBlank(),
+                onClick = onSearch,
+            )
+            BasicComponent(
+                title = stringResource(R.string.action_auto_match),
+                enabled = !state.searching && state.title.isNotBlank(),
+                onClick = onAutoMatch,
+            )
+            state.error?.let { message ->
+                Text(
+                    text = message,
+                    color = MiuixTheme.colorScheme.error,
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
             }
-            HorizontalDivider()
-
+            if (state.failures.isNotEmpty()) {
+                Text(
+                    text = stringResource(R.string.search_failures, state.failures.joinToString("、")),
+                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+            }
             val selected = state.selected
             if (selected != null) {
-                CandidatePreview(selected, state.selectedLabel, onUseCandidate, onDismissCandidate)
+                CandidatePreview(
+                    candidate = selected,
+                    label = state.selectedLabel,
+                    onUse = onUseCandidate,
+                    onDismiss = onDismissCandidate,
+                )
             } else {
-                Results(state, onSelectResult)
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                OutlinedButton(onClick = onCancel) { Text("Cancel") }
+                Results(state = state, onSelect = onSelectResult)
             }
         }
+    }
+}
+
+@Composable
+private fun QueryFields(
+    state: SearchUiState,
+    onTitleChange: (String) -> Unit,
+    onArtistChange: (String) -> Unit,
+    onAlbumChange: (String) -> Unit,
+) {
+    FieldRow(
+        label = stringResource(R.string.label_title),
+        value = state.title,
+        onValueChange = onTitleChange,
+    )
+    FieldRow(
+        label = stringResource(R.string.label_artist),
+        value = state.artist,
+        onValueChange = onArtistChange,
+    )
+    FieldRow(
+        label = stringResource(R.string.search_field_album),
+        value = state.album,
+        onValueChange = onAlbumChange,
+    )
+}
+
+@Composable
+private fun FieldRow(label: String, value: String, onValueChange: (String) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+            fontSize = 14.sp,
+            modifier = Modifier.width(96.dp),
+        )
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            singleLine = true,
+            textStyle = TextStyle(color = MiuixTheme.colorScheme.onSurface, fontSize = 14.sp),
+            cursorBrush = SolidColor(MiuixTheme.colorScheme.primary),
+            modifier = Modifier.weight(1f),
+        )
     }
 }
 
@@ -142,34 +182,32 @@ fun SearchScreen(
 private fun Results(state: SearchUiState, onSelect: (SearchResult) -> Unit) {
     if (state.results.isEmpty()) {
         Text(
-            text = if (state.searching) "Searching…" else "No results yet.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            text = stringResource(if (state.searching) R.string.search_searching else R.string.search_no_results),
+            color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+            fontSize = 14.sp,
             modifier = Modifier.padding(16.dp),
         )
         return
     }
     LazyColumn(modifier = Modifier.fillMaxWidth()) {
-        items(state.results) { result ->
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(enabled = !state.searching) { onSelect(result) }
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-            ) {
-                Text(result.title, style = MaterialTheme.typography.bodyLarge)
-                Text(
-                    text = listOf(result.artist, result.album).filter { it.isNotBlank() }.joinToString(" · "),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    text = result.provider.displayName,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-            }
-            HorizontalDivider()
+        items(state.results, key = { "${it.provider.key}:${it.id}" }) { result ->
+            BasicComponent(
+                title = result.title,
+                summary = listOf(result.artist, result.album)
+                    .filter { it.isNotBlank() }
+                    .joinToString(" · "),
+                rightActions = {
+                    Text(
+                        text = result.provider.displayName,
+                        color = MiuixTheme.colorScheme.primary,
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                },
+                enabled = !state.searching,
+                onClick = { onSelect(result) },
+            )
         }
     }
 }
@@ -181,49 +219,51 @@ private fun CandidatePreview(
     onUse: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    LazyColumn(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+    val rows = listOf(
+        stringResource(R.string.label_title) to candidate.title,
+        stringResource(R.string.label_artist) to candidate.artist,
+        stringResource(R.string.label_album) to candidate.album,
+        stringResource(R.string.label_album_artist) to candidate.albumArtist,
+        stringResource(R.string.label_genre) to candidate.genre,
+        stringResource(R.string.label_composer) to candidate.composer,
+        stringResource(R.string.label_track) to candidate.track,
+        stringResource(R.string.label_disc) to candidate.disc,
+        stringResource(R.string.label_year) to candidate.year,
+        stringResource(R.string.label_comment) to candidate.comment,
+        stringResource(R.string.label_lyrics) to candidate.lyrics?.let {
+            stringResource(R.string.search_lyrics_length, it.length)
+        },
+        stringResource(R.string.label_cover) to candidate.coverUrl,
+    ).filter { it.second != null }
+
+    LazyColumn(modifier = Modifier.fillMaxWidth()) {
         item {
             Text(
-                text = label?.let { "Match from $it" } ?: "Match",
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.padding(vertical = 8.dp),
+                text = label?.let { stringResource(R.string.search_match_from, it) }
+                    ?: stringResource(R.string.search_match),
+                color = MiuixTheme.colorScheme.primary,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             )
         }
-        val rows = listOf(
-            "Title" to candidate.title,
-            "Artist" to candidate.artist,
-            "Album" to candidate.album,
-            "Album artist" to candidate.albumArtist,
-            "Genre" to candidate.genre,
-            "Composer" to candidate.composer,
-            "Track" to candidate.track,
-            "Disc" to candidate.disc,
-            "Year" to candidate.year,
-            "Comment" to candidate.comment,
-            "Lyrics" to candidate.lyrics?.let { "${it.length} characters" },
-            "Cover" to candidate.coverUrl,
-        ).filter { it.second != null }
         items(rows.size) { index ->
             val (name, value) = rows[index]
-            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 3.dp)) {
                 Text(
                     text = name,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                    fontSize = 12.sp,
                     modifier = Modifier.width(96.dp),
                 )
-                Text(text = value.orEmpty(), style = MaterialTheme.typography.bodyMedium)
+                Text(text = value.orEmpty(), fontSize = 13.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
             }
         }
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Button(onClick = onUse) { Text("Use these tags") }
-                OutlinedButton(onClick = onDismiss) { Text("Back to results") }
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                BasicComponent(title = stringResource(R.string.search_use_tags), onClick = onUse)
+                BasicComponent(title = stringResource(R.string.search_back_to_results), onClick = onDismiss)
             }
-            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }

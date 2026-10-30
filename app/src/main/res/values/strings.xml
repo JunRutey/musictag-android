@@ -61,4 +61,36 @@
     <string name="action_back">返回</string>
     <string name="action_reset">重置</string>
     <string name="settings_footer">共 %1$d 项，保存在 musictag_settings 中。</string>
+
+    <!-- 在线搜索 -->
+    <string name="search_title">在线查找标签</string>
+    <string name="search_field_album">专辑（可选）</string>
+    <string name="action_search">搜索</string>
+    <string name="action_auto_match">自动补全全部来源</string>
+    <string name="search_searching">正在搜索…</string>
+    <string name="search_no_results">还没有结果。</string>
+    <string name="search_failures">部分来源没有响应：%1$s</string>
+    <string name="search_match_from">来自 %1$s 的匹配</string>
+    <string name="search_match">匹配结果</string>
+    <string name="search_use_tags">使用这些标签</string>
+    <string name="search_back_to_results">返回结果列表</string>
+    <string name="search_lyrics_length">%1$d 个字符</string>
+    <string name="search_error_no_result">没有来源返回结果。</string>
+    <string name="search_error_no_match">没有来源给出可用的匹配。</string>
+    <string name="search_error_source_empty">%1$s 没有可用的标签。</string>
+    <string name="search_all_sources">全部来源</string>
+
+    <!-- 标签字段名 -->
+    <string name="label_title">标题</string>
+    <string name="label_artist">艺术家</string>
+    <string name="label_album">专辑</string>
+    <string name="label_album_artist">专辑艺术家</string>
+    <string name="label_genre">流派</string>
+    <string name="label_composer">作曲</string>
+    <string name="label_track">音轨</string>
+    <string name="label_disc">碟号</string>
+    <string name="label_year">年份</string>
+    <string name="label_comment">注释</string>
+    <string name="label_lyrics">歌词</string>
+    <string name="label_cover">封面</string>
 </resources>

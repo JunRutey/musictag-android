@@ -15,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
+import com.xjcheng.musictageditor.R
 import com.xjcheng.musictageditor.core.net.SearchQuery
 import com.xjcheng.musictageditor.core.net.SearchResult
 import com.xjcheng.musictageditor.net.Providers
@@ -88,7 +89,7 @@ class SearchActivity : ComponentActivity() {
                 searching = false,
                 results = rows,
                 failures = registry.failures().map { it.provider.displayName },
-                error = if (rows.isEmpty()) "No source returned a result." else null,
+                error = if (rows.isEmpty()) getString(R.string.search_error_no_result) else null,
             )
         }
     }
@@ -104,13 +105,13 @@ class SearchActivity : ComponentActivity() {
                 ui.copy(
                     searching = false,
                     failures = registry.failures().map { it.provider.displayName },
-                    error = "No source produced a usable match.",
+                    error = getString(R.string.search_error_no_match),
                 )
             } else {
                 ui.copy(
                     searching = false,
                     selected = candidate,
-                    selectedLabel = "all sources",
+                    selectedLabel = getString(R.string.search_all_sources),
                     autoMatched = true,
                     failures = registry.failures().map { it.provider.displayName },
                 )
@@ -125,7 +126,7 @@ class SearchActivity : ComponentActivity() {
                 runCatching { registry.detailFor(result) }.getOrNull()
             }
             ui = if (candidate == null || candidate.isEmpty()) {
-                ui.copy(searching = false, error = "${result.provider.displayName} returned no usable tags.")
+                ui.copy(searching = false, error = getString(R.string.search_error_source_empty, result.provider.displayName))
             } else {
                 ui.copy(
                     searching = false,

@@ -55,4 +55,34 @@
     <string name="action_back">Back</string>
     <string name="action_reset">Reset</string>
     <string name="settings_footer">%1$d preferences, stored in musictag_settings.</string>
+
+    <string name="search_title">Find tags online</string>
+    <string name="search_field_album">Album (optional)</string>
+    <string name="action_search">Search</string>
+    <string name="action_auto_match">Auto match all sources</string>
+    <string name="search_searching">Searching…</string>
+    <string name="search_no_results">No results yet.</string>
+    <string name="search_failures">Some sources did not answer: %1$s</string>
+    <string name="search_match_from">Match from %1$s</string>
+    <string name="search_match">Match</string>
+    <string name="search_use_tags">Use these tags</string>
+    <string name="search_back_to_results">Back to results</string>
+    <string name="search_lyrics_length">%1$d characters</string>
+    <string name="search_error_no_result">No source returned a result.</string>
+    <string name="search_error_no_match">No source produced a usable match.</string>
+    <string name="search_error_source_empty">%1$s returned no usable tags.</string>
+    <string name="search_all_sources">all sources</string>
+
+    <string name="label_title">Title</string>
+    <string name="label_artist">Artist</string>
+    <string name="label_album">Album</string>
+    <string name="label_album_artist">Album artist</string>
+    <string name="label_genre">Genre</string>
+    <string name="label_composer">Composer</string>
+    <string name="label_track">Track</string>
+    <string name="label_disc">Disc</string>
+    <string name="label_year">Year</string>
+    <string name="label_comment">Comment</string>
+    <string name="label_lyrics">Lyrics</string>
+    <string name="label_cover">Cover</string>
 </resources>
