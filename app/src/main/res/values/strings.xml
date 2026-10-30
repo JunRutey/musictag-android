@@ -56,4 +56,9 @@
     <string name="home_settings">设置</string>
     <string name="home_compat">兼容性：其他应用仍可通过 VIEW、EDIT、SEND 和系统搜索打开本应用；所有历史组件名保持不变。</string>
     <string name="home_engine">标签读写由上游 TagLib 2.0.2 完成，支持 MP3、FLAC、Ogg、APE、M4A 与封面。</string>
+
+    <!-- 通用动作 -->
+    <string name="action_back">返回</string>
+    <string name="action_reset">重置</string>
+    <string name="settings_footer">共 %1$d 项，保存在 musictag_settings 中。</string>
 </resources>

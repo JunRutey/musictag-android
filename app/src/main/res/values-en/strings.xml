@@ -51,4 +51,8 @@
     <string name="home_settings">Settings</string>
     <string name="home_compat">Compatibility: other apps can still open files here with VIEW, EDIT, SEND and the system search intent; every historical component name is unchanged.</string>
     <string name="home_engine">Tags are read and written by upstream TagLib 2.0.2: MP3, FLAC, Ogg, APE and M4A, artwork included.</string>
+
+    <string name="action_back">Back</string>
+    <string name="action_reset">Reset</string>
+    <string name="settings_footer">%1$d preferences, stored in musictag_settings.</string>
 </resources>
