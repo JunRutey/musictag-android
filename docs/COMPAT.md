@@ -15,8 +15,9 @@ four are preserved, and all four are enforced by tests rather than by good inten
 
 * `applicationId` = `com.xjcheng.musictageditor` (never change it: it *is* the identity
   callers resolve).
-* `minSdk` 21, `targetSdk` 35. The increase over the original (`16`/`28`) is what allows
-  a modern UI; it does not change the calling contract.
+* `minSdk` 24, `targetSdk` 35. The original was `16`/`28`; the floor moved to Android 7.0
+  because Miuix 0.7.2 — the newest release the pinned Kotlin 2.2.0 compiler can consume —
+  declares `minSdk 24`. This changes who can install the app, not the calling contract.
 
 ## 2. Components
 

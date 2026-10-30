@@ -25,7 +25,9 @@ android {
 
     defaultConfig {
         applicationId = "com.xjcheng.musictageditor"
-        minSdk = 21
+        // Android 7.0. Miuix 0.7.2 (the newest release the pinned Kotlin 2.2.0 compiler can
+        // consume) declares minSdk 24, and the library harness has no override for that.
+        minSdk = 24
         targetSdk = 35
         versionCode = (project.findProperty("versionCode") as String?)?.toInt() ?: 1
         versionName = (project.findProperty("versionName") as String?) ?: "1.0.0"
