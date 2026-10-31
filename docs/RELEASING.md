@@ -13,7 +13,7 @@
 | 项 | 值 |
 |---|---|
 | 包名 | `com.xjcheng.musictageditor.debug`（对应 `applicationIdSuffix = ".debug"`） |
-| 版本名 | `x.y.z-debug`（对应 `versionNameSuffix = "-debug"`） |
+| 版本名 | `1.1.9-debug`（`gradle.properties` 的 `versionName` + `-debug` 后缀） |
 | 签名 | Android 调试密钥（`~/.android/debug.keystore`） |
 | 用途 | 自测、给你确认；**不发布**，不进发行页 |
 
@@ -26,8 +26,8 @@ CI 每次推送都会构建 `app-debug` 并在 Actions 里作为 artifact 提供
 ## 发行包（确认之后）
 
 ```bash
-# 1) 确认版本号与 CHANGELOG
-#    app/build.gradle.kts 的 versionName 默认值 + CHANGELOG.md 对应小节
+# 1) 确认版本号与 CHANGELOG：
+#    gradle.properties 的 versionCode/versionName 与 CHANGELOG.md 对应小节
 # 2) 打 tag 并推送，Release 工作流会签名、校验、发布
 git tag -a v1.1.10 -m "Music Tag 1.1.10"
 git push origin v1.1.10
