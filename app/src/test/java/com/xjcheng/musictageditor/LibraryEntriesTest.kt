@@ -87,6 +87,67 @@ class LibraryEntriesTest {
         assertEquals(listOf("b", "a"), entries.titles())
     }
 
+    /**
+     * Regression test for the "Key header-H was already used" crash: ordering by duration
+     * interleaves titles that share an initial, and the list keys used to be derived from
+     * the section letter, so the same letter produced the same key twice.
+     */
+    @Test
+    fun durationOrderDoesNotRepeatSectionKeys() {
+        val tracks = listOf(
+            track(1, "Hello", durationMs = 1_000),
+            track(2, "Adele", durationMs = 2_000),
+            track(3, "Hey Jude", durationMs = 3_000),
+            track(4, "Air", durationMs = 4_000),
+            track(5, "Halo", durationMs = 5_000),
+        )
+        for (ascending in listOf(true, false)) {
+            val entries = buildEntries(tracks, LibrarySort.DURATION, ascending)
+            val keys = entries.map { it.key }
+            assertEquals("$ascending: $keys", keys.size, keys.toSet().size)
+        }
+    }
+
+    /** A duration-ordered list has no alphabetical grouping, so it must not grow headers. */
+    @Test
+    fun durationOrderEmitsNoSectionHeaders() {
+        val entries = buildEntries(
+            listOf(
+                track(1, "Hello", durationMs = 1_000),
+                track(2, "Adele", durationMs = 2_000),
+                track(3, "Hey Jude", durationMs = 3_000),
+            ),
+            LibrarySort.DURATION,
+            ascending = true,
+        )
+        assertEquals(emptyList<String>(), entries.letters())
+        assertEquals(listOf("Hello", "Adele", "Hey Jude"), entries.titles())
+    }
+
+    /** Compose throws on a repeated lazy-list key, so every sort mode must hand out unique ones. */
+    @Test
+    fun everySortModeKeepsLazyListKeysUnique() {
+        val tracks = listOf(
+            track(1, "晴天"),
+            track(2, "七里香"),
+            track(3, "Always Online"),
+            track(4, "十年", artist = "陈奕迅"),
+            track(5, "十一月的萧邦", artist = "周杰伦"),
+            track(6, "", artist = ""),
+            track(7, "123", artist = "123"),
+            track(8, "晴天"),
+            track(9, "Hello", artist = "Adele"),
+            track(10, "Hey Jude", artist = "The Beatles"),
+            track(1, "晴天"), // the same media row reported twice
+        )
+        for (sort in LibrarySort.entries) {
+            for (ascending in listOf(true, false)) {
+                val keys = buildEntries(tracks, sort, ascending).map { it.key }
+                assertEquals("$sort/$ascending: $keys", keys.size, keys.toSet().size)
+            }
+        }
+    }
+
     @Test
     fun emptyInputProducesNoEntries() {
         assertTrue(buildEntries(emptyList(), LibrarySort.TITLE, ascending = true).isEmpty())

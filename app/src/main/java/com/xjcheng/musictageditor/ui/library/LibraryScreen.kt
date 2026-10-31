@@ -98,10 +98,19 @@ data class LibraryUiState(
     val selectedTab: Int = TAB_SONGS,
 )
 
-/** One row of the flattened song list: a section header or a track. */
+/**
+ * One row of the flattened song list: a section header or a track.
+ *
+ * [key] is the identity the lazy list uses. Compose treats two items with the same key in
+ * one list as a fatal error, so the builder assigns it and guarantees it is unique instead
+ * of deriving it from display text, which can legitimately repeat.
+ */
 internal sealed interface LibraryEntry {
-    data class Header(val letter: String) : LibraryEntry
-    data class Song(val track: MediaTrack) : LibraryEntry
+    val key: String
+
+    data class Header(val letter: String, override val key: String) : LibraryEntry
+
+    data class Song(val track: MediaTrack, override val key: String) : LibraryEntry
 }
 
 /**
@@ -241,15 +250,7 @@ private fun SongList(
     val listState = rememberLazyListState()
     Box(modifier = Modifier.fillMaxSize()) {
         LazyColumn(modifier = Modifier.fillMaxSize(), state = listState) {
-            items(
-                items = entries,
-                key = { entry ->
-                    when (entry) {
-                        is LibraryEntry.Header -> "header-${entry.letter}"
-                        is LibraryEntry.Song -> "song-${entry.track.id}"
-                    }
-                },
-            ) { entry ->
+            items(items = entries, key = { it.key }) { entry ->
                 when (entry) {
                     is LibraryEntry.Header -> SectionHeader(entry.letter)
                     is LibraryEntry.Song -> SongRow(entry.track, onOpenTrack)
@@ -731,35 +732,52 @@ private fun subtitle(track: MediaTrack): String {
 /** Flattens the filtered list into headers + rows, ordered by [sort]. */
 internal fun buildEntries(tracks: List<MediaTrack>, sort: LibrarySort, ascending: Boolean): List<LibraryEntry> {
     if (tracks.isEmpty()) return emptyList()
-    val keys = tracks.associate { it.id to PinyinIndex.sortKeyOf(it.title) }
+    val sortKeys = tracks.associate { it.id to PinyinIndex.sortKeyOf(it.title) }
     val comparator = when (sort) {
         LibrarySort.TITLE -> compareBy<MediaTrack> { PinyinIndex.rankOf(it.title) }
-            .thenBy { keys[it.id] ?: "" }
+            .thenBy { sortKeys[it.id] ?: "" }
         LibrarySort.ARTIST -> compareBy<MediaTrack> { PinyinIndex.rankOf(it.artist) }
             .thenBy { PinyinIndex.sortKeyOf(it.artist) }
-            .thenBy { keys[it.id] ?: "" }
+            .thenBy { sortKeys[it.id] ?: "" }
         LibrarySort.ALBUM -> compareBy<MediaTrack> { PinyinIndex.rankOf(it.album) }
             .thenBy { PinyinIndex.sortKeyOf(it.album) }
-            .thenBy { keys[it.id] ?: "" }
+            .thenBy { sortKeys[it.id] ?: "" }
         LibrarySort.DURATION -> compareBy<MediaTrack> { it.durationMs }
     }
     val ordered = tracks.sortedWith(if (ascending) comparator else comparator.reversed())
 
-    val entries = ArrayList<LibraryEntry>(ordered.size + 27)
+    val entries = ArrayList<LibraryEntry>(ordered.size + PinyinIndex.sections.size)
+    val usedKeys = HashSet<String>()
     var current: String? = null
     for (track in ordered) {
-        val letter = when (sort) {
-            LibrarySort.ARTIST -> PinyinIndex.initialOf(track.artist)
-            LibrarySort.ALBUM -> PinyinIndex.initialOf(track.album)
-            else -> PinyinIndex.initialOf(track.title)
-        }.ifEmpty { PinyinIndex.OTHER }
-        if (letter != current) {
-            entries += LibraryEntry.Header(letter)
-            current = letter
+        // Only the alphabetical orders have sections. A duration-ordered list has no letter
+        // grouping at all, so a section label there would repeat - and, with it, the key.
+        if (sort != LibrarySort.DURATION) {
+            val letter = when (sort) {
+                LibrarySort.ARTIST -> PinyinIndex.initialOf(track.artist)
+                LibrarySort.ALBUM -> PinyinIndex.initialOf(track.album)
+                else -> PinyinIndex.initialOf(track.title)
+            }.ifEmpty { PinyinIndex.OTHER }
+            if (letter != current) {
+                current = letter
+                entries += LibraryEntry.Header(letter, uniqueKey("header-$letter", usedKeys))
+            }
         }
-        entries += LibraryEntry.Song(track)
+        entries += LibraryEntry.Song(track, uniqueKey("song-${track.id}", usedKeys))
     }
     return entries
+}
+
+/**
+ * Returns [base], or an occurrence-suffixed variant when it is already taken, so a section
+ * label that repeats or a media row that MediaStore reports twice can never produce two
+ * items with the same lazy-list key.
+ */
+private fun uniqueKey(base: String, used: MutableSet<String>): String {
+    if (used.add(base)) return base
+    var occurrence = 2
+    while (!used.add("$base#$occurrence")) occurrence++
+    return "$base#$occurrence"
 }
 
 /** `m:ss` for a duration, which is enough for a library row. */
