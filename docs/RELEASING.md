@@ -13,7 +13,7 @@
 | 项 | 值 |
 |---|---|
 | 包名 | `com.xjcheng.musictageditor.debug`（对应 `applicationIdSuffix = ".debug"`） |
-| 版本名 | `1.1.9-debug`（`gradle.properties` 的 `versionName` + `-debug` 后缀） |
+| 版本名 | `1.1.10-debug`（`gradle.properties` 的 `versionName` + `-debug` 后缀） |
 | 签名 | Android 调试密钥（`~/.android/debug.keystore`） |
 | 用途 | 自测、给你确认；**不发布**，不进发行页 |
 

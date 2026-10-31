@@ -113,7 +113,7 @@ jobs:
                   section.append(line)
 
           print("安装说明：本包用项目自有密钥签名，覆盖安装前请先卸载原版")
-          print("com.xjcheng.musictageditor 1.2.x（Android 不允许更换签名的应用直接覆盖）。")
+          print("com.xjcheng.musictageditor（Android 不允许更换签名的应用直接覆盖）。")
           print("音频文件里的标签不受影响；应用设置与日志按安装独立。")
           print()
           print(f"## 版本 {version}")

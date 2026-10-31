@@ -13,7 +13,7 @@
 > TagLib via JNI. Feature work is complete; the project is now in a polish phase.
 
 **状态：功能完成，进入打磨阶段。** 后续只做细节优化、缺陷修复和兼容性维护，不再有大的功能
-变更。当前发行版 **v1.1.9**，代码在 `main`，每次推送由 CI 全量验证。
+变更。当前发行版 **v1.1.10**，代码在 `main`，每次推送由 CI 全量验证。
 
 ## 功能一览
 
@@ -81,7 +81,7 @@ CI 是唯一权威构建（`ubuntu-latest`、JDK 21、Gradle 8.13）。本地需
 （Kotlin 2.2.0、AGP 8.10.1、NDK 27.0.12077973、compileSdk 35）。
 
 ```bash
-./gradlew :app:assembleDebug          # 调试包：com.xjcheng.musictageditor.debug，1.1.9-debug
+./gradlew :app:assembleDebug          # 调试包：com.xjcheng.musictageditor.debug，1.1.10-debug
 ./gradlew test                        # 单元测试（含 native 引擎的真实读写，需 MUSICTAG_HOST_LIB）
 python3 tools/selfcheck.py            # 本地自检：资源、契约文件、JNI 配对、硬编码文案、fixture
 ./gradlew :app:lintDebug              # Lint（CI 会跑，abortOnError）

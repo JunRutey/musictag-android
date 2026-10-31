@@ -3,7 +3,7 @@
 > 项目：`JunRutey/musictag-android` —— 音乐标签（`com.xjcheng.musictageditor` 1.2.5.2）的
 > Android 重写版。
 > 状态：功能完成，**进入打磨阶段**，不再规划大的功能更新。
-> 当前发行版：`v1.1.9`（唯一保留的 release）；代码在 `main`。
+> 当前发行版：`v1.1.10`；代码在 `main`。
 > 本文件写给接手的人：先读这一份，再看 README 与 docs/ 下的专题文档。
 
 ---

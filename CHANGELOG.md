@@ -4,6 +4,33 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.10] - 2026-10-31
+
+### 新增
+
+* 曲库的**艺术家 / 专辑详情页**：点艺术家或专辑不再是把搜索框填上名字，而是进入一个独立页面，
+  只列出该艺术家（或该专辑）的曲目，顶部有返回按钮，系统返回键同样返回曲库。艺术家页按
+  专辑名（拼音）+ 音轨号排序，专辑页按音轨号排序；没有音轨号时回落到标题。
+* 新的启动图标：按 TagMusic 图标素材重制，Android 8+ 用自适应图标（背景色 `#F3F7FB`，
+  前景落在 66dp 安全区内，圆角/圆形/方形遮罩都不切字），Android 7.x 用五个密度的方形 PNG。
+
+### 修复
+
+* **A–Z 索引条被字母气泡顶开**：拖动索引时，气泡原先叠在字母条上并把它往左挤。现在气泡与
+  字母条并排（气泡在左、字母条在右），索引条始终贴着屏幕右缘不动，气泡固定 48dp 宽。
+* **调试包和发行版不能共存**：安装调试包会报
+  `INSTALL_FAILED_CONFLICTING_PROVIDER`。两个 Provider 的 authority 原先写死成
+  `com.xjcheng.musictageditor.SearchSugg` / `.provider`，而 authority 在设备上必须唯一；
+  现在改为由 `${applicationId}` 派生，调试包自动是 `.debug.SearchSugg` / `.debug.provider`，
+  并自带一份指向调试 authority 的 `searchable.xml`，系统搜索仍然可用。
+* 曲库列表项 key 不唯一、以及按时长排序时仍会插进字母分组头的问题。
+* 艺术家/专辑按「全部曲目」分组，不再受搜索框影响；歌曲 Tab 恒为全库。
+
+### 变更
+
+* 三个 Tab 的职责明确拆开：歌曲 Tab 只受搜索框影响，艺术家/专辑 Tab 各自独立，点开是详情页，
+  不再互相串用「填搜索框」这条旧路径。
+
 ## [1.1.9] - 2026-10-31
 
 已发布：https://github.com/JunRutey/musictag-android/releases/tag/v1.1.9
