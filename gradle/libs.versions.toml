@@ -2,7 +2,7 @@
 # Toolchain. These versions are pinned deliberately: they are known-good combinations,
 # and CI (not the developer machine) is the source of truth for resolution.
 agp = "8.10.1"
-kotlin = "2.2.0"
+kotlin = "2.4.21"
 # Compose 1.9.3 / Material3 1.4.0. This is the newest Compose line that Miuix 0.7.2
 # itself was built against (see docs/UI.md); Miuix 0.8+ needs Kotlin >= 2.3 metadata,
 # which the pinned Kotlin 2.2.0 compiler cannot read.
