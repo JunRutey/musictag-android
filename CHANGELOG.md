@@ -4,6 +4,23 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.7] - 2026-10-31
+
+### 新增
+
+* 设置项改为「点选」而不是手填：`.lrc` 编码（UTF-8/GBK）、`.lrc` 文件名（同名/艺术家-标题）、
+  忽略时长（不启用/15/30/60 秒/2 分钟/5 分钟，默认 60 秒）、主题颜色（跟随系统/白色/深色）
+  都变成底部选择面板。
+* 「忽略的目录」改为系统文件夹选择器（OpenDocumentTree），保存相对路径并保留授权，可一键清除。
+* 外观：`theme_mode` + `dynamic_color` 映射到 Miuix 的 `ThemeController`，支持
+  System/Light/Dark 与三种 Monet 动态取色（Android 12+），切换即时生效。
+* 统一输入观感：编辑器字段、设置里的文本框、搜索的三个输入行都用加深的圆角底，
+  与背景区分；编辑器「保存」按钮左移 12dp。
+
+### 移除
+
+* 手动批量相关的 2 个设置（功能本身已移除）、`.lrc` 目录模式与文件名模板（固定同目录 +
+  可选文件名）、旧的 `dark_theme`（被 `theme_mode` 取代）。设置项 25 → 22。
 ## [1.1.6] - 2026-10-31
 
 已发布：https://github.com/JunRutey/musictag-android/releases/tag/v1.1.6

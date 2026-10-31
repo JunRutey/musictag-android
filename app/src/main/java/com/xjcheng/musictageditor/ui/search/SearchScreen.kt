@@ -187,14 +187,23 @@ private fun FieldRow(label: String, value: String, onValueChange: (String) -> Un
             fontSize = 14.sp,
             modifier = Modifier.width(96.dp),
         )
-        BasicTextField(
-            value = value,
-            onValueChange = onValueChange,
-            singleLine = true,
-            textStyle = TextStyle(color = MiuixTheme.colorScheme.onSurface, fontSize = 14.sp),
-            cursorBrush = SolidColor(MiuixTheme.colorScheme.primary),
-            modifier = Modifier.weight(1f),
-        )
+        // Same deeper input surface as the settings and the editor.
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .clip(RoundedCornerShape(10.dp))
+                .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.06f))
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+        ) {
+            BasicTextField(
+                value = value,
+                onValueChange = onValueChange,
+                singleLine = true,
+                textStyle = TextStyle(color = MiuixTheme.colorScheme.onSurface, fontSize = 14.sp),
+                cursorBrush = SolidColor(MiuixTheme.colorScheme.primary),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
     }
 }
 
