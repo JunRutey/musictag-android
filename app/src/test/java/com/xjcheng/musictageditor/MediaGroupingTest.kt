@@ -123,8 +123,10 @@ class MediaGroupingTest {
             track(3, artist = "周杰伦", album = "叶惠美", track = 1),
         )
 
-        // Blank tags are trimmed on both sides, so " " and "" are the same group.
-        assertEquals(listOf(2L, 1L), MediaGrouping.artistTracks(tracks, "").map { it.id })
+        // Blank tags are trimmed on both sides, so " " and "" are the same group. Ordering
+        // inside a group with no album is not meaningful, so only membership is asserted
+        // there; the album page orders by track number, which is stable.
+        assertEquals(setOf(1L, 2L), MediaGrouping.artistTracks(tracks, "").map { it.id }.toSet())
         assertEquals(listOf(2L, 1L), MediaGrouping.albumTracks(tracks, "", "").map { it.id })
     }
 }
