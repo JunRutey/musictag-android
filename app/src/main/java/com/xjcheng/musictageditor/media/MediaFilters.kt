@@ -136,7 +136,7 @@ object MediaFilters {
     /**
      * MP4 files are usually videos with an audio track, which is why the original app let
      * users hide them. The extension wins over the MIME type: MediaStore reports
-     * udio/mp4 for m4a *and* for the audio track of an mp4 video, while .m4a is always
+     * `audio/mp4` for m4a *and* for the audio track of an mp4 video, while .m4a is always
      * an audio file.
      */
     fun isVideo(track: MediaTrack): Boolean {
@@ -150,9 +150,44 @@ object MediaFilters {
     /** Case-insensitive match over title, artist and album. */
     fun matchesQuery(track: MediaTrack, query: String): Boolean {
         val needle = query.trim()
+        return matchesNormalizedQuery(track, needle)
+    }
+
+    private fun matchesNormalizedQuery(track: MediaTrack, needle: String): Boolean {
         if (needle.isEmpty()) return true
-        val haystack = listOf(track.title, track.artist, track.album).joinToString(" ")
-        return haystack.contains(needle, ignoreCase = true)
+        if (track.title.contains(needle, ignoreCase = true) ||
+            track.artist.contains(needle, ignoreCase = true) ||
+            track.album.contains(needle, ignoreCase = true)
+        ) {
+            return true
+        }
+        if (!needle.contains(' ')) return false
+
+        val title = track.title
+        val artist = track.artist
+        val album = track.album
+        val totalLength = title.length + artist.length + album.length + 2
+        if (needle.length > totalLength) return false
+        for (start in 0..totalLength - needle.length) {
+            var matches = true
+            for (offset in needle.indices) {
+                val index = start + offset
+                val character = when {
+                    index < title.length -> title[index]
+                    index == title.length -> ' '
+                    index < title.length + artist.length + 1 ->
+                        artist[index - title.length - 1]
+                    index == title.length + artist.length + 1 -> ' '
+                    else -> album[index - title.length - artist.length - 2]
+                }
+                if (!character.equals(needle[offset], ignoreCase = true)) {
+                    matches = false
+                    break
+                }
+            }
+            if (matches) return true
+        }
+        return false
     }
 
     fun apply(
@@ -161,8 +196,28 @@ object MediaFilters {
         ignoredDirectories: String,
         ignoreMp4Videos: Boolean,
         query: String = "",
-    ): List<MediaTrack> = tracks.filter { track ->
-        shouldInclude(track, minDurationSeconds, ignoredDirectories, ignoreMp4Videos) &&
-            matchesQuery(track, query)
+    ): List<MediaTrack> {
+        val directories = parseIgnoredDirectories(ignoredDirectories)
+        val needle = query.trim()
+        return tracks.filter { track ->
+            (minDurationSeconds <= 0 || track.durationMs >= minDurationSeconds * 1_000L) &&
+                !isIgnoredDirectory(track, directories) &&
+                (!ignoreMp4Videos || !isVideo(track)) &&
+                matchesNormalizedQuery(track, needle)
+        }
+    }
+
+    private fun parseIgnoredDirectories(value: String): List<String> =
+        value.split('\n', ';')
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .map { it.replace('\\', '/').trimEnd('/') }
+
+    private fun isIgnoredDirectory(track: MediaTrack, directories: List<String>): Boolean {
+        if (directories.isEmpty()) return false
+        val path = track.path.replace('\\', '/')
+        return directories.any { directory ->
+            path == directory || path.startsWith("$directory/")
+        }
     }
 }

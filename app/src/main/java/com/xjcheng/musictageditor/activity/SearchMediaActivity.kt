@@ -9,7 +9,6 @@ import android.Manifest
 import android.app.SearchManager
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -31,7 +30,12 @@ import com.xjcheng.musictageditor.settings.SettingsRepository
 import com.xjcheng.musictageditor.ui.library.LibraryScreen
 import com.xjcheng.musictageditor.ui.library.LibraryUiState
 import com.xjcheng.musictageditor.ui.theme.MusicTagTheme
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -42,7 +46,7 @@ import kotlinx.coroutines.withContext
  * (minimum duration, ignored directories, MP4 videos) and by the query - see
  * [MediaFilters], which is unit tested. Tapping a row opens the editor on that URI.
  */
-class SearchMediaActivity : ComponentActivity() {
+open class SearchMediaActivity : ComponentActivity() {
 
     private val settings by lazy { SettingsRepository(this) }
     private val library by lazy { MediaLibrary(this) }
@@ -68,7 +72,6 @@ class SearchMediaActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        AppLog.init(this)
         ui = ui.copy(
             query = intent?.getStringExtra(SearchManager.QUERY).orEmpty(),
             permissionGranted = hasAudioPermission(),
@@ -82,7 +85,7 @@ class SearchMediaActivity : ComponentActivity() {
             MusicTagTheme {
                 LibraryScreen(
                     state = ui,
-                    onQueryChange = { query -> ui = ui.copy(query = query); applyFilter(loadRaw = false) },
+                    onQueryChange = ::updateQuery,
                     onRefresh = { load() },
                     onRequestPermission = { requestPermission.launch(audioPermission()) },
                     onOpenTrack = ::openTrack,
@@ -94,39 +97,61 @@ class SearchMediaActivity : ComponentActivity() {
         if (ui.permissionGranted) load() else ui = ui.copy(loading = false)
     }
 
-    private var allTracks: List<MediaTrack> = emptyList()
+    private var libraryTracks: List<MediaTrack> = emptyList()
+    private var hasLoaded = false
+    private var loadJob: Job? = null
+    private var queryJob: Job? = null
 
     private fun load() {
-        lifecycleScope.launch {
+        loadJob?.cancel()
+        queryJob?.cancel()
+        loadJob = lifecycleScope.launch {
             ui = ui.copy(loading = true, message = null)
-            val loaded = withContext(Dispatchers.IO) { runCatching { library.query() } }
-            allTracks = loaded.getOrDefault(emptyList())
-            ui = ui.copy(
-                message = if (loaded.isFailure) getString(R.string.library_error) else null,
-            )
-            applyFilter(loadRaw = true)
+            try {
+                val (loaded, filterSettings) = coroutineScope {
+                    val tracks = async(Dispatchers.IO) { library.query() }
+                    val preferences = async(Dispatchers.IO) { settings.load() }
+                    tracks.await() to preferences.await()
+                }
+                val filtered = withContext(Dispatchers.Default) {
+                    MediaFilters.apply(
+                        tracks = loaded,
+                        minDurationSeconds = filterSettings.ignoreDurationSeconds,
+                        ignoredDirectories = filterSettings.ignoreDirectories,
+                        ignoreMp4Videos = filterSettings.ignoreMp4Videos,
+                    )
+                }
+                libraryTracks = filtered
+                hasLoaded = true
+                val query = ui.query
+                val visible = withContext(Dispatchers.Default) {
+                    filtered.filter { MediaFilters.matchesQuery(it, query) }
+                }
+                ui = ui.copy(
+                    loading = false,
+                    message = null,
+                    libraryTracks = filtered,
+                    tracks = visible,
+                )
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                AppLog.e("Library", "failed to load media library", error)
+                ui = ui.copy(loading = false, message = getString(R.string.library_error))
+            }
         }
     }
 
-    private fun applyFilter(loadRaw: Boolean) {
-        if (loadRaw && allTracks.isEmpty()) {
-            ui = ui.copy(loading = false, tracks = emptyList(), libraryTracks = emptyList())
-            return
+    private fun updateQuery(query: String) {
+        ui = ui.copy(query = query)
+        queryJob?.cancel()
+        queryJob = lifecycleScope.launch {
+            delay(120)
+            val matches = withContext(Dispatchers.Default) {
+                libraryTracks.filter { MediaFilters.matchesQuery(it, query) }
+            }
+            if (ui.query == query) ui = ui.copy(tracks = matches)
         }
-        val settings = settings.load()
-        // The settings filters apply to the whole library; the search query only narrows the
-        // song tab. Artist and album pages must not shrink because of a leftover query.
-        val filtered = MediaFilters.apply(
-            tracks = allTracks,
-            minDurationSeconds = settings.ignoreDurationSeconds,
-            ignoredDirectories = settings.ignoreDirectories,
-            ignoreMp4Videos = settings.ignoreMp4Videos,
-        )
-        ui = ui.copy(
-            loading = false,
-            libraryTracks = filtered,
-            tracks = filtered.filter { MediaFilters.matchesQuery(it, ui.query) },
-        )
     }
 
     private fun openTrack(track: MediaTrack) {
@@ -156,7 +181,7 @@ class SearchMediaActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         val query = intent.getStringExtra(SearchManager.QUERY) ?: return
-        ui = ui.copy(query = query)
-        if (allTracks.isEmpty()) load() else applyFilter(loadRaw = false)
+        updateQuery(query)
+        if (!hasLoaded) load()
     }
 }

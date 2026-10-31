@@ -90,6 +90,7 @@ class MediaFiltersTest {
         assertFalse(MediaFilters.matchesQuery(song, "富士山"))
         assertTrue(MediaFilters.matchesQuery(song, "   "))
         assertTrue(MediaFilters.matchesQuery(track(title = "Sunny"), "sunny"))
+        assertTrue(MediaFilters.matchesQuery(track(title = "Hello", artist = "World"), "lo Wo"))
     }
 
     @Test

@@ -5,17 +5,21 @@
 
 package com.xjcheng.musictageditor.ui.library
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.ui.input.pointer.pointerInput
-import kotlinx.coroutines.delay
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,6 +35,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.Composable
@@ -45,7 +51,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -62,7 +70,10 @@ import com.xjcheng.musictageditor.media.ArtistGroup
 import com.xjcheng.musictageditor.media.MediaGrouping
 import com.xjcheng.musictageditor.media.MediaTrack
 import com.xjcheng.musictageditor.media.PinyinIndex
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -114,6 +125,11 @@ private const val DETAIL_NONE = 0
 private const val DETAIL_ARTIST = 1
 private const val DETAIL_ALBUM = 2
 
+private sealed interface LibraryPage {
+    data class Library(val tab: Int) : LibraryPage
+    data class GroupDetail(val kind: Int, val name: String, val artist: String) : LibraryPage
+}
+
 /**
  * One row of the flattened song list: a section header or a track.
  *
@@ -162,8 +178,11 @@ fun LibraryScreen(
     // The artist and album tabs are views over the library, not over the search results.
     val groups = state.libraryTracks.ifEmpty { state.tracks }
 
-    val entries = remember(state.tracks, sort, ascending) {
-        buildEntries(state.tracks, sort, ascending)
+    var entries by remember { mutableStateOf(emptyList<LibraryEntry>()) }
+    LaunchedEffect(state.tracks, sort, ascending) {
+        entries = withContext(Dispatchers.Default) {
+            buildEntries(state.tracks, sort, ascending)
+        }
     }
     val letterIndex = remember(entries) {
         entries.withIndex().mapNotNull { (index, entry) ->
@@ -171,122 +190,143 @@ fun LibraryScreen(
         }.toMap()
     }
 
-    val libraryTitle = when (state.selectedTab) {
-        TAB_ARTISTS -> stringResource(
-            R.string.list_title_count,
-            stringResource(R.string.tab_artists),
-            remember(groups) { MediaGrouping.artists(groups) }.size,
-        )
-        TAB_ALBUMS -> stringResource(
-            R.string.list_title_count,
-            stringResource(R.string.tab_albums),
-            remember(groups) { MediaGrouping.albums(groups) }.size,
-        )
-        else -> stringResource(R.string.song_list_title, state.tracks.size)
+    val page = if (detailKind == DETAIL_NONE) {
+        LibraryPage.Library(state.selectedTab)
+    } else {
+        LibraryPage.GroupDetail(detailKind, detailName, detailArtist)
     }
-
-    if (detailKind != DETAIL_NONE) {
-        val detailTracks = remember(groups, detailKind, detailName, detailArtist) {
-            when (detailKind) {
-                DETAIL_ARTIST -> MediaGrouping.artistTracks(groups, detailName)
-                else -> MediaGrouping.albumTracks(groups, detailName, detailArtist)
+    BackHandler(detailKind != DETAIL_NONE) { detailKind = DETAIL_NONE }
+    AnimatedContent(
+        targetState = page,
+        modifier = Modifier.fillMaxSize(),
+        transitionSpec = {
+            when {
+                targetState is LibraryPage.GroupDetail && initialState is LibraryPage.Library ->
+                    (fadeIn(tween(180)) + slideInHorizontally(tween(180)) { it / 10 }) togetherWith
+                        (fadeOut(tween(120)) + slideOutHorizontally(tween(120)) { -it / 16 })
+                targetState is LibraryPage.Library && initialState is LibraryPage.GroupDetail ->
+                    (fadeIn(tween(180)) + slideInHorizontally(tween(180)) { -it / 10 }) togetherWith
+                        (fadeOut(tween(120)) + slideOutHorizontally(tween(120)) { it / 16 })
+                else -> fadeIn(tween(150)) togetherWith fadeOut(tween(100))
             }
-        }
-        val isArtist = detailKind == DETAIL_ARTIST
-        val fallback = stringResource(if (isArtist) R.string.label_unknown_artist else R.string.label_unknown_album)
-        val count = stringResource(R.string.library_count, detailTracks.size)
-        val subtitle = if (!isArtist && detailArtist.isNotBlank()) {
-            listOf(detailArtist, count).joinToString(" · ")
-        } else {
-            count
-        }
-        BackHandler { detailKind = DETAIL_NONE }
-        GroupDetailScreen(
-            title = detailName.ifBlank { fallback },
-            subtitle = subtitle,
-            tracks = detailTracks,
-            onBack = { detailKind = DETAIL_NONE },
-            onOpenTrack = onOpenTrack,
-        )
-        return
-    }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = libraryTitle,
-                navigationIcon = {
-                    IconButton(onClick = onSettings) {
-                        Icon(MiuixIcons.Useful.Settings, stringResource(R.string.action_settings))
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onRefresh) {
-                        Icon(MiuixIcons.Useful.Refresh, stringResource(R.string.action_refresh))
-                    }
-                },
-            )
         },
-        bottomBar = {
-            NavigationBar(
-                items = listOf(
-                    NavigationItem(stringResource(R.string.tab_songs), MiuixIcons.Useful.Play),
-                    NavigationItem(stringResource(R.string.tab_artists), MiuixIcons.Useful.Personal),
-                    NavigationItem(stringResource(R.string.tab_albums), MiuixIcons.Useful.Stick),
-                ),
-                selected = state.selectedTab,
-                onClick = onTabSelected,
-            )
-        },
-    ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            // The filter and the sort chips stay visible on the song list and are hidden on
-            // the artist/album browsers, which have their own (alphabetical) ordering.
-            if (state.selectedTab == TAB_SONGS) {
-                LibrarySearchField(
-                    value = state.query,
-                    onValueChange = onQueryChange,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        label = "library-page",
+    ) { targetPage ->
+        when (targetPage) {
+            is LibraryPage.GroupDetail -> {
+                val detailTracks = remember(groups, targetPage.kind, targetPage.name, targetPage.artist) {
+                    when (targetPage.kind) {
+                        DETAIL_ARTIST -> MediaGrouping.artistTracks(groups, targetPage.name)
+                        else -> MediaGrouping.albumTracks(groups, targetPage.name, targetPage.artist)
+                    }
+                }
+                val isArtist = targetPage.kind == DETAIL_ARTIST
+                val fallback = stringResource(
+                    if (isArtist) R.string.label_unknown_artist else R.string.label_unknown_album,
                 )
-                SortBar(
-                    sort = sort,
-                    ascending = ascending,
-                    onSort = { sort = it },
-                    onToggleOrder = { ascending = !ascending },
-                )
-            }
-            state.message?.let { message ->
-                Text(
-                    text = message,
-                    color = MiuixTheme.colorScheme.error,
-                    fontSize = 13.sp,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-                )
-            }
-            if (!state.permissionGranted) {
-                PermissionPrompt(onRequestPermission)
-                return@Column
-            }
-            if (state.loading) {
-                Hint(stringResource(R.string.library_loading))
-                return@Column
-            }
-            when (state.selectedTab) {
-                TAB_ARTISTS -> ArtistList(groups, onOpenArtist = { artist ->
-                    detailName = artist.name
-                    detailArtist = ""
-                    detailKind = DETAIL_ARTIST
-                })
-                TAB_ALBUMS -> AlbumList(groups, onOpenAlbum = { album ->
-                    detailName = album.name
-                    detailArtist = album.artist
-                    detailKind = DETAIL_ALBUM
-                })
-                else -> SongList(
-                    entries = entries,
-                    letterIndex = letterIndex,
+                val count = stringResource(R.string.library_count, detailTracks.size)
+                val subtitle = if (!isArtist && targetPage.artist.isNotBlank()) {
+                    listOf(targetPage.artist, count).joinToString(" · ")
+                } else {
+                    count
+                }
+                GroupDetailScreen(
+                    title = targetPage.name.ifBlank { fallback },
+                    subtitle = subtitle,
+                    tracks = detailTracks,
+                    onBack = { detailKind = DETAIL_NONE },
                     onOpenTrack = onOpenTrack,
                 )
+            }
+            is LibraryPage.Library -> {
+                val libraryTitle = when (targetPage.tab) {
+                    TAB_ARTISTS -> stringResource(
+                        R.string.list_title_count,
+                        stringResource(R.string.tab_artists),
+                        remember(groups) { MediaGrouping.artists(groups) }.size,
+                    )
+                    TAB_ALBUMS -> stringResource(
+                        R.string.list_title_count,
+                        stringResource(R.string.tab_albums),
+                        remember(groups) { MediaGrouping.albums(groups) }.size,
+                    )
+                    else -> stringResource(R.string.song_list_title, state.tracks.size)
+                }
+                Scaffold(
+                    topBar = {
+                        TopAppBar(
+                            title = libraryTitle,
+                            navigationIcon = {
+                                IconButton(onClick = onSettings) {
+                                    Icon(MiuixIcons.Useful.Settings, stringResource(R.string.action_settings))
+                                }
+                            },
+                            actions = {
+                                IconButton(onClick = onRefresh) {
+                                    Icon(MiuixIcons.Useful.Refresh, stringResource(R.string.action_refresh))
+                                }
+                            },
+                        )
+                    },
+                    bottomBar = {
+                        NavigationBar(
+                            items = listOf(
+                                NavigationItem(stringResource(R.string.tab_songs), MiuixIcons.Useful.Play),
+                                NavigationItem(stringResource(R.string.tab_artists), MiuixIcons.Useful.Personal),
+                                NavigationItem(stringResource(R.string.tab_albums), MiuixIcons.Useful.Stick),
+                            ),
+                            selected = targetPage.tab,
+                            onClick = onTabSelected,
+                        )
+                    },
+                ) { padding ->
+                    Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+                        if (targetPage.tab == TAB_SONGS) {
+                            LibrarySearchField(
+                                value = state.query,
+                                onValueChange = onQueryChange,
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                            )
+                            SortBar(
+                                sort = sort,
+                                ascending = ascending,
+                                onSort = { sort = it },
+                                onToggleOrder = { ascending = !ascending },
+                            )
+                        }
+                        state.message?.let { message ->
+                            Text(
+                                text = message,
+                                color = MiuixTheme.colorScheme.error,
+                                fontSize = 13.sp,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                            )
+                        }
+                        if (!state.permissionGranted) {
+                            PermissionPrompt(onRequestPermission)
+                        } else if (state.loading) {
+                            Hint(stringResource(R.string.library_loading))
+                        } else {
+                            when (targetPage.tab) {
+                                TAB_ARTISTS -> ArtistList(groups, onOpenArtist = { artist ->
+                                    detailName = artist.name
+                                    detailArtist = ""
+                                    detailKind = DETAIL_ARTIST
+                                })
+                                TAB_ALBUMS -> AlbumList(groups, onOpenAlbum = { album ->
+                                    detailName = album.name
+                                    detailArtist = album.artist
+                                    detailKind = DETAIL_ALBUM
+                                })
+                                else -> SongList(
+                                    entries = entries,
+                                    letterIndex = letterIndex,
+                                    onOpenTrack = onOpenTrack,
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -403,15 +443,7 @@ private fun SongRow(track: MediaTrack, onOpenTrack: (MediaTrack) -> Unit) {
                 .background(MiuixTheme.colorScheme.secondaryContainer),
             contentAlignment = Alignment.Center,
         ) {
-            val bitmap = cover
-            if (bitmap != null) {
-                Image(
-                    bitmap = bitmap,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                )
-            }
+            AlbumArtwork(cover)
             val badge = track.format
             if (badge.isNotBlank()) {
                 Box(
@@ -560,11 +592,29 @@ private fun GroupList(rows: List<LibraryGroupRow>, emptyLabel: String) {
             }
         }
         AlphabetBar(
-            letters = PinyinIndex.sections,
+            letters = letterIndex.keys.toList(),
             listState = listState,
             letterIndex = letterIndex,
             modifier = Modifier.align(Alignment.CenterEnd),
         )
+    }
+}
+
+@Composable
+private fun AlbumArtwork(bitmap: ImageBitmap?) {
+    AnimatedVisibility(
+        visible = bitmap != null,
+        modifier = Modifier.fillMaxSize(),
+        enter = fadeIn(tween(180)),
+    ) {
+        bitmap?.let {
+            Image(
+                bitmap = it,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
+        }
     }
 }
 
@@ -591,15 +641,7 @@ private fun GroupRow(row: LibraryGroupRow, fallbackTitle: String) {
                 .background(MiuixTheme.colorScheme.secondaryContainer),
             contentAlignment = Alignment.Center,
         ) {
-            val bitmap = cover
-            if (bitmap != null) {
-                Image(
-                    bitmap = bitmap,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                )
-            }
+            AlbumArtwork(cover)
         }
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
@@ -838,32 +880,50 @@ private fun subtitle(track: MediaTrack): String {
 /** Flattens the filtered list into headers + rows, ordered by [sort]. */
 internal fun buildEntries(tracks: List<MediaTrack>, sort: LibrarySort, ascending: Boolean): List<LibraryEntry> {
     if (tracks.isEmpty()) return emptyList()
-    val sortKeys = tracks.associate { it.id to PinyinIndex.sortKeyOf(it.title) }
-    val comparator = when (sort) {
-        LibrarySort.TITLE -> compareBy<MediaTrack> { PinyinIndex.rankOf(it.title) }
-            .thenBy { sortKeys[it.id] ?: "" }
-        LibrarySort.ARTIST -> compareBy<MediaTrack> { PinyinIndex.rankOf(it.artist) }
-            .thenBy { PinyinIndex.sortKeyOf(it.artist) }
-            .thenBy { sortKeys[it.id] ?: "" }
-        LibrarySort.ALBUM -> compareBy<MediaTrack> { PinyinIndex.rankOf(it.album) }
-            .thenBy { PinyinIndex.sortKeyOf(it.album) }
-            .thenBy { sortKeys[it.id] ?: "" }
-        LibrarySort.DURATION -> compareBy<MediaTrack> { it.durationMs }
+    data class SortableTrack(
+        val track: MediaTrack,
+        val rank: Int,
+        val sortKey: String,
+        val titleKey: String,
+        val section: String?,
+    )
+
+    val sortable = tracks.map { track ->
+        val groupingText = when (sort) {
+            LibrarySort.ARTIST -> track.artist
+            LibrarySort.ALBUM -> track.album
+            else -> track.title
+        }
+        SortableTrack(
+            track = track,
+            rank = if (sort == LibrarySort.DURATION) 0 else PinyinIndex.rankOf(groupingText),
+            sortKey = if (sort == LibrarySort.DURATION) "" else PinyinIndex.sortKeyOf(groupingText),
+            titleKey = if (sort == LibrarySort.TITLE || sort == LibrarySort.DURATION) {
+                ""
+            } else {
+                PinyinIndex.sortKeyOf(track.title)
+            },
+            section = if (sort == LibrarySort.DURATION) null else PinyinIndex.initialOf(groupingText),
+        )
     }
-    val ordered = tracks.sortedWith(if (ascending) comparator else comparator.reversed())
+    val comparator = when (sort) {
+        LibrarySort.TITLE -> compareBy<SortableTrack> { it.rank }.thenBy { it.sortKey }
+        LibrarySort.ARTIST, LibrarySort.ALBUM -> compareBy<SortableTrack> { it.rank }
+            .thenBy { it.sortKey }
+            .thenBy { it.titleKey }
+        LibrarySort.DURATION -> compareBy<SortableTrack> { it.track.durationMs }
+    }
+    val ordered = sortable.sortedWith(if (ascending) comparator else comparator.reversed())
 
     val entries = ArrayList<LibraryEntry>(ordered.size + PinyinIndex.sections.size)
     val usedKeys = HashSet<String>()
     var current: String? = null
-    for (track in ordered) {
+    for (item in ordered) {
+        val track = item.track
         // Only the alphabetical orders have sections. A duration-ordered list has no letter
         // grouping at all, so a section label there would repeat - and, with it, the key.
         if (sort != LibrarySort.DURATION) {
-            val letter = when (sort) {
-                LibrarySort.ARTIST -> PinyinIndex.initialOf(track.artist)
-                LibrarySort.ALBUM -> PinyinIndex.initialOf(track.album)
-                else -> PinyinIndex.initialOf(track.title)
-            }.ifEmpty { PinyinIndex.OTHER }
+            val letter = item.section.orEmpty().ifEmpty { PinyinIndex.OTHER }
             if (letter != current) {
                 current = letter
                 entries += LibraryEntry.Header(letter, uniqueKey("header-$letter", usedKeys))
