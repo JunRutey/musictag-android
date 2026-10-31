@@ -10,14 +10,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme as materialDarkColorScheme
 import androidx.compose.material3.lightColorScheme as materialLightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import com.xjcheng.musictageditor.settings.Appearance
-import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.theme.ThemeController
 import top.yukonga.miuix.kmp.theme.ColorSchemeMode
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.theme.darkColorScheme as miuixDarkColorScheme
+import top.yukonga.miuix.kmp.theme.lightColorScheme as miuixLightColorScheme
+import top.yukonga.miuix.kmp.theme.platformDynamicColors
 
 private val Seed = Color(0xFF3F6FB5)
 
@@ -36,26 +35,32 @@ private val MaterialDarkColors = materialDarkColorScheme(
 /**
  * App theme.
  *
- * The `dark_theme` preference is read through [Appearance], a snapshot state, so the switch in
- * the settings screen repaints every open screen immediately instead of being cached in a
- * `remember`. The system setting still wins when it is dark.
+ * The colour scheme is chosen straight from [Appearance], which is snapshot state: toggling
+ * the theme in the settings screen recomposes this function and every screen under it
+ * immediately. Monet variants call Miuix's own [platformDynamicColors], which reads the
+ * wallpaper on Android 12+ and falls back to the normal scheme before that.
  */
 @Composable
 fun MusicTagTheme(
-    darkTheme: Boolean? = null,
     content: @Composable () -> Unit,
 ) {
-    val context = LocalContext.current
-    LaunchedEffect(context) { Appearance.refresh(context) }
-
-    val controller = remember { ThemeController(Appearance.mode) }
-    LaunchedEffect(Appearance.mode) { controller.colorSchemeMode = Appearance.mode }
-    val dark = darkTheme ?: (Appearance.mode == ColorSchemeMode.Dark ||
-        Appearance.mode == ColorSchemeMode.MonetDark ||
-        (Appearance.mode == ColorSchemeMode.System && isSystemInDarkTheme()) ||
-        (Appearance.mode == ColorSchemeMode.MonetSystem && isSystemInDarkTheme()))
+    val mode = Appearance.mode
+    val systemDark = isSystemInDarkTheme()
+    val dark = when (mode) {
+        ColorSchemeMode.Light, ColorSchemeMode.MonetLight -> false
+        ColorSchemeMode.Dark, ColorSchemeMode.MonetDark -> true
+        ColorSchemeMode.System, ColorSchemeMode.MonetSystem -> systemDark
+    }
+    val miuixColors = when (mode) {
+        ColorSchemeMode.System -> if (dark) miuixDarkColorScheme() else miuixLightColorScheme()
+        ColorSchemeMode.Light -> miuixLightColorScheme()
+        ColorSchemeMode.Dark -> miuixDarkColorScheme()
+        ColorSchemeMode.MonetSystem -> platformDynamicColors(systemDark)
+        ColorSchemeMode.MonetLight -> platformDynamicColors(false)
+        ColorSchemeMode.MonetDark -> platformDynamicColors(true)
+    }
     val materialColors = if (dark) MaterialDarkColors else MaterialLightColors
-    MiuixTheme(controller = controller) {
+    MiuixTheme(colors = miuixColors) {
         MaterialTheme(colorScheme = materialColors, content = content)
     }
 }

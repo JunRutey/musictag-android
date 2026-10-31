@@ -3,7 +3,7 @@
 设置页由 `settings/SettingsSchema.kt` 单源渲染：一个键一条 `SettingSpec`，界面只负责按组
 显示。默认值即 `SettingsSchema.defaults`，键名尽量沿用原版 `prefs_settings.xml`。
 
-当前共 **22** 项。可选项（`SettingType.CHOICE`）在界面上是一个选择面板，不再让用户手填；
+当前共 **23** 项。可选项（`SettingType.CHOICE`）在界面上是一个选择面板，不再让用户手填；
 只有分隔符这类确实需要自由文本的才保留输入框。
 
 ## 标签写入（2）
@@ -56,16 +56,18 @@
 
 | 键 | 类型 | 默认 | 选项 |
 |---|---|---|---|
-| `theme_mode` | choice | `system` | 跟随系统 / 白色主题 / 深色主题 |
+| `theme_mode` | choice | `system` | 跟随系统 / 白色 / 深色 |
 | `dynamic_color` | bool | false | 动态取色（Monet，Android 12+） |
 
-主题由 Miuix 的 `ThemeController` 驱动：`theme_mode` 与 `dynamic_color` 组合出
-`System`/`Light`/`Dark` 与 `MonetSystem`/`MonetLight`/`MonetDark` 六种模式。
+界面上是并排的三张模式卡（带选中描边）+ 动态取色开关，不用再点开选择面板。
+主题直接由 `Appearance.mode` 决定并即时重绘；动态取色走 Miuix 的
+`platformDynamicColors`，Android 12 以下自动退回普通配色。
 
-## 高级（1）
+## 高级（2）
 
 | 键 | 类型 | 默认 | 说明 |
 |---|---|---|---|
+| `verbose_logging` | bool | false | 全量日志：记录每次搜索、来源调用与读写细节，文件上限提高到 4 MiB |
 | `search_recent_suggestions` | bool | true | 记住最近搜索 |
 
 ## 已删除

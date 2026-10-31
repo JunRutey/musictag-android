@@ -66,6 +66,12 @@
     <string name="settings_ignore_dirs_add_hint">Pick the folder to ignore with the system file picker.</string>
     <string name="settings_ignore_dirs_clear">Clear ignored folders</string>
     <string name="settings_choice_current">Current</string>
+    <string name="settings_theme_system">Follow system</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
+    <string name="settings_dynamic_color">Dynamic colour</string>
+    <string name="settings_dynamic_color_summary">Use the wallpaper colours as the theme.</string>
+    <string name="settings_dynamic_unsupported">Requires Android 12 or newer.</string>
     <string name="settings_about">About</string>
     <string name="settings_repository">Project repository</string>
     <string name="settings_version">Version</string>

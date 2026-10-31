@@ -84,13 +84,22 @@ class SearchActivity : ComponentActivity() {
     )
 
     private fun search() {
+        AppLog.d("Search", "search title='${ui.title}' artist='${ui.artist}' album='${ui.album}'")
         lifecycleScope.launch {
             ui = ui.copy(searching = true, error = null, results = emptyList(), selected = null)
             registry.clearFailures()
+            val startedAt = System.currentTimeMillis()
             val rows = withContext(Dispatchers.IO) {
                 runCatching { registry.searchAll(query(), limitPerProvider = 10) }
                     .getOrDefault(emptyList())
             }
+            val grouped = rows.groupingBy { it.provider.key }.eachCount()
+            AppLog.d(
+                "Search",
+                "search done in ${System.currentTimeMillis() - startedAt}ms: " +
+                    "results=${rows.size} perProvider=$grouped " +
+                    "failures=${registry.failures().map { it.provider.key }}",
+            )
             ui = ui.copy(
                 searching = false,
                 results = rows,
@@ -126,6 +135,7 @@ class SearchActivity : ComponentActivity() {
     }
 
     private fun select(result: SearchResult) {
+        AppLog.d("Search", "detail ${result.provider.key}:${result.id}")
         lifecycleScope.launch {
             ui = ui.copy(searching = true, error = null)
             val candidate = withContext(Dispatchers.IO) {

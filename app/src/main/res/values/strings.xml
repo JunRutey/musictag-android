@@ -72,6 +72,12 @@
     <string name="settings_ignore_dirs_add_hint">用系统文件选择器挑选要忽略的文件夹。</string>
     <string name="settings_ignore_dirs_clear">清除忽略目录</string>
     <string name="settings_choice_current">当前</string>
+    <string name="settings_theme_system">跟随系统</string>
+    <string name="settings_theme_light">白色</string>
+    <string name="settings_theme_dark">深色</string>
+    <string name="settings_dynamic_color">动态取色</string>
+    <string name="settings_dynamic_color_summary">从壁纸提取主题色，主题随壁纸变化。</string>
+    <string name="settings_dynamic_unsupported">需要 Android 12 及以上。</string>
     <string name="settings_about">关于</string>
     <string name="settings_repository">项目仓库</string>
     <string name="settings_version">版本</string>

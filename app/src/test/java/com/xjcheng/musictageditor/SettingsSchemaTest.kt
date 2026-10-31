@@ -67,6 +67,7 @@ class SettingsSchemaTest {
             "video_of_ignore_medias",
             "theme_mode",
             "dynamic_color",
+            "verbose_logging",
             "search_recent_suggestions",
         )
         for (key in expected) {
@@ -201,7 +202,7 @@ class SettingsSchemaTest {
     @Test
     fun schemaStaysDeliberatelySmall() {
         // The screen is meant to be scannable: keep it well under the original 48 entries.
-        assertEquals(22, SettingsSchema.specs.size)
+        assertEquals(23, SettingsSchema.specs.size)
     }
 
     @Test

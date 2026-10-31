@@ -6,16 +6,20 @@
 package com.xjcheng.musictageditor.ui.settings
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -95,7 +99,15 @@ fun SettingsScreen(
         ) { padding ->
             LazyColumn(modifier = Modifier.fillMaxWidth().padding(padding)) {
                 for (group in SettingGroup.entries) {
-                    val specs = SettingsSchema.specs.filter { it.group == group }
+                    val specs = SettingsSchema.specs
+                        .filter { it.group == group }
+                        .filter { it.key !in CUSTOM_ROWS }
+                    if (group == SettingGroup.APPEARANCE) {
+                        item(key = "appearance") {
+                            AppearanceSection(settings = settings, onUpdate = onUpdate)
+                        }
+                        continue
+                    }
                     if (specs.isEmpty()) continue
                     item(key = "header-${group.name}") { GroupTitle(group.title) }
                     items(specs, key = { it.key }) { spec ->
@@ -176,6 +188,107 @@ fun SettingsScreen(
 }
 
 private const val IGNORE_DIRECTORY_KEY = "dirpath_of_ignore_medias"
+
+/** Preferences rendered by hand instead of the generic row factory. */
+private val CUSTOM_ROWS = setOf("theme_mode", "dynamic_color")
+
+/**
+ * Appearance: three big mode cards plus the dynamic-colour switch.
+ *
+ * A chooser sheet was the wrong shape here: the user needs to see the three options at once,
+ * and the selected one has to look selected.
+ */
+@Composable
+private fun AppearanceSection(settings: Settings, onUpdate: (String, Any?) -> Unit) {
+    GroupTitle(SettingGroup.APPEARANCE.title)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        for ((value, label, swatch, dark) in themeChoices()) {
+            val selected = settings.string("theme_mode") == value
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(
+                        if (selected) {
+                            MiuixTheme.colorScheme.primary.copy(alpha = 0.16f)
+                        } else {
+                            MiuixTheme.colorScheme.onSurface.copy(alpha = 0.05f)
+                        },
+                    )
+                    .then(
+                        if (selected) {
+                            Modifier.border(
+                                width = 1.5.dp,
+                                color = MiuixTheme.colorScheme.primary,
+                                shape = RoundedCornerShape(16.dp),
+                            )
+                        } else {
+                            Modifier
+                        },
+                    )
+                    .clickable { onUpdate("theme_mode", value) }
+                    .padding(vertical = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .background(swatch)
+                        .border(
+                            width = 1.dp,
+                            color = MiuixTheme.colorScheme.onSurface.copy(alpha = 0.25f),
+                            shape = CircleShape,
+                        ),
+                )
+                Text(
+                    text = label,
+                    color = if (selected) {
+                        MiuixTheme.colorScheme.primary
+                    } else {
+                        MiuixTheme.colorScheme.onSurface
+                    },
+                    fontSize = 13.sp,
+                )
+            }
+        }
+    }
+    BasicComponent(
+        title = stringResource(R.string.settings_dynamic_color),
+        summary = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            stringResource(R.string.settings_dynamic_color_summary)
+        } else {
+            stringResource(R.string.settings_dynamic_unsupported)
+        },
+        rightActions = {
+            Switch(
+                checked = settings.boolean("dynamic_color"),
+                enabled = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S,
+                onCheckedChange = { onUpdate("dynamic_color", it) },
+            )
+        },
+    )
+}
+
+private data class ThemeChoice(
+    val value: String,
+    val label: String,
+    val swatch: Color,
+    val dark: Boolean,
+)
+
+@Composable
+private fun themeChoices(): List<ThemeChoice> = listOf(
+    ThemeChoice("system", stringResource(R.string.settings_theme_system), Color(0xFF9E9E9E), false),
+    ThemeChoice("light", stringResource(R.string.settings_theme_light), Color.White, false),
+    ThemeChoice("dark", stringResource(R.string.settings_theme_dark), Color(0xFF1B1B1B), true),
+)
 
 @Composable
 private fun GroupTitle(title: String) {

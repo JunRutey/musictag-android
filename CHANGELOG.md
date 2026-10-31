@@ -4,6 +4,24 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.9] - 2026-10-31
+
+### 新增
+
+* 设置 → 高级 → **全量日志**：打开后 `AppLog.d` 会写入每次搜索的查询串、耗时、各来源结果数、
+  失败来源与详情请求；日志文件上限从 512 KiB 提高到 4 MiB，关闭时回到原上限。
+  开关立即生效并持久化，不用重启。
+* 外观界面重做：三张并排的模式卡（跟随系统 / 白色 / 深色，选中带主题色描边与色点），
+  下面是动态取色开关；Android 12 以下会说明「需要 Android 12 及以上」并禁用开关。
+
+### 修复
+
+* 深色主题点了不立即切换：之前用 `Appearance.refresh()` 重读存储，而设置文件只在 `onPause`
+  才写入，读到的是旧值。现在改用内存里的新值（`Appearance.update`）并立即保存。
+* 动态取色无效：同一个原因；顺带把主题实现从 `ThemeController` 改为直接按
+  `Appearance.mode` 选色（`lightColorScheme`/`darkColorScheme`/`platformDynamicColors`），
+  切换即时重绘，也不再依赖 `remember` 的间接刷新。
+
 ## [1.1.8] - 2026-10-31
 
 ### 修复

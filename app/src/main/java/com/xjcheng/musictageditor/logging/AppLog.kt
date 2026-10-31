@@ -30,6 +30,7 @@ object AppLog {
     private const val FILE_NAME = "app.log"
     private const val ARCHIVE_NAME = "app.log.1"
     private const val MAX_BYTES = 512 * 1024
+    private const val MAX_BYTES_VERBOSE = 4 * 1024 * 1024
 
     private val stamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.US)
 
@@ -38,6 +39,11 @@ object AppLog {
 
     @Volatile
     private var handlerInstalled = false
+
+    /** When true every [d] line is written; off by default to keep the file readable. */
+    @Volatile
+    var verbose: Boolean = false
+        private set
 
     /** Binds the log to this app's private storage; safe to call more than once. */
     fun init(context: Context) {
@@ -52,6 +58,19 @@ object AppLog {
             }
             i("AppLog", "session started on ${Build.MANUFACTURER} ${Build.MODEL}, API ${Build.VERSION.SDK_INT}")
         }
+    }
+
+    /** Debug detail; only written when the 全量日志 switch is on. */
+    fun d(tag: String, message: String) {
+        if (!verbose) return
+        Log.d("$ROOT_TAG/$tag", message)
+        append("D", tag, message, null)
+    }
+
+    fun setVerbose(enabled: Boolean) {
+        if (verbose == enabled) return
+        verbose = enabled
+        i("AppLog", "verbose logging ${if (enabled) "enabled" else "disabled"}")
     }
 
     fun i(tag: String, message: String) {
@@ -105,7 +124,8 @@ object AppLog {
         synchronized(this) {
             runCatching {
                 val file = File(dir, FILE_NAME)
-                if (file.isFile && file.length() + line.length > MAX_BYTES) {
+                val limit = if (verbose) MAX_BYTES_VERBOSE else MAX_BYTES
+                if (file.isFile && file.length() + line.length > limit) {
                     val archive = File(dir, ARCHIVE_NAME)
                     archive.delete()
                     file.renameTo(archive)

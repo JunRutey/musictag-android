@@ -74,6 +74,7 @@ data class Settings(val values: Map<String, Any> = SettingsSchema.defaults.value
     val ignoreDurationSeconds: Int get() = int("duration_of_ignore_medias")
     val ignoreDirectories: String get() = string("dirpath_of_ignore_medias")
     val ignoreMp4Videos: Boolean get() = boolean("video_of_ignore_medias")
+    val verboseLogging: Boolean get() = boolean("verbose_logging")
     val recentSuggestions: Boolean get() = boolean("search_recent_suggestions")
 
     /** MP3 write options packed the way the native layer expects (1 = ID3v1, 2 = ID3v2.3). */

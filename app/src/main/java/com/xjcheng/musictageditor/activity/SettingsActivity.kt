@@ -137,9 +137,20 @@ class SettingsActivity : ComponentActivity() {
                     },
                     onUpdate = { key, value ->
                         settings = settings.with(key, value)
-                        if (key == "theme_mode" || key == "dynamic_color") {
-                            Appearance.refresh(this)
-                            AppLog.i("Settings", "appearance updated: ${Appearance.mode}")
+                        when (key) {
+                            // Apply from the in-memory copy: refreshing from storage here
+                            // would read the previous value, because the file is only
+                            // written when the activity pauses.
+                            "theme_mode", "dynamic_color" -> {
+                                Appearance.update(settings.themeMode, settings.dynamicColor)
+                                repository.save(settings)
+                                AppLog.i("Settings", "appearance=${Appearance.mode}")
+                            }
+                            "verbose_logging" -> {
+                                AppLog.setVerbose(settings.verboseLogging)
+                                repository.save(settings)
+                                AppLog.i("Settings", "verbose logging=${settings.verboseLogging}")
+                            }
                         }
                     },
                     onBack = { finish() },

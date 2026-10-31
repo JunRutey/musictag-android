@@ -110,6 +110,7 @@ object SettingsSchema {
         SettingSpec("dynamic_color", SettingType.BOOLEAN, false, "动态取色", SettingGroup.APPEARANCE, "从壁纸提取主题色（Android 12+）。"),
 
         // ------------------------------------------------------------------ advanced
+        SettingSpec("verbose_logging", SettingType.BOOLEAN, false, "全量日志", SettingGroup.ADVANCED, "记录每次搜索、读写与来源调用的细节，排查问题时打开。"),
         SettingSpec("search_recent_suggestions", SettingType.BOOLEAN, true, "记住最近搜索", SettingGroup.ADVANCED),
     )
 
