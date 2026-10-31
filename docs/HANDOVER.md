@@ -77,9 +77,12 @@ python3 tools/selfcheck.py          # 本地自检
 4. **写 MediaStore 需要用户授权**：`DocumentWriter` 遇 `SecurityException` 返回
    `Result.NeedsPermission`，编辑器用 `MediaStore.createWriteRequest` 弹一次系统框后重试同一
    次保存；Android 10 另开 `requestLegacyExternalStorage`。
-5. **FileProvider authority 是 `com.xjcheng.musictageditor.provider`**（manifest 里写死的），
-   不是 `.fileprovider`。分享日志与分享音频都走它；`provider_paths.xml` 里既有契约要求的
-   `storage` 根，也有新增的 `files/logs`。
+5. **Provider authority 由 `${applicationId}` 派生**（manifest 里是占位符，不是字面量）：
+   发行包解析成契约值 `com.xjcheng.musictageditor.SearchSugg` / `com.xjcheng.musictageditor.provider`，
+   调试包则自动变成 `.debug` 版本，两个包才能并存（authority 全设备唯一，写死会
+   `INSTALL_FAILED_CONFLICTING_PROVIDER`）。改这里要同时看 `src/debug/res/xml/searchable.xml`
+   与 `SearchSuggProvider.AUTHORITY`（后者由 `BuildConfig.APPLICATION_ID` 派生）。
+   `provider_paths.xml` 里既有契约要求的 `storage` 根，也有新增的 `files/logs`。
 6. **主题切换必须是快照状态**：`Appearance.mode` 是 Compose 状态，`MusicTagTheme` 每次直接
    按它选色（`lightColorScheme`/`darkColorScheme`/`platformDynamicColors`）。曾经用
    `ThemeController` + `remember` + 从存储重读，导致「点了不切换」「动态取色无效」。
@@ -139,7 +142,8 @@ python3 tools/selfcheck.py          # 本地自检
 
 1. **批量自动匹配**：曲库多选 → 按文件信息逐首在线匹配 → 只写回非空字段（后台服务 + 通知）。
    目前只留了 `BatchEditSongsDetail` 的占位与说明。
-2. **艺术家/专辑二级页**：现在点进去是把名字交给曲库页筛选，没有独立的详情页。
+2. **艺术家/专辑二级页**：已实现为曲库内的独立详情页（`GroupDetailScreen`，带返回、按专辑+
+   音轨号排序）。历史 `ArtistActivity` / `AlbumActivity` 仍是兼容空壳，不参与这条路径。
 3. **行内 `⋮` 菜单**：文件动作目前放在编辑器顶栏（分享/删除/重命名），曲库行内没有菜单。
 4. **`.lrc` 目录自定义**：固定写在音频同目录；`custom` 目录需要 SAF 写入支持。
 5. **在线源数量与质量**：酷狗、Apple Music 已移除；QQ/酷我解析依赖网页接口，长期可能失效。

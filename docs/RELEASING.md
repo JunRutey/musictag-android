@@ -17,8 +17,11 @@
 | 签名 | Android 调试密钥（`~/.android/debug.keystore`） |
 | 用途 | 自测、给你确认；**不发布**，不进发行页 |
 
-因为包名不同，它不会覆盖已安装的发行版，两者并存互不影响；`FileProvider` 的 authority 由
-`${applicationId}` 派生，也会自动变成 `.debug.provider`。
+因为包名不同，它不会覆盖已安装的发行版，两者并存互不影响。两个 Provider 的 authority 都由
+`${applicationId}` 派生，因此调试包自动变成 `.debug.SearchSugg` / `.debug.provider`——否则
+Android 会以 `INSTALL_FAILED_CONFLICTING_PROVIDER` 拒绝安装（authority 在一个设备上必须唯一）。
+调试变体另有 `app/src/debug/res/xml/searchable.xml`，把系统搜索指向 `.debug.SearchSugg`；
+发行包仍用 `src/main` 里的契约值。
 
 CI 每次推送都会构建 `app-debug` 并在 Actions 里作为 artifact 提供（`Build & test` 任务的
 `app-debug`），可以直接下载安装。

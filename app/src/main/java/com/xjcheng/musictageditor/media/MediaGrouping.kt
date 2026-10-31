@@ -58,4 +58,43 @@ object MediaGrouping {
                 val byName = PinyinIndex.compare(first.name, second.name)
                 if (byName != 0) byName else PinyinIndex.compare(first.artist, second.artist)
             }
+
+    /**
+     * Everything credited to one artist, for the artist page.
+     *
+     * Ordered by album and then by track number, so the page reads as a stack of albums
+     * instead of one alphabetical pile; blank artists and albums sort into the `#` bucket
+     * like everywhere else in the library.
+     */
+    fun artistTracks(tracks: List<MediaTrack>, artist: String): List<MediaTrack> =
+        tracks.asSequence()
+            .filter { it.artist.trim() == artist.trim() }
+            .sortedWith(
+                compareBy<MediaTrack>(
+                    { PinyinIndex.rankOf(it.album) },
+                    { PinyinIndex.sortKeyOf(it.album) },
+                    { it.track },
+                    { PinyinIndex.rankOf(it.title) },
+                    { PinyinIndex.sortKeyOf(it.title) },
+                ),
+            )
+            .toList()
+
+    /**
+     * The tracks of one album, for the album page.
+     *
+     * The artist is part of the album's identity (see [albums]), so it is part of the
+     * filter too; otherwise two "Greatest Hits" would be shown as a single album.
+     */
+    fun albumTracks(tracks: List<MediaTrack>, album: String, artist: String): List<MediaTrack> =
+        tracks.asSequence()
+            .filter { it.album.trim() == album.trim() && it.artist.trim() == artist.trim() }
+            .sortedWith(
+                compareBy<MediaTrack>(
+                    { it.track },
+                    { PinyinIndex.rankOf(it.title) },
+                    { PinyinIndex.sortKeyOf(it.title) },
+                ),
+            )
+            .toList()
 }

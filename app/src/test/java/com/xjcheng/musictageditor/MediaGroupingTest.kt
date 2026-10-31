@@ -19,6 +19,7 @@ class MediaGroupingTest {
         artist: String = "",
         album: String = "",
         albumId: Long = 0,
+        track: Int = 0,
     ) = MediaTrack(
         id = id,
         uri = "content://media/external/audio/media/$id",
@@ -30,6 +31,7 @@ class MediaGroupingTest {
         mimeType = "audio/flac",
         displayName = "$title.flac",
         albumId = albumId,
+        track = track,
     )
 
     @Test
@@ -82,5 +84,47 @@ class MediaGroupingTest {
     fun emptyLibraryProducesEmptyTabs() {
         assertTrue(MediaGrouping.artists(emptyList()).isEmpty())
         assertTrue(MediaGrouping.albums(emptyList()).isEmpty())
+    }
+
+    @Test
+    fun artistTracksKeepOneArtistOrderedByAlbumThenTrackNumber() {
+        val tracks = listOf(
+            track(1, title = "叶惠美-2", artist = "周杰伦", album = "叶惠美", track = 2),
+            track(2, title = "八度空间-2", artist = "周杰伦", album = "八度空间", track = 2),
+            track(3, title = "八度空间-1", artist = "周杰伦", album = "八度空间", track = 1),
+            track(4, title = "别的歌手", artist = "林俊杰", album = "曹操", track = 1),
+        )
+
+        val page = MediaGrouping.artistTracks(tracks, "周杰伦")
+
+        // 八度空间 (B) before 叶惠美 (Y), track 1 before track 2, and no other artist.
+        assertEquals(listOf(3L, 2L, 1L), page.map { it.id })
+    }
+
+    @Test
+    fun albumTracksNeedTheArtistTooAndFollowTrackNumbers() {
+        val tracks = listOf(
+            track(1, artist = "周杰伦", album = "叶惠美", track = 3),
+            track(2, artist = "周杰伦", album = "叶惠美", track = 1),
+            track(3, artist = "周杰伦", album = "叶惠美", track = 2),
+            // Same album name, different artist: a separate page, never merged in.
+            track(4, artist = "林俊杰", album = "叶惠美", track = 1),
+        )
+
+        assertEquals(listOf(2L, 3L, 1L), MediaGrouping.albumTracks(tracks, "叶惠美", "周杰伦").map { it.id })
+        assertEquals(listOf(4L), MediaGrouping.albumTracks(tracks, "叶惠美", "林俊杰").map { it.id })
+    }
+
+    @Test
+    fun blankArtistAndAlbumPagesStillResolve() {
+        val tracks = listOf(
+            track(1, artist = "", album = "", track = 2),
+            track(2, artist = "  ", album = "  ", track = 1),
+            track(3, artist = "周杰伦", album = "叶惠美", track = 1),
+        )
+
+        // Blank tags are trimmed on both sides, so " " and "" are the same group.
+        assertEquals(listOf(2L, 1L), MediaGrouping.artistTracks(tracks, "").map { it.id })
+        assertEquals(listOf(2L, 1L), MediaGrouping.albumTracks(tracks, "", "").map { it.id })
     }
 }

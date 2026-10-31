@@ -242,14 +242,19 @@
 
         <!-- ============================= Providers ============================ -->
 
+        <!-- Authorities are derived from the applicationId. For the release build that
+             resolves to the contract strings below verbatim; for the debug build it follows
+             the `.debug` suffix, which is what lets both APKs be installed side by side
+             (two packages may not declare the same provider authority). The debug source
+             set carries a matching res/xml/searchable.xml. -->
         <provider
             android:name="com.xjcheng.musictageditor.SearchSuggProvider"
-            android:authorities="com.xjcheng.musictageditor.SearchSugg"
+            android:authorities="${applicationId}.SearchSugg"
             android:exported="false" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="com.xjcheng.musictageditor.provider"
+            android:authorities="${applicationId}.provider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data

@@ -8,6 +8,7 @@ package com.xjcheng.musictageditor.ui.library
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.input.pointer.pointerInput
 import kotlinx.coroutines.delay
@@ -71,6 +72,7 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.icons.useful.Back
 import top.yukonga.miuix.kmp.icon.icons.useful.Order
 import top.yukonga.miuix.kmp.icon.icons.useful.Personal
 import top.yukonga.miuix.kmp.icon.icons.useful.Play
@@ -89,13 +91,28 @@ enum class LibrarySort { TITLE, ARTIST, ALBUM, DURATION }
 
 /** What the library screen renders. */
 data class LibraryUiState(
+    /**
+     * The song list, narrowed by the search field. Only the song tab reads this.
+     */
     val tracks: List<MediaTrack> = emptyList(),
+    /**
+     * The whole library after the settings filters but *before* the search query.
+     *
+     * The artist and album tabs (and their detail pages) are views over the library, not
+     * over the search results, so typing in the song search must not silently shrink them.
+     */
+    val libraryTracks: List<MediaTrack> = emptyList(),
     val query: String = "",
     val loading: Boolean = true,
     val permissionGranted: Boolean = false,
     val message: String? = null,
     val selectedTab: Int = TAB_SONGS,
 )
+
+/** Which group page, if any, is pushed over the library. */
+private const val DETAIL_NONE = 0
+private const val DETAIL_ARTIST = 1
+private const val DETAIL_ALBUM = 2
 
 /**
  * One row of the flattened song list: a section header or a track.
@@ -117,9 +134,11 @@ internal sealed interface LibraryEntry {
  * gear on the left, search and sort on the right, artwork rows with a format badge and the
  * duration/bitrate column, an A–Z/# index bar, and the three-tab bottom bar.
  *
- * Sorting, bucketing and the tab lists are derived from [LibraryUiState.tracks]; the artist
- * and album tabs open the song list filtered by that name, which keeps the two placeholder
- * activities untouched until their own screens land.
+ * The three tabs are independent views of the same library:
+ * - songs shows every track, narrowed only by the search field;
+ * - artists and albums list the groups, and opening one *pushes a page* for that group
+ *   instead of retargeting the song list. The song tab therefore always keeps the full
+ *   library, and back returns to the tab the page was opened from.
  */
 @Composable
 fun LibraryScreen(
@@ -134,6 +153,15 @@ fun LibraryScreen(
     var sort by rememberSaveable { mutableStateOf(LibrarySort.TITLE) }
     var ascending by rememberSaveable { mutableStateOf(true) }
 
+    // The pushed group page. Kept as a tri-state plus the name/artist strings so it can be
+    // saved across process death without a custom Saver.
+    var detailKind by rememberSaveable { mutableStateOf(DETAIL_NONE) }
+    var detailName by rememberSaveable { mutableStateOf("") }
+    var detailArtist by rememberSaveable { mutableStateOf("") }
+
+    // The artist and album tabs are views over the library, not over the search results.
+    val groups = state.libraryTracks.ifEmpty { state.tracks }
+
     val entries = remember(state.tracks, sort, ascending) {
         buildEntries(state.tracks, sort, ascending)
     }
@@ -147,14 +175,40 @@ fun LibraryScreen(
         TAB_ARTISTS -> stringResource(
             R.string.list_title_count,
             stringResource(R.string.tab_artists),
-            remember(state.tracks) { MediaGrouping.artists(state.tracks) }.size,
+            remember(groups) { MediaGrouping.artists(groups) }.size,
         )
         TAB_ALBUMS -> stringResource(
             R.string.list_title_count,
             stringResource(R.string.tab_albums),
-            remember(state.tracks) { MediaGrouping.albums(state.tracks) }.size,
+            remember(groups) { MediaGrouping.albums(groups) }.size,
         )
         else -> stringResource(R.string.song_list_title, state.tracks.size)
+    }
+
+    if (detailKind != DETAIL_NONE) {
+        val detailTracks = remember(groups, detailKind, detailName, detailArtist) {
+            when (detailKind) {
+                DETAIL_ARTIST -> MediaGrouping.artistTracks(groups, detailName)
+                else -> MediaGrouping.albumTracks(groups, detailName, detailArtist)
+            }
+        }
+        val isArtist = detailKind == DETAIL_ARTIST
+        val fallback = stringResource(if (isArtist) R.string.label_unknown_artist else R.string.label_unknown_album)
+        val count = stringResource(R.string.library_count, detailTracks.size)
+        val subtitle = if (!isArtist && detailArtist.isNotBlank()) {
+            listOf(detailArtist, count).joinToString(" · ")
+        } else {
+            count
+        }
+        BackHandler { detailKind = DETAIL_NONE }
+        GroupDetailScreen(
+            title = detailName.ifBlank { fallback },
+            subtitle = subtitle,
+            tracks = detailTracks,
+            onBack = { detailKind = DETAIL_NONE },
+            onOpenTrack = onOpenTrack,
+        )
+        return
     }
 
     Scaffold(
@@ -218,19 +272,68 @@ fun LibraryScreen(
                 return@Column
             }
             when (state.selectedTab) {
-                TAB_ARTISTS -> ArtistList(state.tracks, onOpenArtist = { artist ->
-                    onTabSelected(TAB_SONGS)
-                    onQueryChange(artist.name)
+                TAB_ARTISTS -> ArtistList(groups, onOpenArtist = { artist ->
+                    detailName = artist.name
+                    detailArtist = ""
+                    detailKind = DETAIL_ARTIST
                 })
-                TAB_ALBUMS -> AlbumList(state.tracks, onOpenAlbum = { album ->
-                    onTabSelected(TAB_SONGS)
-                    onQueryChange(album.name)
+                TAB_ALBUMS -> AlbumList(groups, onOpenAlbum = { album ->
+                    detailName = album.name
+                    detailArtist = album.artist
+                    detailKind = DETAIL_ALBUM
                 })
                 else -> SongList(
                     entries = entries,
                     letterIndex = letterIndex,
                     onOpenTrack = onOpenTrack,
                 )
+            }
+        }
+    }
+}
+
+/**
+ * One artist or album, pushed over the library.
+ *
+ * Deliberately its own page with a back arrow rather than the song tab with a filter:
+ * the song tab keeps the whole library, this page shows exactly one group, and both the
+ * system back gesture and the arrow return to where the page was opened from.
+ */
+@Composable
+private fun GroupDetailScreen(
+    title: String,
+    subtitle: String,
+    tracks: List<MediaTrack>,
+    onBack: () -> Unit,
+    onOpenTrack: (MediaTrack) -> Unit,
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = title,
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(MiuixIcons.Useful.Back, stringResource(R.string.action_back))
+                    }
+                },
+            )
+        },
+    ) { padding ->
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            Text(
+                text = subtitle,
+                color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
+                fontSize = 13.sp,
+                modifier = Modifier.padding(start = 16.dp, top = 4.dp, bottom = 8.dp),
+            )
+            if (tracks.isEmpty()) {
+                Hint(stringResource(R.string.library_empty))
+                return@Column
+            }
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                items(items = tracks, key = { it.id }) { track ->
+                    SongRow(track, onOpenTrack)
+                }
             }
         }
     }

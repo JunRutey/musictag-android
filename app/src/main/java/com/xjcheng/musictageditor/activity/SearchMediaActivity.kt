@@ -110,18 +110,23 @@ class SearchMediaActivity : ComponentActivity() {
 
     private fun applyFilter(loadRaw: Boolean) {
         if (loadRaw && allTracks.isEmpty()) {
-            ui = ui.copy(loading = false, tracks = emptyList())
+            ui = ui.copy(loading = false, tracks = emptyList(), libraryTracks = emptyList())
             return
         }
         val settings = settings.load()
+        // The settings filters apply to the whole library; the search query only narrows the
+        // song tab. Artist and album pages must not shrink because of a leftover query.
         val filtered = MediaFilters.apply(
             tracks = allTracks,
             minDurationSeconds = settings.ignoreDurationSeconds,
             ignoredDirectories = settings.ignoreDirectories,
             ignoreMp4Videos = settings.ignoreMp4Videos,
-            query = ui.query,
         )
-        ui = ui.copy(loading = false, tracks = filtered)
+        ui = ui.copy(
+            loading = false,
+            libraryTracks = filtered,
+            tracks = filtered.filter { MediaFilters.matchesQuery(it, ui.query) },
+        )
     }
 
     private fun openTrack(track: MediaTrack) {

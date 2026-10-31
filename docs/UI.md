@@ -22,12 +22,15 @@ Material 3 只留在两个还没迁完的地方：启动页 `MainActivity` 与 `
 * 行：48dp 圆角（6dp）封面，底部压半透明黑条 + 8sp 格式角标（FLAC/MP3/M4A…）；
   标题 15sp 粗体，`艺术家 - 专辑` 13sp；右列时长 12sp 与 `NNN kbps` 11sp。
 * 分组：A–Z 与 `#` 分组头；`#` 排在 Z 之后（`PinyinIndex.rankOf`），不是按字符比较。
-* 索引条：右缘字母列，点一下滚到该分组。
+* 索引条：右缘字母列，拖动连续滚动、点一下滚到该分组；选中分组的气泡显示在字母列左侧，
+  字母列本身始终贴着屏幕右缘。
 * 排序：标题 / 艺术家 / 专辑 / 时长，可升降序；改动只在 `remember(tracks, sort, ascending)`
   里重算，避免滚动时重复做拼音转换。
-* 底部：歌曲 / 艺术家 / 专辑三 Tab；艺术家与专辑来自内存分组（`MediaGrouping`），点一行会
-  切回歌曲 Tab 并按该名字筛选。
-* 搜索：顶部搜索图标展开 MIUI 风格胶囊输入框，实时过滤（沿用 `MediaFilters.matchesQuery`）。
+* 底部：歌曲 / 艺术家 / 专辑三 Tab，三者是曲库的独立视图：歌曲 Tab 恒为全库（只受搜索框
+  影响），艺术家与专辑来自内存分组（`MediaGrouping`）。点开一行会在曲库之上压入**独立的
+  详情页**（自己的返回箭头 + 系统返回），只列该艺术家/专辑的作品，歌曲 Tab 不被改动。
+* 搜索：顶部搜索图标展开 MIUI 风格胶囊输入框，实时过滤（沿用 `MediaFilters.matchesQuery`）；
+  查询只作用于歌曲 Tab，不会缩小艺术家/专辑列表。
 
 ## 已迁移到 Miuix 的屏幕（M11 完成）
 
@@ -39,8 +42,9 @@ Material 3 只留在两个还没迁完的地方：启动页 `MainActivity` 与 `
 * 编辑器：文件信息、十个行内字段、歌词多行编辑、带 48dp 预览的封面行（更换 / 移除）、
   MP3 的 ID3v1 / ID3v2.3 开关、底部整宽保存行。
 * 批量：返回箭头、「N 首 / M 个字段」摘要、只填充缺失项开关、每个字段一个输入行、写入标签行。
-* 艺术家 / 专辑：`GroupBrowserActivity` 的共享实现，分组来自 `MediaGrouping`（拼音序），
-  点一行把名字作为查询交给曲库页，因此全应用只有一份歌曲列表。
+* 艺术家 / 专辑：曲库内的两个 Tab（`ArtistList` / `AlbumList`），分组来自 `MediaGrouping`
+  （拼音序），点开一行压入 `GroupDetailScreen` 详情页；`GroupBrowserActivity`（历史
+  `ArtistActivity` / `AlbumActivity`）仍作为兼容空壳保留，不参与这条路径。
 
 ## 已知未验证项
 
@@ -50,7 +54,8 @@ Material 3 只留在两个还没迁完的地方：启动页 `MainActivity` 与 `
 * 自定义 Tab 图标（音符 / 人群 / 唱片）未绘制，暂用 Miuix 内置图标代替。
 * 深色主题走 `darkColorScheme()`，未接入 Monet 取色；`primary_color`/`accent_color` 设置项目前
   还不影响 Miuix 主题。
-* 艺术家 / 专辑页的第二层（点进去的歌曲列表）复用了曲库页，不是独立的详情页。
+* 艺术家 / 专辑的详情页按专辑 + 音轨号排序，`track` 标签为空的文件会退化成按标题拼音序；
+  尚未提供「返回时保持滚动位置」以外的过渡动画。
 
 ## 文案
 

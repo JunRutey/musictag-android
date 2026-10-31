@@ -48,6 +48,13 @@ Providers:
 | `com.xjcheng.musictageditor.SearchSugg` | `com.xjcheng.musictageditor.SearchSuggProvider` | recent search suggestions |
 | `com.xjcheng.musictageditor.provider` | `androidx.core.content.FileProvider` | `grantUriPermissions=true` |
 
+Both are written as `${applicationId}.<suffix>` in the manifest, so the **release** build
+resolves to exactly the values above (what callers see, and what the contract check
+asserts) while the `.debug` build gets `.debug`-suffixed authorities. That is not a
+cosmetic difference: a device allows one package per provider authority, so hardcoding
+them made the debug APK refuse to install next to the release APK
+(`INSTALL_FAILED_CONFLICTING_PROVIDER`).
+
 ## 3. Intent filters on `SongDetailActivity`
 
 0. **Inert `MAIN`** — no category, so it never shows in a launcher. Reproduced verbatim so

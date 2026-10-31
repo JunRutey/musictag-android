@@ -59,6 +59,13 @@ class ManifestContractTest {
     private fun components(tag: String): List<Element> =
         children(children(manifest, "application").single(), tag)
 
+    /**
+     * AAPT expands `${applicationId}` in the merged manifest. The value that ships in the
+     * release build is the contract value, so that is what the placeholder must resolve to.
+     */
+    private fun releaseAuthority(element: Element): String? =
+        attr(element, "authorities")?.replace("\${applicationId}", CompatContract.PACKAGE)
+
     private fun resolvedName(element: Element): String? {
         val raw = attr(element, "name") ?: return null
         // The applicationId lives in build.gradle.kts: AGP 8 rejects a `package`
@@ -204,11 +211,36 @@ class ManifestContractTest {
     fun providersKeepTheirAuthorities() {
         val providers = components("provider")
         val sugg = providers.first { resolvedName(it) == "com.xjcheng.musictageditor.SearchSuggProvider" }
-        assertEquals(CompatContract.SUGGEST_AUTHORITY, attr(sugg, "authorities"))
+        assertEquals(CompatContract.SUGGEST_AUTHORITY, releaseAuthority(sugg))
 
         val fileProvider = providers.first { resolvedName(it) == "androidx.core.content.FileProvider" }
-        assertEquals(CompatContract.FILE_PROVIDER_AUTHORITY, attr(fileProvider, "authorities"))
+        assertEquals(CompatContract.FILE_PROVIDER_AUTHORITY, releaseAuthority(fileProvider))
         assertEquals("true", attr(fileProvider, "grantUriPermissions"))
+    }
+
+    /**
+     * The debug build installs next to the release build, and two packages may not declare
+     * the same provider authority. Both authorities are therefore written as
+     * `${applicationId}.<suffix>`, which expands to the contract strings for release.
+     */
+    @Test
+    fun providerAuthoritiesAreDerivedSoTheDebugBuildCanCoexist() {
+        for (provider in components("provider")) {
+            val raw = attr(provider, "authorities").orEmpty()
+            assertTrue(
+                "authority must be derived from the applicationId: $raw",
+                raw.startsWith("\${applicationId}."),
+            )
+        }
+        // The debug variant points the search dialog at its own authority; otherwise the
+        // system would query the release app's (unexported) provider.
+        val debugSearchable = parse("src/debug/res/xml/searchable.xml").documentElement
+        assertEquals(
+            "${CompatContract.PACKAGE}.debug.SearchSugg",
+            attr(debugSearchable, "searchSuggestAuthority"),
+        )
+        assertEquals(" ?", attr(debugSearchable, "searchSuggestSelection"))
+        assertEquals("android.intent.action.VIEW", attr(debugSearchable, "searchSuggestIntentAction"))
     }
 
     @Test
