@@ -6,6 +6,9 @@ not the same pixels: the UI is rebuilt in Compose.
 
 Status values: `todo` / `wip` / `done` / `dropped`.
 
+构建与发版流程见 [docs/RELEASING.md](RELEASING.md)：日常改动构建 `.debug` 后缀的验证包，
+确认后才打 tag 出签名发行版。
+
 ## 0. 1.1.0 实际状态（以此表为准）
 
 下面按能力组给出 1.1.0 的真实状态；第 1 节之后的逐行表格是最初的计划清单，行内状态
