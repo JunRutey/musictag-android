@@ -80,17 +80,29 @@ object FileOps {
 
     /** Opens the system share sheet with a temporary read grant. */
     fun share(context: Context, uri: Uri, mimeType: String): Result {
-        val send = Intent(Intent.ACTION_SEND).apply {
-            type = mimeType.ifBlank { "audio/*" }
-            putExtra(Intent.EXTRA_STREAM, uri)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-        val chooser = Intent.createChooser(send, null).apply {
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+        fun intentWith(grant: Boolean): Intent {
+            val send = Intent(Intent.ACTION_SEND).apply {
+                type = mimeType.ifBlank { "audio/*" }
+                putExtra(Intent.EXTRA_STREAM, uri)
+                if (grant) addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            return Intent.createChooser(send, null).apply {
+                if (grant) addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
         }
         return try {
-            context.startActivity(chooser)
+            context.startActivity(intentWith(grant = true))
             Result.Ok
+        } catch (denied: SecurityException) {
+            // A MediaStore row the app does not own cannot be granted onward; the receiving
+            // app usually holds its own media permission, so try once without the flag.
+            try {
+                context.startActivity(intentWith(grant = false))
+                Result.Ok
+            } catch (error: ActivityNotFoundException) {
+                Result.Failed(error.message ?: "no app can share this file")
+            }
         } catch (error: ActivityNotFoundException) {
             Result.Failed(error.message ?: "no app can share this file")
         }

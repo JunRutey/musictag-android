@@ -58,7 +58,7 @@ class SettingsActivity : ComponentActivity() {
         val uri = runCatching {
             FileProvider.getUriForFile(
                 this,
-                "$packageName.fileprovider",
+                "$packageName.provider",
                 AppLog.file(this),
             )
         }.getOrNull() ?: return

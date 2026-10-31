@@ -57,6 +57,12 @@ import kotlinx.coroutines.withContext
  */
 class SongDetailActivity : ComponentActivity() {
 
+    companion object {
+        /** Internal extra used by the library; exported callers keep using ACTION_VIEW. */
+        const val EXTRA_URI = "com.xjcheng.musictageditor.extra.URI"
+    }
+
+
     private val engine = TagLibEngine()
     private val settings by lazy { SettingsRepository(this) }
 
@@ -175,6 +181,9 @@ class SongDetailActivity : ComponentActivity() {
 
     private fun resolveDocumentUri(intent: Intent?): Uri? {
         intent ?: return null
+        // Internal hand-off: a plain extra, because a data URI plus FLAG_GRANT_* is rejected
+        // for MediaStore rows the app does not own.
+        intent.getStringExtra(EXTRA_URI)?.takeIf { it.isNotBlank() }?.let { return Uri.parse(it) }
         intent.data?.let { return it }
         @Suppress("DEPRECATION")
         val stream = intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)

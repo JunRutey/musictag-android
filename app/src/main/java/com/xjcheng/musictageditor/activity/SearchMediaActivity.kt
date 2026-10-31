@@ -26,6 +26,7 @@ import com.xjcheng.musictageditor.media.MediaFilters
 import com.xjcheng.musictageditor.media.MediaLibrary
 import com.xjcheng.musictageditor.logging.AppLog
 import com.xjcheng.musictageditor.media.MediaTrack
+import com.xjcheng.musictageditor.media.Permissions
 import com.xjcheng.musictageditor.settings.SettingsRepository
 import com.xjcheng.musictageditor.ui.library.LibraryScreen
 import com.xjcheng.musictageditor.ui.library.LibraryUiState
@@ -53,6 +54,18 @@ class SearchMediaActivity : ComponentActivity() {
         if (granted) load() else ui = ui.copy(loading = false, message = getString(R.string.library_permission_denied))
     }
 
+    /**
+     * First launch asks for audio read, legacy storage write and notifications together, so a
+     * later feature does not have to interrupt the user with another dialog.
+     */
+    private val requestFirstLaunch =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
+            AppLog.i("Permissions", "first launch result: $result")
+            val granted = Permissions.audioGranted(this)
+            ui = ui.copy(permissionGranted = granted)
+            if (granted) load() else ui = ui.copy(loading = false)
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         AppLog.init(this)
@@ -60,6 +73,11 @@ class SearchMediaActivity : ComponentActivity() {
             query = intent?.getStringExtra(SearchManager.QUERY).orEmpty(),
             permissionGranted = hasAudioPermission(),
         )
+        if (!Permissions.askedBefore(this)) {
+            Permissions.markAsked(this)
+            AppLog.i("Permissions", "requesting ${Permissions.firstLaunch()}")
+            requestFirstLaunch.launch(Permissions.firstLaunch().toTypedArray())
+        }
         setContent {
             MusicTagTheme {
                 LibraryScreen(
@@ -108,15 +126,13 @@ class SearchMediaActivity : ComponentActivity() {
 
     private fun openTrack(track: MediaTrack) {
         AppLog.i("Library", "open ${track.title} (${track.uri})")
-        val parsed = Uri.parse(track.uri)
+        // Hand the URI over as a plain extra. Putting it in data with FLAG_GRANT_* makes the
+        // system verify that *we* can grant access to it; for a MediaStore row we cannot, so
+        // startActivity itself threw SecurityException on Android 14+. The editor reads the
+        // URI with its own media permission, so no grant is needed.
         startActivity(
             Intent(this, SongDetailActivity::class.java)
-                .setAction(Intent.ACTION_VIEW)
-                .setData(parsed)
-                // Redundant for our own reader, but it keeps the intent valid for any other
-                // audio handler a caller may route through, so the entry point stays compatible.
-                .putExtra(Intent.EXTRA_STREAM, parsed)
-                .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION),
+                .putExtra(SongDetailActivity.EXTRA_URI, track.uri),
         )
     }
 

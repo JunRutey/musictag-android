@@ -4,9 +4,14 @@
   The original app exposed `storage` as the single root so that sharing an arbitrary
   media file works with the same authority. Keep the root identical; the M7 hardening
   task adds a runtime allow-list on top of it (see docs/COMPAT.md).
+
+  `logs` is additive and only used by the in-app log export.
 -->
 <paths>
     <root-path
         name="storage"
         path="storage" />
+    <files-path
+        name="logs"
+        path="logs/" />
 </paths>
