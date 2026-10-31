@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [1.1.6] - 2026-10-31
 
+已发布：https://github.com/JunRutey/musictag-android/releases/tag/v1.1.6
+
+* APK：`musictag-1.1.6.apk`（9,636,893 字节，versionName 1.1.6，`apksigner verify` 退出码 0）。
+* APK SHA-256：`fe87c15a3f1320f20a3f9c42c74bb2b0d059010ffc39c310d5d96c6afddcc3a4`。
+
+
 ### 新增
 
 * 编辑页：右上角改为填充式「保存」按钮；右下角蓝色在线查找按钮上移到 96dp，不再压住最后一个字段。
