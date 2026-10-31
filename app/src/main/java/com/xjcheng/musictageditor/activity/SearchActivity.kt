@@ -19,6 +19,7 @@ import com.xjcheng.musictageditor.R
 import com.xjcheng.musictageditor.core.net.SearchQuery
 import com.xjcheng.musictageditor.core.net.SearchResult
 import com.xjcheng.musictageditor.net.Providers
+import com.xjcheng.musictageditor.logging.AppLog
 import com.xjcheng.musictageditor.net.SearchContract
 import com.xjcheng.musictageditor.settings.SettingsRepository
 import com.xjcheng.musictageditor.ui.search.SearchScreen
