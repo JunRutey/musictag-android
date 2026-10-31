@@ -4,6 +4,17 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.8] - 2026-10-31
+
+### 修复
+
+* 启动闪退：`duration_of_ignore_medias` 在 1.1.6 是 `Int`，1.1.7 变成选择项字符串，
+  `SettingsRepository.load()` 仍按 `getString` 读取，旧安装里存的是整数，于是抛
+  `ClassCastException`，而它在 `Application.onCreate` 里执行，直接把进程带走。现在读取
+  用 `preferences.all` 取原始值再由 `Settings` 做类型转换，旧类型不会崩。
+* `MusicTagApp.onCreate` 的初始化加了兜底：日志或外观刷新失败不再影响启动。
+* 新增 `oldTypesStillReadAfterAChoiceConversion` 覆盖这次的类型迁移。
+
 ## [1.1.7] - 2026-10-31
 
 ### 新增
