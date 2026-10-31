@@ -4,6 +4,21 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.6] - 2026-10-31
+
+### 新增
+
+* 编辑页：右上角改为填充式「保存」按钮；右下角蓝色在线查找按钮上移到 96dp，不再压住最后一个字段。
+* 在线搜索：从编辑页进入时自动搜索，用户只需点选结果；结果行左侧显示来源封面（44dp，
+  带 LRU 缓存），不再只有文字。
+* 保存到 MediaStore 文件：`DocumentWriter` 遇到 `SecurityException` 时返回「需要授权」，
+  编辑页通过 `MediaStore.createWriteRequest` 弹一次系统授权框，允许后自动重试同一次保存。
+
+### 移除
+
+* 酷狗音乐与 Apple Music 两个「一直没响应」的来源：不再注册进应用、不在合并顺序里；
+  实现与离线测试仍留在 `core/net`。随之删除 3 个 `apple_*` 设置（设置项 28 → 25）。
+
 ## [1.1.5] - 2026-10-31
 
 已发布：https://github.com/JunRutey/musictag-android/releases/tag/v1.1.5
