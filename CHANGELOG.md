@@ -6,6 +6,13 @@ All notable changes to this project are documented here. The format follows
 
 ## [1.1.5] - 2026-10-31
 
+已发布：https://github.com/JunRutey/musictag-android/releases/tag/v1.1.5
+
+* APK：`musictag-1.1.5.apk`（9,652,608 字节，versionName 1.1.5，`apksigner verify` 退出码 0，
+  证书 SHA-256 `51485c4e5ea851005cd72051dfbf0ac8ce64f6b211599b556e704c6ad7d79d4d`）。
+* APK SHA-256：`04e7d2ac1625dcb16075917a715094a3b03f7bea075fbf2d1aef5c0496d92029`。
+
+
 ### 修复
 
 * 点歌闪退的根因：曲库把 `content://media/...` 放进 intent 的 data 并加了
