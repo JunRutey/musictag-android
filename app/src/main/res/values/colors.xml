@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#1E2A3A</color>
+    <!-- Sampled from the launcher artwork (#F3F7FB) so the adaptive-icon background blends
+         into the foreground bitmap instead of framing it. -->
+    <color name="ic_launcher_background">#F3F7FB</color>
     <color name="window_background">#FFFBFE</color>
 </resources>
