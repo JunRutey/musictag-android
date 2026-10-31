@@ -110,10 +110,10 @@ class ProviderRegistryTest {
         assertEquals(MergePolicy.TAG_ORDER, policy.priorityFor(MergeField.TITLE))
         assertEquals(MergePolicy.COVER_ORDER, policy.priorityFor(MergeField.COVER))
         assertEquals(MergePolicy.LYRIC_ORDER, policy.priorityFor(MergeField.LYRICS))
-        // Apple's artwork is the highest resolution, so it leads the default cover order.
-        assertEquals(ProviderId.APPLE, MergePolicy.COVER_ORDER.first())
+        // NetEase leads the default cover order now that Apple Music is gone.
+        assertEquals(ProviderId.NETEASE, MergePolicy.COVER_ORDER.first())
         assertEquals(
-            listOf(ProviderId.NETEASE, ProviderId.QQ, ProviderId.KUWO, ProviderId.KUGOU),
+            listOf(ProviderId.NETEASE, ProviderId.QQ, ProviderId.KUWO, ProviderId.ITUNES),
             MergePolicy.TAG_ORDER.take(4),
         )
     }

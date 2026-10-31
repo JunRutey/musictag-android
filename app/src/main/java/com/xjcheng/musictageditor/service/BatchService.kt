@@ -126,6 +126,7 @@ class BatchService : Service() {
         return when (val written = DocumentWriter.writeBack(this, parsed, document)) {
             is DocumentWriter.Result.Success -> null
             is DocumentWriter.Result.Failure -> written.message
+            is DocumentWriter.Result.NeedsPermission -> "write permission required"
         }
     }
 
