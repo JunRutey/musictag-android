@@ -56,7 +56,7 @@ object LyricsSidecar {
         album: String,
     ): File {
         val audio = File(audioPath)
-        val name = fileNameFor(audio.name, settings.lrcFilenameMode, settings.lrcFilenameTemplate, title, artist, album)
+        val name = fileNameFor(audio.name, settings.lrcFilenameMode, "", title, artist, album)
         return File(audio.parentFile ?: File("."), name)
     }
 

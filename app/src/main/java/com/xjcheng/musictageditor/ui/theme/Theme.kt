@@ -11,12 +11,13 @@ import androidx.compose.material3.darkColorScheme as materialDarkColorScheme
 import androidx.compose.material3.lightColorScheme as materialLightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import com.xjcheng.musictageditor.settings.Appearance
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.theme.darkColorScheme as miuixDarkColorScheme
-import top.yukonga.miuix.kmp.theme.lightColorScheme as miuixLightColorScheme
+import top.yukonga.miuix.kmp.theme.ThemeController
+import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 
 private val Seed = Color(0xFF3F6FB5)
 
@@ -47,10 +48,14 @@ fun MusicTagTheme(
     val context = LocalContext.current
     LaunchedEffect(context) { Appearance.refresh(context) }
 
-    val dark = darkTheme ?: (Appearance.darkTheme || isSystemInDarkTheme())
-    val miuixColors = if (dark) miuixDarkColorScheme() else miuixLightColorScheme()
+    val controller = remember { ThemeController(Appearance.mode) }
+    LaunchedEffect(Appearance.mode) { controller.colorSchemeMode = Appearance.mode }
+    val dark = darkTheme ?: (Appearance.mode == ColorSchemeMode.Dark ||
+        Appearance.mode == ColorSchemeMode.MonetDark ||
+        (Appearance.mode == ColorSchemeMode.System && isSystemInDarkTheme()) ||
+        (Appearance.mode == ColorSchemeMode.MonetSystem && isSystemInDarkTheme()))
     val materialColors = if (dark) MaterialDarkColors else MaterialLightColors
-    MiuixTheme(colors = miuixColors) {
+    MiuixTheme(controller = controller) {
         MaterialTheme(colorScheme = materialColors, content = content)
     }
 }

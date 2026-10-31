@@ -15,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.FileProvider
+import com.xjcheng.musictageditor.io.IgnoreDirectory
 import com.xjcheng.musictageditor.R
 import com.xjcheng.musictageditor.logging.AppLog
 import com.xjcheng.musictageditor.logging.LogExporter
@@ -88,6 +89,22 @@ class SettingsActivity : ComponentActivity() {
         }
     }
 
+    private val pickDirectory =
+        registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+            if (uri == null) return@registerForActivityResult
+            IgnoreDirectory.persist(this, uri)
+            val path = IgnoreDirectory.relativePath(uri)
+            if (path == null) {
+                AppLog.w("Settings", "cannot read the relative path of $uri")
+                return@registerForActivityResult
+            }
+            settings = settings.copy(
+                values = settings.values + ("dirpath_of_ignore_medias" to
+                    IgnoreDirectory.add(settings.ignoreDirectories, path)),
+            )
+            AppLog.i("Settings", "ignore directory added: $path")
+        }
+
     private fun clearLog() {
         AppLog.clear(this)
         logBytes = AppLog.sizeBytes(this)
@@ -111,11 +128,17 @@ class SettingsActivity : ComponentActivity() {
                     onExportLog = { exportLog() },
                     onExportToDownloads = { exportToDownloads() },
                     onClearLog = { clearLog() },
+                    onPickIgnoreDirectory = { pickDirectory.launch(null) },
+                    onClearIgnoreDirectories = {
+                        settings = settings.copy(
+                            values = settings.values + ("dirpath_of_ignore_medias" to ""),
+                        )
+                    },
                     onUpdate = { key, value ->
                         settings = settings.with(key, value)
-                        if (key == "dark_theme") {
-                            Appearance.update(value as? Boolean ?: false)
-                            AppLog.i("Settings", "dark_theme=$value")
+                        if (key == "theme_mode" || key == "dynamic_color") {
+                            Appearance.refresh(this)
+                            AppLog.i("Settings", "appearance updated: ${Appearance.mode}")
                         }
                     },
                     onBack = { finish() },

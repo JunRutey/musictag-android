@@ -12,22 +12,21 @@ enum class SettingGroup(val title: String) {
     LYRICS("歌词"),
     LRC_FILES(".lrc 文件"),
     LIBRARY("曲库"),
-    BATCH("批量处理"),
     APPEARANCE("外观"),
     ADVANCED("高级"),
 }
 
-enum class SettingType { BOOLEAN, STRING, INT }
+enum class SettingType { BOOLEAN, STRING, INT, CHOICE }
+
+/** One selectable value of a [SettingType.CHOICE] preference. */
+data class SettingOption(val value: String, val label: String)
 
 /**
  * One stored preference.
  *
- * [key] keeps the original app's preference name wherever the semantics match, so a future
- * import of legacy settings has something to map onto (see docs/SETTINGS.md).
- *
- * Only preferences the app actually reads are declared here: the source-priority strings,
- * the unused colour and animation switches, and the manual batch switches were removed in
- * 1.1.1 because toggling them changed nothing.
+ * [key] keeps the original app's preference name wherever the semantics match. Only
+ * preferences the app actually reads are declared: manual text entry was replaced by
+ * [SettingType.CHOICE] pickers, and settings that changed nothing were removed.
  */
 data class SettingSpec(
     val key: String,
@@ -36,7 +35,12 @@ data class SettingSpec(
     val title: String,
     val group: SettingGroup,
     val summary: String = "",
-)
+    val options: List<SettingOption> = emptyList(),
+) {
+    /** The label of the current choice, for the row summary. */
+    fun labelOf(value: String): String =
+        options.firstOrNull { it.value == value }?.label ?: value
+}
 
 /**
  * The complete preference schema.
@@ -45,6 +49,31 @@ data class SettingSpec(
  * decode round-trip, and no key is declared twice.
  */
 object SettingsSchema {
+
+    private val themeOptions = listOf(
+        SettingOption("system", "跟随系统"),
+        SettingOption("light", "白色主题"),
+        SettingOption("dark", "深色主题"),
+    )
+
+    private val encodingOptions = listOf(
+        SettingOption("UTF-8", "UTF-8"),
+        SettingOption("GBK", "GBK"),
+    )
+
+    private val lrcNameOptions = listOf(
+        SettingOption("same", "与音频同名"),
+        SettingOption("artist-title", "艺术家 - 标题"),
+    )
+
+    private val durationOptions = listOf(
+        SettingOption("0", "不启用"),
+        SettingOption("15", "15 秒"),
+        SettingOption("30", "30 秒"),
+        SettingOption("60", "60 秒"),
+        SettingOption("120", "2 分钟"),
+        SettingOption("300", "5 分钟"),
+    )
 
     val specs: List<SettingSpec> = listOf(
         // ---------------------------------------------------------------- tag writing
@@ -68,22 +97,17 @@ object SettingsSchema {
 
         // ------------------------------------------------------------------ .lrc files
         SettingSpec("allow_save_lrc_file_while_save_file_tags", SettingType.BOOLEAN, true, "同时写入 .lrc 文件", SettingGroup.LRC_FILES),
-        SettingSpec("lrcfiles_encoding", SettingType.STRING, "UTF-8", ".lrc 编码", SettingGroup.LRC_FILES),
-        SettingSpec("lrcfiles_save_directory_mode", SettingType.STRING, "alongside", ".lrc 目录", SettingGroup.LRC_FILES, "alongside、music 或 custom。"),
-        SettingSpec("lrcfiles_filename_format_mode", SettingType.STRING, "same", ".lrc 文件名", SettingGroup.LRC_FILES, "same、artist-title 或 custom。"),
-        SettingSpec("lrcfiles_filename_format", SettingType.STRING, "%t - %a", "文件名模板", SettingGroup.LRC_FILES, "%t 标题、%a 艺术家、%l 专辑。"),
+        SettingSpec("lrcfiles_encoding", SettingType.CHOICE, "UTF-8", ".lrc 编码", SettingGroup.LRC_FILES, "只影响写出的 .lrc 文件。", encodingOptions),
+        SettingSpec("lrcfiles_filename_format_mode", SettingType.CHOICE, "same", ".lrc 文件名", SettingGroup.LRC_FILES, "与音频同名，或「艺术家 - 标题」。", lrcNameOptions),
 
         // -------------------------------------------------------------------- library
-        SettingSpec("duration_of_ignore_medias", SettingType.INT, 0, "忽略短于该时长的文件", SettingGroup.LIBRARY, "秒；0 表示不启用。"),
-        SettingSpec("dirpath_of_ignore_medias", SettingType.STRING, "", "忽略的目录", SettingGroup.LIBRARY, "换行分隔。"),
+        SettingSpec("duration_of_ignore_medias", SettingType.CHOICE, "60", "忽略短于该时长的文件", SettingGroup.LIBRARY, "常见提示音不会出现在曲库里。", durationOptions),
+        SettingSpec("dirpath_of_ignore_medias", SettingType.STRING, "", "忽略的目录", SettingGroup.LIBRARY, "点按用系统文件选择器添加。"),
         SettingSpec("video_of_ignore_medias", SettingType.BOOLEAN, true, "忽略 MP4 视频", SettingGroup.LIBRARY),
 
-        // --------------------------------------------------------------------- batch
-        SettingSpec("batch_rename_mode", SettingType.STRING, "tags", "批量重命名依据", SettingGroup.BATCH, "tags 或 name。"),
-        SettingSpec("batch_rename_template", SettingType.STRING, "%a - %t", "重命名模板", SettingGroup.BATCH, "%t 标题、%a 艺术家、%l 专辑、%n 音轨。"),
-
         // ---------------------------------------------------------------- appearance
-        SettingSpec("dark_theme", SettingType.BOOLEAN, false, "深色主题", SettingGroup.APPEARANCE, "跟随系统深色，或在此强制开启。"),
+        SettingSpec("theme_mode", SettingType.CHOICE, "system", "主题颜色", SettingGroup.APPEARANCE, "跟随系统、白色或深色。", themeOptions),
+        SettingSpec("dynamic_color", SettingType.BOOLEAN, false, "动态取色", SettingGroup.APPEARANCE, "从壁纸提取主题色（Android 12+）。"),
 
         // ------------------------------------------------------------------ advanced
         SettingSpec("search_recent_suggestions", SettingType.BOOLEAN, true, "记住最近搜索", SettingGroup.ADVANCED),

@@ -172,6 +172,7 @@ fun TagEditorScreen(
                 actions = {
                     Box(
                         modifier = Modifier
+                            .padding(end = 12.dp)
                             .clip(RoundedCornerShape(10.dp))
                             .background(
                                 if (state.saving) {
@@ -528,6 +529,7 @@ private fun FieldCard(
             .padding(horizontal = 16.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(MiuixTheme.colorScheme.secondaryContainer)
+            .background(MiuixTheme.colorScheme.onSurface.copy(alpha = 0.06f))
             .padding(horizontal = 14.dp, vertical = 10.dp),
     ) {
         Row(

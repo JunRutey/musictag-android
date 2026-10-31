@@ -9,25 +9,33 @@ import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import top.yukonga.miuix.kmp.theme.ColorSchemeMode
 
 /**
  * The appearance preference as observable state.
  *
- * `dark_theme` used to be read once inside `remember`, so flipping the switch could not
- * recompose anything: the value was cached for the lifetime of the activity. Keeping it in a
- * snapshot state makes every screen that reads it update immediately.
+ * `theme_mode` and `dynamic_color` map onto Miuix's own [ColorSchemeMode], so the theme is
+ * driven by the library instead of a hand-rolled dark flag: System/Light/Dark plus the three
+ * Monet variants that read the wallpaper.
  */
 object Appearance {
 
-    var darkTheme by mutableStateOf(false)
+    var mode by mutableStateOf(ColorSchemeMode.System)
         private set
 
-    fun update(dark: Boolean) {
-        darkTheme = dark
+    fun update(themeMode: String, dynamic: Boolean) {
+        mode = modeOf(themeMode, dynamic)
     }
 
-    /** Re-reads the stored preference; call from an activity's onCreate or a toggle. */
+    /** Re-reads the stored preferences; cheap enough to call from an activity's onCreate. */
     fun refresh(context: Context) {
-        darkTheme = SettingsRepository(context.applicationContext).load().darkTheme
+        val settings = SettingsRepository(context.applicationContext).load()
+        mode = modeOf(settings.themeMode, settings.dynamicColor)
+    }
+
+    fun modeOf(themeMode: String, dynamic: Boolean): ColorSchemeMode = when (themeMode) {
+        "light" -> if (dynamic) ColorSchemeMode.MonetLight else ColorSchemeMode.Light
+        "dark" -> if (dynamic) ColorSchemeMode.MonetDark else ColorSchemeMode.Dark
+        else -> if (dynamic) ColorSchemeMode.MonetSystem else ColorSchemeMode.System
     }
 }

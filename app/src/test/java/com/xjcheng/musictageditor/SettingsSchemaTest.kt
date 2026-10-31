@@ -20,7 +20,7 @@ class SettingsSchemaTest {
 
     @Test
     fun everySpecIsUsable() {
-        assertTrue("expected a substantial preference set", SettingsSchema.specs.size >= 25)
+        assertTrue("expected a substantial preference set", SettingsSchema.specs.size >= 20)
         for (spec in SettingsSchema.specs) {
             assertTrue("key must not be blank", spec.key.isNotBlank())
             assertTrue("title must not be blank for ${spec.key}", spec.title.isNotBlank())
@@ -53,7 +53,6 @@ class SettingsSchemaTest {
             "duration_of_ignore_medias",
             "dirpath_of_ignore_medias",
             "video_of_ignore_medias",
-            "dark_theme",
             "web_search_items_limit_count",
             "id3v2_mode",
         )
@@ -140,6 +139,11 @@ class SettingsSchemaTest {
             "apple_region",
             "apple_language",
             "apple_cover_size",
+            "dark_theme",
+            "batch_rename_mode",
+            "batch_rename_template",
+            "lrcfiles_save_directory_mode",
+            "lrcfiles_filename_format",
         )
         for (key in retired) {
             assertNull("retired key still declared: $key", SettingsSchema.spec(key))
@@ -149,7 +153,7 @@ class SettingsSchemaTest {
     @Test
     fun schemaStaysDeliberatelySmall() {
         // The screen is meant to be scannable: keep it well under the original 48 entries.
-        assertEquals(25, SettingsSchema.specs.size)
+        assertEquals(22, SettingsSchema.specs.size)
     }
 
     @Test

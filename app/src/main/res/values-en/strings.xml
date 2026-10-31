@@ -61,6 +61,11 @@
     <string name="settings_clear_log">Clear log</string>
     <string name="settings_log_size">Current log size: %1$s</string>
     <string name="settings_log_empty">No log yet</string>
+    <string name="settings_ignore_dirs_empty">Not set</string>
+    <string name="settings_ignore_dirs_add">Add a folder</string>
+    <string name="settings_ignore_dirs_add_hint">Pick the folder to ignore with the system file picker.</string>
+    <string name="settings_ignore_dirs_clear">Clear ignored folders</string>
+    <string name="settings_choice_current">Current</string>
     <string name="settings_about">About</string>
     <string name="settings_repository">Project repository</string>
     <string name="settings_version">Version</string>

@@ -67,16 +67,13 @@ data class Settings(val values: Map<String, Any> = SettingsSchema.defaults.value
     val deleteLyricBlankLines: Boolean get() = boolean("delete_lyric_blank_text_lines")
     val deleteLyricHeadTags: Boolean get() = boolean("delete_lyric_head_tags")
     val saveLrcWithTags: Boolean get() = boolean("allow_save_lrc_file_while_save_file_tags")
+    val themeMode: String get() = string("theme_mode")
+    val dynamicColor: Boolean get() = boolean("dynamic_color")
     val lrcEncoding: String get() = string("lrcfiles_encoding")
-    val lrcDirectoryMode: String get() = string("lrcfiles_save_directory_mode")
     val lrcFilenameMode: String get() = string("lrcfiles_filename_format_mode")
-    val lrcFilenameTemplate: String get() = string("lrcfiles_filename_format")
     val ignoreDurationSeconds: Int get() = int("duration_of_ignore_medias")
     val ignoreDirectories: String get() = string("dirpath_of_ignore_medias")
     val ignoreMp4Videos: Boolean get() = boolean("video_of_ignore_medias")
-    val batchRenameMode: String get() = string("batch_rename_mode")
-    val batchRenameTemplate: String get() = string("batch_rename_template")
-    val darkTheme: Boolean get() = boolean("dark_theme")
     val recentSuggestions: Boolean get() = boolean("search_recent_suggestions")
 
     /** MP3 write options packed the way the native layer expects (1 = ID3v1, 2 = ID3v2.3). */
@@ -99,7 +96,7 @@ class SettingsRepository(context: Context) {
                     }
                 SettingType.INT ->
                     if (preferences.contains(spec.key)) preferences.getInt(spec.key, spec.default as Int) else null
-                SettingType.STRING ->
+                SettingType.STRING, SettingType.CHOICE ->
                     preferences.getString(spec.key, spec.default as String)
             }
             stored?.let { spec.key to it }
@@ -113,7 +110,8 @@ class SettingsRepository(context: Context) {
             when (spec.type) {
                 SettingType.BOOLEAN -> editor.putBoolean(spec.key, settings.boolean(spec.key))
                 SettingType.INT -> editor.putInt(spec.key, settings.int(spec.key))
-                SettingType.STRING -> editor.putString(spec.key, settings.string(spec.key))
+                SettingType.STRING, SettingType.CHOICE ->
+                    editor.putString(spec.key, settings.string(spec.key))
             }
         }
         editor.apply()

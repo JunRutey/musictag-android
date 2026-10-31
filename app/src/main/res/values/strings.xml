@@ -67,6 +67,11 @@
     <string name="settings_clear_log">清空日志</string>
     <string name="settings_log_size">当前日志大小：%1$s</string>
     <string name="settings_log_empty">暂无日志</string>
+    <string name="settings_ignore_dirs_empty">未设置</string>
+    <string name="settings_ignore_dirs_add">添加目录</string>
+    <string name="settings_ignore_dirs_add_hint">用系统文件选择器挑选要忽略的文件夹。</string>
+    <string name="settings_ignore_dirs_clear">清除忽略目录</string>
+    <string name="settings_choice_current">当前</string>
     <string name="settings_about">关于</string>
     <string name="settings_repository">项目仓库</string>
     <string name="settings_version">版本</string>
