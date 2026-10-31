@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [1.1.9] - 2026-10-31
 
+已发布：https://github.com/JunRutey/musictag-android/releases/tag/v1.1.9
+
+* APK：`musictag-1.1.9.apk`（9,674,795 字节，versionName 1.1.9，`apksigner verify` 退出码 0）。
+* APK SHA-256：`59490b05a30383a7306f56acbd0accc21ba1c7dc1ba60530e70becfc61670b5c`。
+
+
 ### 新增
 
 * 设置 → 高级 → **全量日志**：打开后 `AppLog.d` 会写入每次搜索的查询串、耗时、各来源结果数、
