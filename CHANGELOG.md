@@ -4,6 +4,26 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.5] - 2026-10-31
+
+### 修复
+
+* 点歌闪退的根因：曲库把 `content://media/...` 放进 intent 的 data 并加了
+  `FLAG_GRANT_READ/WRITE_URI_PERMISSION`，系统在 `startActivity` 时校验发送方能否授予该
+  URI，MediaStore 的行我们无权授予，于是抛 `SecurityException`。现在改为纯字符串 extra
+  (`SongDetailActivity.EXTRA_URI`) 且不加任何 grant 标志；外部 `ACTION_VIEW` 调用不变。
+* 分享 MediaStore 文件时若系统拒绝授权，会自动去掉 grant 标志重试。
+* 「导出日志」改用 manifest 里真实存在的 FileProvider authority (`.provider`)，之前写成
+  `.fileprovider`，所以分享面板一直打不开；`provider_paths.xml` 增加 `files/logs` 根。
+* 移除 `MANAGE_EXTERNAL_STORAGE`（代码从未使用，且属于商店政策风险）。
+
+### 新增
+
+* 首次启动一次性申请所需权限：`READ_MEDIA_AUDIO`（旧版 `READ_EXTERNAL_STORAGE`）、
+  Android 9 及以下的 `WRITE_EXTERNAL_STORAGE`、Android 13+ 的 `POST_NOTIFICATIONS`；
+  记录已询问标记，不会每次启动都弹。
+* 日志与主题偏好在 `MusicTagApp` 初始化，外部 VIEW/SEND 直接进入也不会漏。
+
 ## [1.1.4] - 2026-10-31
 
 ### 新增
@@ -33,7 +53,8 @@ All notable changes to this project are documented here. The format follows
 ### 修复
 
 * 深色主题可以手动切换了：dark_theme 改为快照状态（Appearance），切换后所有界面立刻重绘；
-  之前的值被 emember 缓存，切了也不会刷新。
+  之前的值被 
+emember 缓存，切了也不会刷新。
 
 ## [1.1.2] - 2026-10-31
 
