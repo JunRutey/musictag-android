@@ -8,7 +8,6 @@ package com.xjcheng.musictageditor.ui.library
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.input.pointer.pointerInput
 import kotlinx.coroutines.delay
@@ -611,9 +610,10 @@ private fun SortChip(label: String, selected: Boolean, onClick: () -> Unit) {
 /**
  * Right-edge A–Z/# index.
  *
- * Dragging along the column scrubs the list the way a launcher app-drawer does: the letter
- * under the finger jumps the list and a bubble shows which section is under it. A single tap
- * still jumps once.
+ * Dragging along the column scrubs the list: the letter under the finger jumps the list and the
+ * current section is echoed in a pill beside the strip. The strip itself stays pinned to the
+ * screen edge; the echo is a sibling drawn to its left, not an offset child, so nothing in the
+ * bar ever widens or moves when it appears. A single tap still jumps once.
  */
 @Composable
 private fun AlphabetBar(
@@ -624,10 +624,10 @@ private fun AlphabetBar(
 ) {
     if (letters.size < 2) return
     val scope = rememberCoroutineScope()
-    var bubble by remember { mutableStateOf<String?>(null) }
+    var current by remember { mutableStateOf<String?>(null) }
 
     fun jump(letter: String) {
-        bubble = letter
+        current = letter
         val index = letterIndex[letter] ?: return
         scope.launch { listState.scrollToItem(index) }
     }
@@ -638,7 +638,28 @@ private fun AlphabetBar(
         return letters.getOrNull((ratio * letters.size).toInt())
     }
 
-    Box(modifier = modifier) {
+    // Bubble on the left, strip flush against the right screen edge.
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        current?.let { letter ->
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(MiuixTheme.colorScheme.primary),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = letter,
+                    color = Color.White,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+        }
         Column(
             modifier = Modifier
                 .pointerInput(letters, letterIndex) {
@@ -646,12 +667,12 @@ private fun AlphabetBar(
                         onDragStart = { offset ->
                             letterAt(offset.y, size.height)?.let(::jump)
                         },
-                        onDragEnd = { bubble = null },
-                        onDragCancel = { bubble = null },
+                        onDragEnd = { current = null },
+                        onDragCancel = { current = null },
                     ) { change, _ ->
                         change.consume()
                         val letter = letterAt(change.position.y, size.height)
-                        if (letter != null && letter != bubble) jump(letter)
+                        if (letter != null && letter != current) jump(letter)
                     }
                 }
                 .pointerInput(letters, letterIndex) {
@@ -660,7 +681,7 @@ private fun AlphabetBar(
                             jump(letter)
                             scope.launch {
                                 delay(450)
-                                bubble = null
+                                current = null
                             }
                         }
                     }
@@ -676,24 +697,6 @@ private fun AlphabetBar(
                     color = MiuixTheme.colorScheme.onSurfaceContainerVariant,
                     fontSize = 9.sp,
                     modifier = Modifier.padding(horizontal = 3.dp),
-                )
-            }
-        }
-        bubble?.let { current ->
-            Box(
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .offset(x = (-64).dp)
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .background(MiuixTheme.colorScheme.primary),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    text = current,
-                    color = Color.White,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
                 )
             }
         }
