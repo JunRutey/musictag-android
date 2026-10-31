@@ -25,3 +25,4 @@ class MusicTagApp : Application() {
         AppLog.init(this)
         Appearance.refresh(this)
     }
+}
