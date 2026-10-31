@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [1.1.10] - 2026-10-31
 
+已发布：https://github.com/JunRutey/musictag-android/releases/tag/v1.1.10
+
+* APK：`musictag-1.1.10.apk`（9,750,889 字节，versionName 1.1.10，versionCode 2026103112，
+  `apksigner verify` 退出码 0，签名证书 SHA-256 指纹 `51485C4E…D79D4D`）。
+* APK SHA-256：`3c3b32a41389b5b69c2205b8e634933be7b4af6ab5eea94cbcd722ea93652af3`。
+
 ### 新增
 
 * 曲库的**艺术家 / 专辑详情页**：点艺术家或专辑不再是把搜索框填上名字，而是进入一个独立页面，
