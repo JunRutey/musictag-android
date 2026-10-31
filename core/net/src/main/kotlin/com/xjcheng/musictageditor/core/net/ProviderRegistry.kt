@@ -36,33 +36,32 @@ data class MergePolicy(
         order[field] ?: DEFAULT_ORDER.getValue(field)
 
     companion object {
-        /** Four Chinese services first, then the international fallbacks. */
+        /**
+         * Three Chinese services first, then the international fallbacks. Kugou and Apple
+         * Music left this list in 1.1.6: Kugou's endpoint kept answering with nothing useful
+         * and the Apple Music token scrape failed on every search, so both showed up as
+         * "no response" sources.
+         */
         val TAG_ORDER: List<ProviderId> = listOf(
             ProviderId.NETEASE,
             ProviderId.QQ,
             ProviderId.KUWO,
-            ProviderId.KUGOU,
-            ProviderId.APPLE,
             ProviderId.ITUNES,
             ProviderId.MUSICBRAINZ,
         )
 
-        /** Apple returns the highest resolution artwork, so it leads the cover order. */
         val COVER_ORDER: List<ProviderId> = listOf(
-            ProviderId.APPLE,
             ProviderId.NETEASE,
             ProviderId.QQ,
             ProviderId.ITUNES,
             ProviderId.COVER_ART_ARCHIVE,
             ProviderId.KUWO,
             ProviderId.MUSICBRAINZ,
-            ProviderId.KUGOU,
         )
 
         val LYRIC_ORDER: List<ProviderId> = listOf(
             ProviderId.NETEASE,
             ProviderId.QQ,
-            ProviderId.KUGOU,
             ProviderId.KUWO,
         )
 

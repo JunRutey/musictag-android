@@ -53,9 +53,6 @@ object SettingsSchema {
 
         // -------------------------------------------------------------- online search
         SettingSpec("web_search_items_limit_count", SettingType.INT, 20, "单源结果数", SettingGroup.SEARCH, "每个来源最多返回多少条。"),
-        SettingSpec("apple_region", SettingType.STRING, "cn", "Apple Music 地区", SettingGroup.SEARCH, "cn、us、jp、kr、hk、tw 等。"),
-        SettingSpec("apple_language", SettingType.STRING, "", "Apple Music 语言", SettingGroup.SEARCH, "留空则跟随地区，中文区为 zh-Hans。"),
-        SettingSpec("apple_cover_size", SettingType.INT, 3000, "Apple Music 封面尺寸", SettingGroup.SEARCH, "像素，120–5000。"),
 
         // --------------------------------------------------------------------- lyrics
         SettingSpec("download_lyric_translations", SettingType.BOOLEAN, true, "下载翻译歌词", SettingGroup.LYRICS),

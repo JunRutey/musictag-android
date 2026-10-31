@@ -22,6 +22,13 @@ object DocumentWriter {
 
     sealed interface Result {
         data object Success : Result
+
+        /**
+         * The provider refused the write because this app does not own the document. On
+         * Android 10+ `MediaStore.createWriteRequest` asks the user once and then the same
+         * write succeeds, so this is recoverable rather than an error.
+         */
+        data object NeedsPermission : Result
         data class Failure(val message: String) : Result
     }
 
@@ -33,14 +40,21 @@ object DocumentWriter {
         }
         return try {
             val source = File(document.path)
-            context.contentResolver.openOutputStream(uri, "rwt")?.use { output ->
+            // A provider that refuses here throws SecurityException, handled below.
+            val stream = context.contentResolver.openOutputStream(uri, "rwt")
+                ?: return Result.Failure("the provider did not open ${uri.authority} for writing")
+            stream.use { output ->
                 source.inputStream().use { input -> input.copyTo(output) }
-            } ?: return Result.Failure("the provider did not open ${uri.authority} for writing")
+            }
             refreshMediaStore(context, document.path)
             source.delete()
             Result.Success
         } catch (t: Throwable) {
-            Result.Failure("write-back failed: ${t.javaClass.simpleName}: ${t.message}")
+            if (t is SecurityException) {
+                Result.NeedsPermission
+            } else {
+                Result.Failure("write-back failed: ${t.javaClass.simpleName}: ${t.message}")
+            }
         }
     }
 

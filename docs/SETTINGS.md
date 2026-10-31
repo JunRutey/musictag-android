@@ -4,7 +4,7 @@
 显示，不再手写布局。默认值即 `SettingsSchema.defaults`，键名尽量沿用原版
 `pref_settings.xml`，方便将来导入旧配置。
 
-当前共 **28** 项。1.1.1 删掉了 12 项“改了也看不出区别”的开关（来源优先级字符串、主色/
+当前共 **25** 项。1.1.1 删掉了 12 项“改了也看不出区别”的开关（来源优先级字符串、主色/
 强调色、动画、黑主题、Tab 项、手动批量开关等），只保留真正影响行为的项。
 
 ## 标签写入（2）
@@ -14,14 +14,13 @@
 | `write_id3v1` | bool | false | MP3 同时写 ID3v1 |
 | `id3v2_mode` | string | `4` | `3` 或 `4` |
 
-## 在线搜索（4）
+## 在线搜索（1）
 
 | 键 | 类型 | 默认 | 说明 |
 |---|---|---|---|
 | `web_search_items_limit_count` | int | 20 | 单源最多返回条数 |
-| `apple_region` | string | `cn` | Apple Music 地区 |
-| `apple_language` | string | 空 | Apple Music 语言，空则跟随地区 |
-| `apple_cover_size` | int | 3000 | Apple 封面边长（像素） |
+
+Apple Music 相关的 3 个设置随来源一起在 1.1.6 移除。
 
 ## 歌词（10）
 
@@ -80,5 +79,6 @@
 `tags_sources_combination`、`tags_sources_picture`、`tags_sources_lyric`、
 `web_search_criteria`、`primary_color`、`accent_color`、`allow_black_theme`、
 `enable_animations`、`tab_items`、`always_show_batch_buttons`、`media_store_rescan`、
-`keep_screen_on_while_batch`。旧配置里的这些键会被忽略；来源优先级固定为
+`keep_screen_on_while_batch`；1.1.6 又移除了 `apple_region`、`apple_language`、
+`apple_cover_size`（Apple Music 来源已移除）。旧配置里的这些键会被忽略；来源优先级固定为
 `MergePolicy.DEFAULT`（见 `docs/SOURCES.md`）。

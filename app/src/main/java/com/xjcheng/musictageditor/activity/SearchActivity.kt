@@ -53,6 +53,12 @@ class SearchActivity : ComponentActivity() {
             album = intent?.getStringExtra(SearchContract.EXTRA_ALBUM).orEmpty(),
         )
 
+        // Opened from the editor with a title already known: search immediately, so the
+        // only decision left is which candidate to pick.
+        if (ui.title.isNotBlank()) {
+            search()
+        }
+
         setContent {
             MusicTagTheme {
                 SearchScreen(

@@ -170,8 +170,30 @@ fun TagEditorScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = onSave, enabled = !state.saving) {
-                        Icon(MiuixIcons.Useful.Save, stringResource(R.string.action_save))
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(
+                                if (state.saving) {
+                                    MiuixTheme.colorScheme.secondaryContainer
+                                } else {
+                                    MiuixTheme.colorScheme.primary
+                                },
+                            )
+                            .clickable(enabled = !state.saving, onClick = onSave)
+                            .padding(horizontal = 14.dp, vertical = 5.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.action_save),
+                            color = if (state.saving) {
+                                MiuixTheme.colorScheme.onSurfaceContainerVariant
+                            } else {
+                                Color.White
+                            },
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                        )
                     }
                 },
             )
@@ -319,7 +341,7 @@ fun TagEditorScreen(
                 Box(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
-                        .padding(20.dp)
+                        .padding(end = 20.dp, bottom = 96.dp)
                         .size(56.dp)
                         .clip(CircleShape)
                         .background(MiuixTheme.colorScheme.primary)

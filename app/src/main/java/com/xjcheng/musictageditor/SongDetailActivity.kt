@@ -8,9 +8,12 @@ package com.xjcheng.musictageditor
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
+import android.provider.MediaStore
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -91,6 +94,21 @@ class SongDetailActivity : ComponentActivity() {
                 coverMime = contentResolver.getType(uri) ?: "image/png"
                 ui = ui.copy(coverBytes = bytes, coverRemoved = false, coverDirty = true, error = null)
             }
+        }
+    }
+
+    /**
+     * Android 10+ can grant write access to a MediaStore row the app does not own, through
+     * `MediaStore.createWriteRequest`. The user sees one system dialog; then the same save
+     * succeeds.
+     */
+    private val writeConsent = registerForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult(),
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            save()
+        } else {
+            ui = ui.copy(error = getString(R.string.editor_error_write_permission))
         }
     }
 
@@ -342,6 +360,31 @@ class SongDetailActivity : ComponentActivity() {
         }
     }
 
+    @Volatile
+    private var needsWriteConsent = false
+
+    private fun requestWriteAccess(uri: Uri) {
+        AppLog.i(TAG, "requesting write access for $uri")
+        val request = runCatching {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                MediaStore.createWriteRequest(contentResolver, listOf(uri))
+            } else {
+                null
+            }
+        }.getOrNull()
+        if (request == null) {
+            ui = ui.copy(error = getString(R.string.editor_error_write_permission))
+            return
+        }
+        runCatching {
+            writeConsent.launch(
+                IntentSenderRequest.Builder(request.intentSender).build(),
+            )
+        }.onFailure {
+            ui = ui.copy(error = getString(R.string.editor_error_write_permission))
+        }
+    }
+
     private fun save() {
         val current = document ?: return
         val uri = documentUri ?: return
@@ -382,6 +425,10 @@ class SongDetailActivity : ComponentActivity() {
                             when (val back = DocumentWriter.writeBack(this@SongDetailActivity, uri, current)) {
                                 is DocumentWriter.Result.Success -> null
                                 is DocumentWriter.Result.Failure -> back.message
+                                is DocumentWriter.Result.NeedsPermission -> {
+                                    needsWriteConsent = true
+                                    null
+                                }
                             }
                         }
                     }
@@ -394,6 +441,11 @@ class SongDetailActivity : ComponentActivity() {
                 }
             }
             ui = ui.copy(saving = false)
+            if (needsWriteConsent) {
+                needsWriteConsent = false
+                requestWriteAccess(uri)
+                return@launch
+            }
             if (failure != null) {
                 ui = ui.copy(error = failure)
             } else {

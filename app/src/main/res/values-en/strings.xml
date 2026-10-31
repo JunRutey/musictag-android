@@ -145,6 +145,7 @@
     <string name="editor_error_read_image">Could not read the selected image.</string>
     <string name="editor_error_no_document">This activity expects an audio document (VIEW or SEND).</string>
     <string name="editor_error_native">Could not read the tags: %1$s</string>
+    <string name="editor_error_write_permission">Write access is required to save into this file; allow it in the system dialog.</string>
     <string name="editor_error_write_crashed">Could not write the tags: %1$s</string>
     <string name="editor_error_open_document">Cannot open this file: it may have been moved or deleted.</string>
     <string name="editor_error_no_permission">No permission to read this file. Grant music/storage access and retry.</string>

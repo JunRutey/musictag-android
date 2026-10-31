@@ -5,6 +5,25 @@
 
 package com.xjcheng.musictageditor.ui.search
 
+import android.graphics.BitmapFactory
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import android.util.LruCache
+import androidx.compose.ui.graphics.ImageBitmap
+import com.xjcheng.musictageditor.io.CoverDownloader
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -196,6 +215,7 @@ private fun Results(state: SearchUiState, onSelect: (SearchResult) -> Unit) {
                 summary = listOf(result.artist, result.album)
                     .filter { it.isNotBlank() }
                     .joinToString(" · "),
+                leftAction = { ResultCover(url = result.coverUrl) },
                 rightActions = {
                     Text(
                         text = result.provider.displayName,
@@ -209,6 +229,66 @@ private fun Results(state: SearchUiState, onSelect: (SearchResult) -> Unit) {
                 onClick = { onSelect(result) },
             )
         }
+    }
+}
+
+/** 44dp cover thumbnail for one search hit, cached by URL. */
+@Composable
+private fun ResultCover(url: String?) {
+    if (url.isNullOrBlank()) {
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(RoundedCornerShape(6.dp))
+                .background(MiuixTheme.colorScheme.secondaryContainer),
+        )
+        return
+    }
+    var image by remember(url) { mutableStateOf(SearchCoverCache.get(url)) }
+    LaunchedEffect(url) {
+        if (image == null) {
+            image = SearchCoverCache.load(url)
+        }
+    }
+    Box(
+        modifier = Modifier
+            .size(44.dp)
+            .clip(RoundedCornerShape(6.dp))
+            .background(MiuixTheme.colorScheme.secondaryContainer),
+        contentAlignment = Alignment.Center,
+    ) {
+        val bitmap = image
+        if (bitmap != null) {
+            Image(
+                bitmap = bitmap,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
+            )
+        }
+    }
+}
+
+/** Small LRU cache so scrolling the result list does not refetch every cover. */
+private object SearchCoverCache {
+
+    private const val MAX_ENTRIES = 60
+    private val cache = object : LruCache<String, ImageBitmap>(MAX_ENTRIES) {}
+
+    fun get(url: String): ImageBitmap? = cache.get(url)
+
+    suspend fun load(url: String): ImageBitmap? {
+        cache.get(url)?.let { return it }
+        val bytes = withContext(Dispatchers.IO) {
+            runCatching { CoverDownloader().fetch(url) }.getOrNull()
+        } ?: return null
+        val bitmap = withContext(Dispatchers.Default) {
+            runCatching {
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+            }.getOrNull()
+        } ?: return null
+        cache.put(url, bitmap)
+        return bitmap
     }
 }
 

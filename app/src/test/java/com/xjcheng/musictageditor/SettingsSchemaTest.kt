@@ -114,13 +114,9 @@ class SettingsSchemaTest {
         val settings = SettingsSchema.defaults
             .with("id3v2_mode", "3")
             .with("web_search_items_limit_count", 7)
-            .with("apple_region", "jp")
-            .with("apple_cover_size", 600)
             .with("connectors_lyric_and_tlyric", " | ")
         assertTrue(settings.id3v23)
         assertEquals(7, settings.searchLimit)
-        assertEquals("jp", settings.appleRegion)
-        assertEquals(600, settings.appleCoverSize)
         assertEquals(" | ", settings.connectorLyricTranslation)
         assertTrue("the retired Last.fm key must be gone", SettingsSchema.spec("lastfm_api_key") == null)
     }
@@ -141,6 +137,9 @@ class SettingsSchemaTest {
             "always_show_batch_buttons",
             "media_store_rescan",
             "keep_screen_on_while_batch",
+            "apple_region",
+            "apple_language",
+            "apple_cover_size",
         )
         for (key in retired) {
             assertNull("retired key still declared: $key", SettingsSchema.spec(key))
@@ -150,7 +149,7 @@ class SettingsSchemaTest {
     @Test
     fun schemaStaysDeliberatelySmall() {
         // The screen is meant to be scannable: keep it well under the original 48 entries.
-        assertEquals(28, SettingsSchema.specs.size)
+        assertEquals(25, SettingsSchema.specs.size)
     }
 
     @Test
