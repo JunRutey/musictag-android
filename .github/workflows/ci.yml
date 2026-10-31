@@ -69,13 +69,13 @@ jobs:
       - name: Verify compatibility contract against the built APK
         run: |
           python3 tools/manifest_contract.py \
-            --verify-apk app/build/outputs/apk/debug/app-debug.apk \
+            --verify-apk app/build/outputs/apk/release/app-release-unsigned.apk \
             --expect docs/MANIFEST_CONTRACT.json
 
       - name: Verify intent resolution matrix
         run: |
           python3 tools/intent_matrix.py \
-            --apk app/build/outputs/apk/debug/app-debug.apk \
+            --apk app/build/outputs/apk/release/app-release-unsigned.apk \
             --write-doc docs/INTENT_MATRIX.md
 
       - name: Show APK facts

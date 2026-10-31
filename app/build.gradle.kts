@@ -69,8 +69,13 @@ android {
 
     buildTypes {
         debug {
-            // Deliberately identical applicationId: the compatibility contract and the
-            // compat-harness tests must exercise the same package as release builds.
+            // Test builds install next to the release app instead of replacing it: the
+            // package id gets a `.debug` suffix and the APK is signed with the debug key.
+            // The FileProvider authority is derived from ${applicationId}, so it follows the
+            // suffix automatically. The compatibility contract is verified against the
+            // release build, which keeps the original package id.
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
             isMinifyEnabled = false
         }
         release {
