@@ -68,7 +68,8 @@ class SettingsSchemaTest {
             when (spec.type) {
                 SettingType.BOOLEAN -> assertEquals(spec.key, spec.default as Boolean, defaults.boolean(spec.key))
                 SettingType.INT -> assertEquals(spec.key, spec.default as Int, defaults.int(spec.key))
-                SettingType.STRING -> assertEquals(spec.key, spec.default as String, defaults.string(spec.key))
+                SettingType.STRING, SettingType.CHOICE ->
+                    assertEquals(spec.key, spec.default as String, defaults.string(spec.key))
             }
         }
     }
@@ -83,7 +84,8 @@ class SettingsSchemaTest {
             when (spec.type) {
                 SettingType.BOOLEAN -> assertEquals(spec.key, spec.default as Boolean, decoded.boolean(spec.key))
                 SettingType.INT -> assertEquals(spec.key, spec.default as Int, decoded.int(spec.key))
-                SettingType.STRING -> assertEquals(spec.key, spec.default as String, decoded.string(spec.key))
+                SettingType.STRING, SettingType.CHOICE ->
+                    assertEquals(spec.key, spec.default as String, decoded.string(spec.key))
             }
         }
     }
