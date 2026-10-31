@@ -93,15 +93,41 @@ jobs:
           path: dist/*
           if-no-files-found: error
 
+      - name: Compose release notes (Chinese, from CHANGELOG.md)
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          python3 - "$VERSION" > dist/NOTES.md <<'PY'
+          import pathlib, sys
+
+          version = sys.argv[1]
+          changelog = pathlib.Path("CHANGELOG.md").read_text(encoding="utf-8").splitlines()
+          section, collecting = [], False
+          for line in changelog:
+              if line.startswith("## ["):
+                  if collecting:
+                      break
+                  collecting = line.startswith(f"## [{version}]")
+                  continue
+              if collecting:
+                  section.append(line)
+
+          print("安装说明：本包用项目自有密钥签名，覆盖安装前请先卸载原版")
+          print("com.xjcheng.musictageditor 1.2.x（Android 不允许更换签名的应用直接覆盖）。")
+          print("音频文件里的标签不受影响；应用设置与日志按安装独立。")
+          print()
+          print(f"## 版本 {version}")
+          print()
+          if section:
+              print("\n".join(section).strip())
+          else:
+              print("详见仓库 CHANGELOG.md。")
+          PY
+          cat dist/NOTES.md
+
       - name: Publish GitHub release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v3
         with:
           files: dist/*
-          generate_release_notes: true
-          body: |
-            Install note: this build is signed with the project's own key, so the
-            original com.xjcheng.musictageditor 1.2.x must be uninstalled first
-            (Android refuses to replace an app with a different signature).
-            Tags stored inside audio files are unaffected; app settings, bookmarks
-            and tag history are per-install and start empty.
+          body_path: dist/NOTES.md
