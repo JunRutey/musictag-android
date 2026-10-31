@@ -5,7 +5,6 @@
 
 package com.xjcheng.musictageditor
 
-import com.xjcheng.musictageditor.core.net.MergePolicy
 import com.xjcheng.musictageditor.settings.SettingType
 import com.xjcheng.musictageditor.settings.Settings
 import com.xjcheng.musictageditor.settings.SettingsSchema
@@ -16,6 +15,10 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
+/**
+ * The preference schema is the single source of truth for the settings screen, so it is
+ * checked here: every key is usable, defaults round-trip, and the retired keys stay retired.
+ */
 class SettingsSchemaTest {
 
     @Test
@@ -25,6 +28,13 @@ class SettingsSchemaTest {
             assertTrue("key must not be blank", spec.key.isNotBlank())
             assertTrue("title must not be blank for ${spec.key}", spec.title.isNotBlank())
             assertNotNull(SettingsSchema.spec(spec.key))
+            if (spec.type == SettingType.CHOICE) {
+                assertTrue("choice ${spec.key} needs options", spec.options.size >= 2)
+                assertTrue(
+                    "choice ${spec.key} must include its default",
+                    spec.options.any { it.value == spec.default },
+                )
+            }
         }
     }
 
@@ -36,8 +46,11 @@ class SettingsSchemaTest {
 
     @Test
     fun originalKeyNamesArePreserved() {
-        // Names from the original pref_settings.xml, where the semantics match.
+        // Names from the original prefs_settings.xml, where the semantics still match.
         val expected = listOf(
+            "write_id3v1",
+            "id3v2_mode",
+            "web_search_items_limit_count",
             "download_lyric_translations",
             "download_lyric_translations_t2s_mode",
             "connectors_lyric_and_tlyric",
@@ -47,17 +60,52 @@ class SettingsSchemaTest {
             "delete_lyric_blank_text_lines",
             "delete_lyric_head_tags",
             "lrcfiles_encoding",
-            "lrcfiles_save_directory_mode",
             "lrcfiles_filename_format_mode",
             "allow_save_lrc_file_while_save_file_tags",
             "duration_of_ignore_medias",
             "dirpath_of_ignore_medias",
             "video_of_ignore_medias",
-            "web_search_items_limit_count",
-            "id3v2_mode",
+            "theme_mode",
+            "dynamic_color",
+            "search_recent_suggestions",
         )
         for (key in expected) {
             assertNotNull("missing original key $key", SettingsSchema.spec(key))
+        }
+    }
+
+    @Test
+    fun retiredKeysAreNoLongerDeclared() {
+        val retired = listOf(
+            // 1.1.1: preferences that changed nothing when toggled.
+            "tags_sources_combination",
+            "tags_sources_picture",
+            "tags_sources_lyric",
+            "web_search_criteria",
+            "primary_color",
+            "accent_color",
+            "allow_black_theme",
+            "enable_animations",
+            "tab_items",
+            "always_show_batch_buttons",
+            "media_store_rescan",
+            "keep_screen_on_while_batch",
+            // 1.1.6: Apple Music source removed.
+            "apple_region",
+            "apple_language",
+            "apple_cover_size",
+            // 1.1.7: manual batch removed, .lrc directory/template fixed, dark_theme replaced.
+            "batch_rename_mode",
+            "batch_rename_template",
+            "lrcfiles_save_directory_mode",
+            "lrcfiles_filename_format",
+            "dark_theme",
+            // Never supported.
+            "lastfm_api_key",
+            "vgmdb_api_key",
+        )
+        for (key in retired) {
+            assertNull("retired key still declared: $key", SettingsSchema.spec(key))
         }
     }
 
@@ -66,8 +114,10 @@ class SettingsSchemaTest {
         val defaults = SettingsSchema.defaults
         for (spec in SettingsSchema.specs) {
             when (spec.type) {
-                SettingType.BOOLEAN -> assertEquals(spec.key, spec.default as Boolean, defaults.boolean(spec.key))
-                SettingType.INT -> assertEquals(spec.key, spec.default as Int, defaults.int(spec.key))
+                SettingType.BOOLEAN ->
+                    assertEquals(spec.key, spec.default as Boolean, defaults.boolean(spec.key))
+                SettingType.INT ->
+                    assertEquals(spec.key, spec.default as Int, defaults.int(spec.key))
                 SettingType.STRING, SettingType.CHOICE ->
                     assertEquals(spec.key, spec.default as String, defaults.string(spec.key))
             }
@@ -82,8 +132,10 @@ class SettingsSchemaTest {
         val decoded = Settings(asStrings)
         for (spec in SettingsSchema.specs) {
             when (spec.type) {
-                SettingType.BOOLEAN -> assertEquals(spec.key, spec.default as Boolean, decoded.boolean(spec.key))
-                SettingType.INT -> assertEquals(spec.key, spec.default as Int, decoded.int(spec.key))
+                SettingType.BOOLEAN ->
+                    assertEquals(spec.key, spec.default as Boolean, decoded.boolean(spec.key))
+                SettingType.INT ->
+                    assertEquals(spec.key, spec.default as Int, decoded.int(spec.key))
                 SettingType.STRING, SettingType.CHOICE ->
                     assertEquals(spec.key, spec.default as String, decoded.string(spec.key))
             }
@@ -116,40 +168,24 @@ class SettingsSchemaTest {
             .with("id3v2_mode", "3")
             .with("web_search_items_limit_count", 7)
             .with("connectors_lyric_and_tlyric", " | ")
+            .with("duration_of_ignore_medias", "30")
+            .with("theme_mode", "dark")
+            .with("dynamic_color", true)
         assertTrue(settings.id3v23)
         assertEquals(7, settings.searchLimit)
         assertEquals(" | ", settings.connectorLyricTranslation)
-        assertTrue("the retired Last.fm key must be gone", SettingsSchema.spec("lastfm_api_key") == null)
+        assertEquals(30, settings.ignoreDurationSeconds)
+        assertEquals("dark", settings.themeMode)
+        assertTrue(settings.dynamicColor)
     }
 
     @Test
-    fun retiredKeysAreNoLongerDeclared() {
-        // 1.1.1 removed the preferences that changed nothing when toggled.
-        val retired = listOf(
-            "tags_sources_combination",
-            "tags_sources_picture",
-            "tags_sources_lyric",
-            "web_search_criteria",
-            "primary_color",
-            "accent_color",
-            "allow_black_theme",
-            "enable_animations",
-            "tab_items",
-            "always_show_batch_buttons",
-            "media_store_rescan",
-            "keep_screen_on_while_batch",
-            "apple_region",
-            "apple_language",
-            "apple_cover_size",
-            "dark_theme",
-            "batch_rename_mode",
-            "batch_rename_template",
-            "lrcfiles_save_directory_mode",
-            "lrcfiles_filename_format",
-        )
-        for (key in retired) {
-            assertNull("retired key still declared: $key", SettingsSchema.spec(key))
-        }
+    fun choiceLabelsAreResolved() {
+        val spec = SettingsSchema.spec("theme_mode")!!
+        assertEquals("跟随系统", spec.labelOf("system"))
+        assertEquals("深色主题", spec.labelOf("dark"))
+        // An unknown stored value falls back to itself instead of crashing the row.
+        assertEquals("wat", spec.labelOf("wat"))
     }
 
     @Test
