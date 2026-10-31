@@ -22,7 +22,9 @@ class MusicTagApp : Application() {
         super.onCreate()
         // Logging and the theme preference are needed by every entry point, including the
         // ones other apps start directly (VIEW / SEND), so they are initialised here.
-        AppLog.init(this)
-        Appearance.refresh(this)
+        runCatching { AppLog.init(this) }
+        // A corrupted or old-format preference file must never stop the app from starting.
+        runCatching { Appearance.refresh(this) }
+            .onFailure { AppLog.w("App", "appearance refresh failed at startup", it) }
     }
 }

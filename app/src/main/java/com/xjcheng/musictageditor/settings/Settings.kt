@@ -85,21 +85,18 @@ class SettingsRepository(context: Context) {
     private val preferences: SharedPreferences =
         context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
 
+    /**
+     * Reads every declared key with whatever type it was stored as.
+     *
+     * Asking for a concrete type would throw `ClassCastException` when a preference changed
+     * type between releases (for example `duration_of_ignore_medias` was an `Int` and became a
+     * choice string). That exception used to crash the app during `Application.onCreate`, so
+     * values are taken raw and coerced by [Settings] instead.
+     */
     fun load(): Settings {
+        val all = preferences.all
         val values = SettingsSchema.specs.mapNotNull { spec ->
-            val stored: Any? = when (spec.type) {
-                SettingType.BOOLEAN ->
-                    if (preferences.contains(spec.key)) {
-                        preferences.getBoolean(spec.key, spec.default as Boolean)
-                    } else {
-                        null
-                    }
-                SettingType.INT ->
-                    if (preferences.contains(spec.key)) preferences.getInt(spec.key, spec.default as Int) else null
-                SettingType.STRING, SettingType.CHOICE ->
-                    preferences.getString(spec.key, spec.default as String)
-            }
-            stored?.let { spec.key to it }
+            all[spec.key]?.let { stored -> spec.key to stored }
         }.toMap()
         return Settings(values)
     }

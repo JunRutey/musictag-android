@@ -180,6 +180,16 @@ class SettingsSchemaTest {
     }
 
     @Test
+    fun oldTypesStillReadAfterAChoiceConversion() {
+        // 1.1.6 stored this as an Int; 1.1.7 made it a choice. Reading it must not throw.
+        val migrated = Settings(mapOf("duration_of_ignore_medias" to 45))
+        assertEquals("45", migrated.string("duration_of_ignore_medias"))
+        assertEquals(45, migrated.ignoreDurationSeconds)
+        assertEquals(true, Settings(mapOf("dynamic_color" to "true")).dynamicColor)
+        assertEquals(7, Settings(mapOf("web_search_items_limit_count" to "7")).searchLimit)
+    }
+
+    @Test
     fun choiceLabelsAreResolved() {
         val spec = SettingsSchema.spec("theme_mode")!!
         assertEquals("跟随系统", spec.labelOf("system"))
