@@ -11,6 +11,8 @@ data class ArtistGroup(
     val trackCount: Int,
     /** Album id of the first track, for the row artwork. */
     val albumId: Long = 0,
+    /** MediaStore URI of a track with artwork; required by loadThumbnail on API 29+. */
+    val audioUri: String = "",
 )
 
 /** One album row of the album tab. */
@@ -19,6 +21,8 @@ data class AlbumGroup(
     val artist: String,
     val trackCount: Int,
     val albumId: Long = 0,
+    /** MediaStore URI of a track with artwork; required by loadThumbnail on API 29+. */
+    val audioUri: String = "",
 )
 
 /**
@@ -32,10 +36,12 @@ object MediaGrouping {
     fun artists(tracks: List<MediaTrack>): List<ArtistGroup> =
         tracks.groupBy { it.artist.trim() }
             .map { (artist, group) ->
+                val coverTrack = group.firstOrNull { it.albumId > 0 }
                 ArtistGroup(
                     name = artist,
                     trackCount = group.size,
-                    albumId = group.firstOrNull { it.albumId > 0 }?.albumId ?: 0,
+                    albumId = coverTrack?.albumId ?: 0,
+                    audioUri = coverTrack?.uri.orEmpty(),
                 )
             }
             .sortedWith { first, second -> PinyinIndex.compare(first.name, second.name) }
@@ -47,11 +53,13 @@ object MediaGrouping {
     fun albums(tracks: List<MediaTrack>): List<AlbumGroup> =
         tracks.groupBy { it.album.trim() to it.artist.trim() }
             .map { (key, group) ->
+                val coverTrack = group.firstOrNull { it.albumId > 0 }
                 AlbumGroup(
                     name = key.first,
                     artist = key.second,
                     trackCount = group.size,
-                    albumId = group.firstOrNull { it.albumId > 0 }?.albumId ?: 0,
+                    albumId = coverTrack?.albumId ?: 0,
+                    audioUri = coverTrack?.uri.orEmpty(),
                 )
             }
             .sortedWith { first, second ->

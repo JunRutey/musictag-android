@@ -4,6 +4,16 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [未发布]
+
+### 修复
+
+* 曲库主页与艺术家 / 专辑行的歌曲封面不再空白：Android 10（API 29）起旧的
+  `content://media/external/audio/albumart/<id>` 已被分区存储废弃，`openInputStream`
+  与 `loadThumbnail` 都会失败。现在改用官方支持的 `loadThumbnail(音频 URI, …)`，
+  用 MediaStore 中该曲目的 `content://media/external/audio/media/<id>` 解析封面；
+  Android 9 及更早版本仍保留旧 albumart URI 回退路径。
+
 ## [1.1.11] - 2026-11-28
 
 已发布：https://github.com/JunRutey/musictag-android/releases/tag/v1.1.11

@@ -5,6 +5,7 @@
 
 package com.xjcheng.musictageditor.ui.library
 
+import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -426,8 +427,10 @@ private fun SongRow(track: MediaTrack, onOpenTrack: (MediaTrack) -> Unit) {
     val context = LocalContext.current
     val loader = remember(context) { AlbumArtLoader.get(context) }
     var cover by remember(track.albumId) { mutableStateOf(loader.cached(track.albumId)) }
-    LaunchedEffect(track.albumId) {
-        if (cover == null && track.albumId > 0) cover = loader.load(track.albumId)
+    LaunchedEffect(track.albumId, track.uri) {
+        if (cover == null && track.albumId > 0) {
+            cover = loader.load(track.albumId, Uri.parse(track.uri))
+        }
     }
 
     Row(
@@ -505,6 +508,8 @@ internal data class LibraryGroupRow(
     val title: String,
     val summary: String,
     val albumId: Long,
+    /** MediaStore URI of a track in the group, needed to load the cover on API 29+. */
+    val audioUri: String = "",
     val open: () -> Unit,
 )
 
@@ -539,6 +544,7 @@ private fun ArtistList(tracks: List<MediaTrack>, onOpenArtist: (ArtistGroup) -> 
                 title = artist.name,
                 summary = countFormat.format(artist.trackCount),
                 albumId = artist.albumId,
+                audioUri = artist.audioUri,
                 open = { onOpenArtist(artist) },
             )
         }
@@ -558,6 +564,7 @@ private fun AlbumList(tracks: List<MediaTrack>, onOpenAlbum: (AlbumGroup) -> Uni
                     .filter { it.isNotBlank() }
                     .joinToString(" · "),
                 albumId = album.albumId,
+                audioUri = album.audioUri,
                 open = { onOpenAlbum(album) },
             )
         }
@@ -624,8 +631,11 @@ private fun GroupRow(row: LibraryGroupRow, fallbackTitle: String) {
     val context = LocalContext.current
     val loader = remember(context) { AlbumArtLoader.get(context) }
     var cover by remember(row.albumId) { mutableStateOf(loader.cached(row.albumId)) }
-    LaunchedEffect(row.albumId) {
-        if (cover == null && row.albumId > 0) cover = loader.load(row.albumId)
+    LaunchedEffect(row.albumId, row.audioUri) {
+        if (cover == null && row.albumId > 0) {
+            val uri = if (row.audioUri.isNotBlank()) Uri.parse(row.audioUri) else null
+            cover = loader.load(row.albumId, uri)
+        }
     }
 
     Row(

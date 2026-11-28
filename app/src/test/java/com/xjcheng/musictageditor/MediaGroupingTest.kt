@@ -51,6 +51,25 @@ class MediaGroupingTest {
     }
 
     @Test
+    fun groupsCarryAnAudioUriForCoverLoading() {
+        val artists = MediaGrouping.artists(
+            listOf(
+                track(1, artist = "周杰伦", albumId = 11),
+                track(2, artist = "周杰伦", albumId = 11),
+            ),
+        )
+        assertEquals("content://media/external/audio/media/1", artists.single().audioUri)
+
+        val albums = MediaGrouping.albums(
+            listOf(
+                track(7, artist = "陈奕迅", album = "叶惠美", albumId = 22),
+                track(8, artist = "陈奕迅", album = "叶惠美", albumId = 22),
+            ),
+        )
+        assertEquals("content://media/external/audio/media/7", albums.single().audioUri)
+    }
+
+    @Test
     fun groupsAlbumsByAlbumAndArtist() {
         val albums = MediaGrouping.albums(
             listOf(
