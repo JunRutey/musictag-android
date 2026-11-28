@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [1.1.11] - 2026-11-28
 
+已发布：https://github.com/JunRutey/musictag-android/releases/tag/v1.1.11
+
+* APK：`musictag-1.1.11.apk`（9,783,654 字节，versionName 1.1.11，versionCode 13，
+  `apksigner verify` 通过，签名证书 SHA-256 指纹 `51485C4E…D79D4D`）。
+* APK SHA-256：`26f4b6c3fe707a4276a69fea0c6809a0ad044153a5baebbae86e651c4de196b1`。
+
 ### 修复
 
 * 曲库在首次加载完成前输入搜索词时，搜索结果不再被空列表覆盖成空白页；加载结束后统一按当前关键词过滤。
