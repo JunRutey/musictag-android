@@ -13,3 +13,11 @@
 
 # Keep annotated Compose-friendly models readable in crash reports.
 -keep class com.xjcheng.musictageditor.compat.** { *; }
+
+# R8 full mode (android.enableR8.fullMode=true) uses aggressive optimization.
+# Providers parse JsonObject/JsonElement trees directly - there are no
+# @Serializable classes and no reflection - so serialization needs no broad
+# keep rule and stays fully shrinkable. Keep annotation metadata for Compose,
+# and silence library warnings that full mode surfaces.
+-keepattributes *Annotation*, InnerClasses, Signature
+-dontwarn kotlinx.serialization.**

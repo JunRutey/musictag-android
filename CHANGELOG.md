@@ -4,6 +4,20 @@ All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.11] - 2026-11-28
+
+### 修复
+
+* 曲库在首次加载完成前输入搜索词时，搜索结果不再被空列表覆盖成空白页；加载结束后统一按当前关键词过滤。
+* 在线搜索的多次请求（搜索 / 自动匹配 / 查看详情）改为共享可取消的单一任务，慢响应不会再盖掉新结果。
+* 索引条拖动和点击的滚动、气泡隐藏协程改为可取消，避免快速操作堆积任务或气泡提前消失。
+
+### 优化
+
+* 应用启动时偏好设置只读取一次（原先重复读取两次），主题直接用内存值更新，减少主线程磁盘 I/O。
+* 编辑器里的 `.lrc` 读取/写入、重命名、删除与媒体库扫描移到 IO 线程执行，避免卡顿主线程。
+* 发行包启用 R8 完整模式（`android.enableR8.fullMode=true`）并补齐序列化相关保规则，进一步缩小体积。
+
 ## [1.1.10] - 2026-10-31
 
 已发布：https://github.com/JunRutey/musictag-android/releases/tag/v1.1.10

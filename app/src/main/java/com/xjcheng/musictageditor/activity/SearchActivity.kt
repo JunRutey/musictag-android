@@ -26,6 +26,7 @@ import com.xjcheng.musictageditor.ui.search.SearchScreen
 import com.xjcheng.musictageditor.ui.search.SearchUiState
 import com.xjcheng.musictageditor.ui.theme.MusicTagTheme
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -43,6 +44,16 @@ class SearchActivity : ComponentActivity() {
     private val registry by lazy { Providers.registry(settings.load()) }
 
     private var ui by mutableStateOf(SearchUiState())
+
+    /**
+     * Only the newest request may write search results. A cancel replaces it with the next
+     * job, so a slow provider response can never overwrite a later search or selection.
+     */
+    private var requestJob: Job? = null
+
+    private fun cancelPendingRequest() {
+        requestJob?.cancel()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -86,7 +97,8 @@ class SearchActivity : ComponentActivity() {
 
     private fun search() {
         AppLog.d("Search", "search title='${ui.title}' artist='${ui.artist}' album='${ui.album}'")
-        lifecycleScope.launch {
+        cancelPendingRequest()
+        requestJob = lifecycleScope.launch {
             ui = ui.copy(searching = true, error = null, results = emptyList(), selected = null)
             registry.clearFailures()
             val startedAt = System.currentTimeMillis()
@@ -111,7 +123,8 @@ class SearchActivity : ComponentActivity() {
     }
 
     private fun autoMatch() {
-        lifecycleScope.launch {
+        cancelPendingRequest()
+        requestJob = lifecycleScope.launch {
             ui = ui.copy(searching = true, error = null, results = emptyList(), selected = null)
             registry.clearFailures()
             val candidate = withContext(Dispatchers.IO) {
@@ -137,7 +150,8 @@ class SearchActivity : ComponentActivity() {
 
     private fun select(result: SearchResult) {
         AppLog.d("Search", "detail ${result.provider.key}:${result.id}")
-        lifecycleScope.launch {
+        cancelPendingRequest()
+        requestJob = lifecycleScope.launch {
             ui = ui.copy(searching = true, error = null)
             val candidate = withContext(Dispatchers.IO) {
                 runCatching { registry.detailFor(result) }.getOrNull()

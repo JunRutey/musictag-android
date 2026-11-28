@@ -145,6 +145,10 @@ open class SearchMediaActivity : ComponentActivity() {
     private fun updateQuery(query: String) {
         ui = ui.copy(query = query)
         queryJob?.cancel()
+        // Filtering against an unloaded library writes an empty result over the real list
+        // and leaves the screen blank until the next load. Wait for the initial load in
+        // that case; load() itself applies the current query when it finishes.
+        if (!hasLoaded) return
         queryJob = lifecycleScope.launch {
             delay(120)
             val matches = withContext(Dispatchers.Default) {

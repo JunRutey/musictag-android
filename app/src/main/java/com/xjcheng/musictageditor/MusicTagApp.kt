@@ -25,9 +25,12 @@ class MusicTagApp : Application() {
         // ones other apps start directly (VIEW / SEND), so they are initialised here.
         runCatching { AppLog.init(this) }
         // A corrupted or old-format preference file must never stop the app from starting.
+        // Read the preferences once: the previous version loaded them twice on the main
+        // thread (once here, once inside Appearance.refresh), doubling startup disk I/O.
         runCatching {
-            AppLog.setVerbose(SettingsRepository(this).load().verboseLogging)
-            Appearance.refresh(this)
+            val settings = SettingsRepository(this).load()
+            AppLog.setVerbose(settings.verboseLogging)
+            Appearance.update(settings.themeMode, settings.dynamicColor)
         }.onFailure { AppLog.w("App", "startup preference read failed", it) }
     }
 }

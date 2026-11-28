@@ -276,7 +276,22 @@ class SongDetailActivity : ComponentActivity() {
                         ?: return@runCatching LoadResult.Failed(
                             getString(R.string.editor_error_unknown_container),
                         )
-                    LoadResult.Ok(resolved, tag)
+                    // Read the .lrc sidecar here, still on IO: pathFor() queries MediaStore
+                    // and read() touches the filesystem, neither of which belongs on Main.
+                    val lyrics = if (tag.lyrics.isBlank()) {
+                        LyricsSidecar.pathFor(this@SongDetailActivity, uri)?.let { audioPath ->
+                            LyricsSidecar.read(
+                                audioPath = audioPath,
+                                settings = settings.load(),
+                                title = tag.title,
+                                artist = tag.artist,
+                                album = tag.album,
+                            )
+                        }
+                    } else {
+                        null
+                    }
+                    LoadResult.Ok(resolved, tag.copy(lyrics = lyrics ?: tag.lyrics))
                 }.getOrElse { error ->
                     AppLog.w(TAG, "cannot read tags for $uri", error)
                     LoadResult.Failed(
@@ -292,21 +307,8 @@ class SongDetailActivity : ComponentActivity() {
                 is LoadResult.Ok -> {
                     document = result.document
                     val tag = result.tag
-                    // A tag without lyrics falls back to the ".lrc" side file, if we can
-                    // reach the real path next to it.
-                    val sidecarLyrics = if (tag.lyrics.isBlank()) {
-                        LyricsSidecar.pathFor(this@SongDetailActivity, uri)?.let { audioPath ->
-                            LyricsSidecar.read(
-                                audioPath = audioPath,
-                                settings = settings.load(),
-                                title = tag.title,
-                                artist = tag.artist,
-                                album = tag.album,
-                            )
-                        }
-                    } else {
-                        null
-                    }
+                    // The .lrc fallback was resolved on IO alongside the tag read, so no
+                    // MediaStore query or file read happens on the main thread here.
                     val front = tag.pictures.firstOrNull { it.type == TagPicture.FRONT_COVER }
                         ?: tag.pictures.firstOrNull()
                     val artist = tag.pictures.firstOrNull { it.type == TagPicture.ARTIST }
@@ -316,9 +318,7 @@ class SongDetailActivity : ComponentActivity() {
                         container = tag.container,
                         tagFormat = tag.tagFormat,
                         audio = describeAudio(tag),
-                        edit = TagEdit.from(tag).let { edit ->
-                            if (sidecarLyrics != null) edit.copy(lyrics = sidecarLyrics) else edit
-                        },
+                        edit = TagEdit.from(tag),
                         original = tag,
                         coverBytes = front?.data,
                         artistCoverBytes = artist?.data,
@@ -451,7 +451,7 @@ class SongDetailActivity : ComponentActivity() {
             } else {
                 AppLog.i(TAG, "tags saved for $uri")
                 ui = ui.copy(message = getString(R.string.editor_message_saved))
-                writeLyricsSidecar(uri)
+                withContext(Dispatchers.IO) { writeLyricsSidecar(uri) }
                 load(uri)
             }
         }
@@ -475,31 +475,43 @@ class SongDetailActivity : ComponentActivity() {
     private fun renameTo(name: String) {
         val current = document ?: return
         val uri = documentUri ?: return
-        when (FileOps.rename(this, uri, name, current.displayName)) {
-            FileOps.Result.Ok -> load(uri)
-            is FileOps.Result.Failed -> ui = ui.copy(error = getString(R.string.editor_error_rename))
+        lifecycleScope.launch {
+            // FileOps.rename issues a MediaStore update and a media scan; keep it off Main.
+            val ok = withContext(Dispatchers.IO) {
+                FileOps.rename(this@SongDetailActivity, uri, name, current.displayName) is FileOps.Result.Ok
+            }
+            if (ok) load(uri) else ui = ui.copy(error = getString(R.string.editor_error_rename))
         }
     }
 
     private fun deleteFile() {
         val current = document ?: return
         val uri = documentUri ?: return
-        when (FileOps.delete(this, uri)) {
-            FileOps.Result.Ok -> {
-                RefreshMediaStoreService.start(this, listOf(current.path))
-                finish()
+        lifecycleScope.launch {
+            val ok = withContext(Dispatchers.IO) {
+                FileOps.delete(this@SongDetailActivity, uri) is FileOps.Result.Ok
             }
-            is FileOps.Result.Failed -> ui = ui.copy(error = getString(R.string.editor_error_delete))
+            if (ok) {
+                RefreshMediaStoreService.start(this@SongDetailActivity, listOf(current.path))
+                finish()
+            } else {
+                ui = ui.copy(error = getString(R.string.editor_error_delete))
+            }
         }
     }
 
     private fun shareFile() {
         document ?: return
         val uri = documentUri ?: return
-        val mimeType = contentResolver.getType(uri) ?: "audio/*"
-        when (FileOps.share(this, uri, mimeType)) {
-            FileOps.Result.Ok -> Unit
-            is FileOps.Result.Failed -> ui = ui.copy(error = getString(R.string.editor_error_share))
+        lifecycleScope.launch {
+            // getType() queries the provider; the share sheet itself must open on Main.
+            val mimeType = withContext(Dispatchers.IO) {
+                contentResolver.getType(uri) ?: "audio/*"
+            }
+            when (FileOps.share(this@SongDetailActivity, uri, mimeType)) {
+                FileOps.Result.Ok -> Unit
+                is FileOps.Result.Failed -> ui = ui.copy(error = getString(R.string.editor_error_share))
+            }
         }
     }
 }

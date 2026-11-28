@@ -71,6 +71,7 @@ import com.xjcheng.musictageditor.media.MediaGrouping
 import com.xjcheng.musictageditor.media.MediaTrack
 import com.xjcheng.musictageditor.media.PinyinIndex
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -770,11 +771,17 @@ private fun AlphabetBar(
     if (letters.size < 2) return
     val scope = rememberCoroutineScope()
     var current by remember { mutableStateOf<String?>(null) }
+    // Dragging the strip can fire many jumps per frame. Cancel the previous scroll and
+    // bubble-hide jobs so they cannot pile up or clear a freshly shown bubble early.
+    var scrollJob by remember { mutableStateOf<Job?>(null) }
+    var hideJob by remember { mutableStateOf<Job?>(null) }
 
     fun jump(letter: String) {
         current = letter
+        hideJob?.cancel()
         val index = letterIndex[letter] ?: return
-        scope.launch { listState.scrollToItem(index) }
+        scrollJob?.cancel()
+        scrollJob = scope.launch { listState.scrollToItem(index) }
     }
 
     fun letterAt(y: Float, height: Int): String? {
@@ -824,7 +831,8 @@ private fun AlphabetBar(
                     detectTapGestures { offset ->
                         letterAt(offset.y, size.height)?.let { letter ->
                             jump(letter)
-                            scope.launch {
+                            hideJob?.cancel()
+                            hideJob = scope.launch {
                                 delay(450)
                                 current = null
                             }
