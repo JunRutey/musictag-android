@@ -85,10 +85,9 @@ class AlbumArtLoader private constructor(
         }
 
         // Pre-Q fallback: the albumart provider URI is still directly openable.
+        // loadThumbnail() is API 29+, so on older devices decode via openInputStream.
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             val uri = ContentUris.withAppendedId(ALBUM_ART, albumId)
-            safeDecode { context.contentResolver.loadThumbnail(uri, Size(targetPx, targetPx), null) }
-                ?.let { return it }
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
             val gotBounds = try {
                 context.contentResolver.openInputStream(uri)?.use { stream ->
