@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [1.1.12] - 2026-11-28
 
+已发布：https://github.com/JunRutey/musictag-android/releases/tag/v1.1.12
+
+* APK：`musictag-1.1.12.apk`（9,783,658 字节，versionName 1.1.12，versionCode 14，
+  `apksigner verify` 通过，签名证书 SHA-256 指纹 `51485C4E…D79D4D`）。
+* APK SHA-256：`ef608ffbaf4a600d2291a9490ab8d95d65c4c1e0d432618f6e18629e4c765bcc`。
+
 ### 修复
 
 * 曲库主页与艺术家 / 专辑行的歌曲封面不再空白：Android 10（API 29）起旧的
